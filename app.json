@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "school-marketplace-app",
+    "slug": "school-marketplace-app",
+    "scheme": "schoolmarketplace",
+    "plugins": ["expo-router"],
+    "web": {
+      "output": "static"
+    }
+  }
+}
