@@ -4,8 +4,7 @@ import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
   signOut,
-  sendEmailVerification,
-} from "firebase/auth";
+, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
@@ -173,7 +172,6 @@ await sendEmailVerification(result.user);
     </main>
   );
 }
-
 
 
 

@@ -199,10 +199,15 @@ function ChatContent() {
       setShowActiveUsers(false);
     }
 
-    function handlePointerDown(e: PointerEvent) {
+    function handleClick(e: MouseEvent) {
       const target = e.target as HTMLElement | null;
 
-      if (target?.closest("[data-popup-root='true']")) {
+      // Si el click fue dentro de algo interactivo, no cerrar
+      if (
+        target?.closest("button") ||
+        target?.closest("input") ||
+        target?.closest("textarea")
+      ) {
         return;
       }
 
@@ -215,11 +220,11 @@ function ChatContent() {
       }
     }
 
-    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("click", handleClick);
     document.addEventListener("keydown", handleKey);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("click", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
   }, []);
@@ -617,7 +622,6 @@ function ChatContent() {
 
               {isAdmin && showActiveUsers && (
                 <div
-                  data-popup-root="true"
                   onClick={(e) => e.stopPropagation()}
                   className={darkMode ? "absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl" : "absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl"}
                 >
@@ -646,8 +650,8 @@ function ChatContent() {
             </div>
           </div>
 
-          <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
+          <div className="relative" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setMenuOpen((prev) => !prev)} className={menuButtonClasses(darkMode)}
             >
               {menuOpen ? "Cerrar menú" : "Menú"}
             </button>
@@ -757,14 +761,14 @@ function ChatContent() {
                         </div>
                       </div>
 
-                      <div className="relative shrink-0" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
+                      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                         {msg.senderPlan === "premium" && (
                           <span className="text-sm md:text-base mr-1" title="Premium">
                             👑
                           </span>
                         )}
 
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setActionForMessage((prev) => (prev === msg.id ? null : msg.id)); }} className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
+                        <button type="button" onClick={() => setActionForMessage((prev) => (prev === msg.id ? null : msg.id))} className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
                           ⋯
                         </button>
@@ -1038,7 +1042,6 @@ export default function ChatPage() {
     </AuthGuard>
   );
 }
-
 
 
 

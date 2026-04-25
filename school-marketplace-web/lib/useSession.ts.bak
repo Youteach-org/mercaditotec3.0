@@ -6,7 +6,6 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 export type AppUser = {
-  role?: "admin" | "user";
   email?: string;
   emailLocalPart?: string;
   emailVerified?: boolean;
@@ -67,4 +66,3 @@ export function useSession() {
     logout,
   };
 }
-

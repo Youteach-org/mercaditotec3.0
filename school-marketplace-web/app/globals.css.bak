@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -25,15 +25,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-
 /* CHAT REACTIONS FINAL FIX */
-.chat-reactions-row {
-  position: absolute !important;
-  bottom: -0.55rem !important;
-  z-index: 20 !important;
-  margin: 0 !important;
+.chat-message-stack {
+  display: flex !important;
+  flex-direction: column-reverse !important;
 }
 
-.chat-reactions-row button {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.18) !important;
+.chat-reactions-row {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0 !important;
+  position: static !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
 }
