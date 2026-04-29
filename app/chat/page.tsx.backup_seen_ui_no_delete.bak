@@ -314,7 +314,30 @@ function ChatContent() {
     const q = query(collection(db, "messages"), orderBy("createdAt"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const now = Date.now();
-const msgs = snapshot.docs
+
+      const expiredDocs = snapshot.docs.filter((item) => {
+        const data = item.data() as Omit<ChatMessage, "id">;
+        const expiresAt = data.expiresAt ?? ((data.createdAt ?? 0) + MESSAGE_TTL_MS);
+        return expiresAt <= now;
+      });
+
+      expiredDocs.forEach(async (item) => {
+        const reactionQuery = query(
+          collection(db, "message_reactions"),
+          where("messageId", "==", item.id)
+        );
+
+        const reactionSnapshot = await getDocs(reactionQuery);
+
+        await Promise.all([
+          ...reactionSnapshot.docs.map((reaction) =>
+            deleteDoc(doc(db, "message_reactions", reaction.id))
+          ),
+          deleteDoc(doc(db, "messages", item.id)),
+        ]);
+      });
+
+      const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
@@ -972,34 +995,6 @@ const msgs = snapshot.docs
                         ))}
                       </div>
                     )}
-                    <div className={darkMode ? "mt-2 space-y-1 text-[10px] text-slate-300" : "mt-2 space-y-1 text-[10px] text-gray-500"}>
-                      <p>Enviado: {formatChatTime(msg.createdAt)}</p>
-
-                      <p>
-                        Visto por {seenCount} {seenCount === 1 ? "persona" : "personas"}
-                      </p>
-
-                      {isAdmin && seenEntries.length > 0 && (
-                        <details className={darkMode ? "text-slate-200" : "text-gray-700"}>
-                          <summary className="cursor-pointer font-semibold">
-                            Ver quién lo vio
-                          </summary>
-
-                          <div className="mt-1 space-y-1">
-                            {seenEntries.map(([userId, seenAt]) => {
-                              const activeUser = activeUsers.find((user) => user.uid === userId);
-                              const label = activeUser?.name || activeUser?.email || userId;
-
-                              return (
-                                <p key={userId} className="break-all">
-                                  {label} — {formatSeenTime(seenAt)}
-                                </p>
-                              );
-                            })}
-                          </div>
-                        </details>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>
