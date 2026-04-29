@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -53,7 +53,6 @@ type ChatMessage = {
   createdAt: number;
   expiresAt?: number;
   replyTo?: ReplyTo | null;
-  seenBy?: Record<string, number>;
 };
 
 type UserImage = {
@@ -140,27 +139,6 @@ async function uploadToSupabase(file: File) {
   return supabase.storage.from("chat-images").getPublicUrl(fileName).data.publicUrl;
 }
 
-function formatChatTime(timestamp?: number) {
-  if (!timestamp) return "";
-  return new Date(timestamp).toLocaleTimeString("es-MX", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatSeenTime(timestamp: number) {
-  return new Date(timestamp).toLocaleString("es-MX", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function seenEntriesForMessage(message: ChatMessage) {
-  return Object.entries(message.seenBy ?? {}).sort((a, b) => a[1] - b[1]);
-}
-
 function ChatContent() {
   const { firebaseUser, appUser, loading, logout } = useSession();
   const appUserAny = appUser as any;
@@ -181,7 +159,6 @@ function ChatContent() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [showActiveUsers, setShowActiveUsers] = useState(false);
   const [actionForMessage, setActionForMessage] = useState<string | null>(null);
-  const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number } | null>(null);
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedSavedUrls, setSelectedSavedUrls] = useState<string[]>([]);
@@ -216,7 +193,7 @@ function ChatContent() {
   useEffect(() => {
     function closeAllPopups() {
       setMenuOpen(false);
-      setActionForMessage(null); setActionMenuPosition(null);
+      setActionForMessage(null);
       setTemplatesOpen(false);
       setGalleryOpen(false);
       setShowActiveUsers(false);
@@ -315,37 +292,12 @@ function ChatContent() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const now = Date.now();
 
-      const expiredDocs = snapshot.docs.filter((item) => {
-        const data = item.data() as Omit<ChatMessage, "id">;
-        const expiresAt = data.expiresAt ?? ((data.createdAt ?? 0) + MESSAGE_TTL_MS);
-        return expiresAt <= now;
-      });
-
-      expiredDocs.forEach(async (item) => {
-        const reactionQuery = query(
-          collection(db, "message_reactions"),
-          where("messageId", "==", item.id)
-        );
-
-        const reactionSnapshot = await getDocs(reactionQuery);
-
-        await Promise.all([
-          ...reactionSnapshot.docs.map((reaction) =>
-            deleteDoc(doc(db, "message_reactions", reaction.id))
-          ),
-          deleteDoc(doc(db, "messages", item.id)),
-        ]);
-      });
-
       const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
         }))
-        .filter((msg) => {
-          const expiresAt = msg.expiresAt ?? ((msg.createdAt ?? 0) + MESSAGE_TTL_MS);
-          return expiresAt > now;
-        });
+        .filter((msg) => !msg.expiresAt || msg.expiresAt > now);
 
       const newest = msgs[msgs.length - 1];
 
@@ -415,38 +367,6 @@ function ChatContent() {
     };
   }, [selectedImages]);
 
-  // SEEN_BY_AUTO_MARKER
-  useEffect(() => {
-    if (!firebaseUser || messages.length === 0) return;
-
-    const now = Date.now();
-
-    const pendingSeenUpdates = messages
-      .filter((msg) => {
-        if (!msg.senderId) return false;
-        if (msg.senderId === firebaseUser.uid) return false;
-        if (msg.seenBy?.[firebaseUser.uid]) return false;
-        return true;
-      })
-      .map((msg) =>
-        setDoc(
-          doc(db, "messages", msg.id),
-          {
-            seenBy: {
-              [firebaseUser.uid]: now,
-            },
-          },
-          { merge: true }
-        )
-      );
-
-    if (pendingSeenUpdates.length > 0) {
-      Promise.all(pendingSeenUpdates).catch((error) => {
-        console.error("MARK_SEEN_ERROR", error);
-      });
-    }
-  }, [messages, firebaseUser]);
-
   function reactionsForMessage(messageId: string) {
     const related = reactions.filter((r) => r.messageId === messageId);
     return QUICK_EMOJIS.map((emoji) => {
@@ -471,33 +391,11 @@ function ChatContent() {
     const existing = await getDocs(q);
     const alreadySelected = existing.docs.some((item) => item.data().emoji === emoji);
 
-    if (alreadySelected) {
-      for (const item of existing.docs) {
-        await deleteDoc(doc(db, "message_reactions", item.id));
-      }
-
-      setActionForMessage(null);
-      return;
+    for (const item of existing.docs) {
+      await deleteDoc(doc(db, "message_reactions", item.id));
     }
 
-    if (existing.docs.length > 0) {
-      const [firstReaction, ...duplicatedReactions] = existing.docs;
-
-      await setDoc(
-        doc(db, "message_reactions", firstReaction.id),
-        {
-          messageId,
-          userId: firebaseUser!.uid,
-          emoji,
-          createdAt: Date.now(),
-        },
-        { merge: true }
-      );
-
-      for (const item of duplicatedReactions) {
-        await deleteDoc(doc(db, "message_reactions", item.id));
-      }
-    } else {
+    if (!alreadySelected) {
       await addDoc(collection(db, "message_reactions"), {
         messageId,
         userId: firebaseUser!.uid,
@@ -516,7 +414,7 @@ function ChatContent() {
       text: message.text || (message.imageUrls?.length ? "Imagen" : ""),
     });
 
-    setActionForMessage(null); setActionMenuPosition(null);
+    setActionForMessage(null);
 
     setTimeout(() => {
       const el = document.querySelector('textarea, input[type="text"]') as HTMLTextAreaElement | HTMLInputElement | null;
@@ -749,7 +647,7 @@ function ChatContent() {
           </div>
 
           <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setActionMenuPosition(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
+            <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
             >
               {menuOpen ? "Cerrar menú" : "Menú"}
             </button>
@@ -798,9 +696,6 @@ function ChatContent() {
           {messages.map((msg) => {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
-            const isAdmin = appUser?.role === "admin";
-            const seenEntries = seenEntriesForMessage(msg);
-            const seenCount = seenEntries.length;
             const groupedReactions = reactionsForMessage(msg.id);
 
             return (
@@ -869,64 +764,15 @@ function ChatContent() {
                           </span>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMenuOpen(false);
-
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const menuWidth = 260;
-                            const menuHeight = 215;
-                            const gap = 10;
-
-                            const candidates = [
-                              { left: rect.left, top: rect.bottom + gap },
-                              { left: rect.right - menuWidth, top: rect.bottom + gap },
-                              { left: rect.left, top: rect.top - menuHeight - gap },
-                              { left: rect.right - menuWidth, top: rect.top - menuHeight - gap },
-                              { left: rect.right + gap, top: rect.top },
-                              { left: rect.left - menuWidth - gap, top: rect.top },
-                            ];
-
-                            function overflow(pos: { left: number; top: number }) {
-                              return (
-                                Math.max(0, gap - pos.left) +
-                                Math.max(0, gap - pos.top) +
-                                Math.max(0, pos.left + menuWidth - (window.innerWidth - gap)) +
-                                Math.max(0, pos.top + menuHeight - (window.innerHeight - gap))
-                              );
-                            }
-
-                            const best = candidates
-                              .map((pos) => ({ pos, score: overflow(pos) }))
-                              .sort((a, b) => a.score - b.score)[0].pos;
-
-                            const left = Math.min(Math.max(gap, best.left), window.innerWidth - menuWidth - gap);
-                            const top = Math.min(Math.max(gap, best.top), window.innerHeight - menuHeight - gap);
-
-                            if (actionForMessage === msg.id) {
-                              setActionForMessage(null);
-                              setActionMenuPosition(null);
-                            } else {
-                              setActionForMessage(msg.id);
-                              setActionMenuPosition({ left, top });
-                            }
-                          }}
-                          className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setMenuOpen(false); setActionForMessage((prev) => (prev === msg.id ? null : msg.id)); }} className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
                           ⋯
                         </button>
 
-                        {actionForMessage === msg.id && actionMenuPosition && (
+                        {actionForMessage === msg.id && (
                           <div
-                            data-popup-root="true"
                             onClick={(e) => e.stopPropagation()}
-                            style={{
-                              left: actionMenuPosition.left,
-                              top: actionMenuPosition.top,
-                            }}
-                            className={darkMode ? "fixed z-[99999] w-[260px] max-w-[90vw] rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl" : "fixed z-[99999] w-[260px] max-w-[90vw] rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl"}
+                            className={darkMode ? `${isMine ? "absolute right-0" : "absolute left-0"} bottom-full z-50 mb-2 w-56 max-w-[80vw] rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl` : `${isMine ? "absolute right-0" : "absolute left-0"} bottom-full z-50 mb-2 w-56 max-w-[80vw] rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl`}
                           >
                             <button
                               type="button"
@@ -1192,9 +1038,6 @@ export default function ChatPage() {
     </AuthGuard>
   );
 }
-
-
-
 
 
 

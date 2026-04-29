@@ -3,8 +3,8 @@
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
-  signOut,
   sendEmailVerification,
+  signOut,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -30,6 +30,10 @@ export default function RegisterPage() {
   const [localPart, setLocalPart] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,11 +58,6 @@ export default function RegisterPage() {
       return;
     }
 
-    if (!password) {
-      setError("Escribe una contraseña.");
-      return;
-    }
-
     if (password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -73,7 +72,6 @@ export default function RegisterPage() {
       setLoading(true);
 
       const result = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-await sendEmailVerification(result.user);
 
       await setDoc(doc(db, "users", result.user.uid), {
         email: cleanEmail,
@@ -82,27 +80,39 @@ await sendEmailVerification(result.user);
         displayName: prettifyDisplayName(cleanLocalPart),
         photoURL: "",
         plan: "free",
+        role: "user",
         isActive: true,
         blocked: false,
         createdAt: Date.now(),
       });
 
-      await sendEmailVerification(result.user);
+      try {
+        await sendEmailVerification(result.user);
+        setSuccess("Cuenta creada. Te enviamos un correo de verificación. Revisa tu bandeja o spam.");
+      } catch (verifyError: any) {
+        if (verifyError?.code === "auth/too-many-requests") {
+          setSuccess("Cuenta creada. Firebase limitó temporalmente el envío de correos. Intenta reenviar la verificación más tarde desde login.");
+        } else {
+          setSuccess("Cuenta creada. Si no recibes correo, intenta reenviar la verificación más tarde desde login.");
+        }
+      }
+
       await signOut(auth);
 
-      setSuccess("Tu cuenta fue creada. Revisa tu correo institucional y confirma tu alta antes de iniciar sesión.");
       setLocalPart("");
       setPassword("");
       setConfirmPassword("");
 
       window.setTimeout(() => {
-        router.push("/login");
-      }, 2500);
+        router.push("/verify-email");
+      }, 1800);
     } catch (err: any) {
       if (err?.code === "auth/email-already-in-use") {
         setError("Ese correo institucional ya está registrado.");
       } else if (err?.code === "auth/weak-password") {
         setError("La contraseña debe tener al menos 6 caracteres.");
+      } else if (err?.code === "auth/too-many-requests") {
+        setError("Firebase bloqueó temporalmente los intentos. Espera unos minutos e intenta de nuevo.");
       } else {
         setError(err?.message || "No se pudo crear la cuenta.");
       }
@@ -127,7 +137,7 @@ await sendEmailVerification(result.user);
               placeholder="ejemplo: a12345678"
               value={localPart}
               onChange={(e) => setLocalPart(e.target.value)}
-              className="flex-1 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
+              className="flex-1 min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
             />
             <div className="bg-gray-100 px-3 flex items-center text-sm text-gray-700 border-l border-gray-300">
               {DOMAIN}
@@ -139,21 +149,39 @@ await sendEmailVerification(result.user);
           </p>
         </div>
 
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 placeholder:text-gray-500"
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl p-3 pr-20 text-gray-900 placeholder:text-gray-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600"
+          >
+            {showPassword ? "Ocultar" : "Ver"}
+          </button>
+        </div>
 
-        <input
-          type="password"
-          placeholder="Confirmar contraseña"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="w-full border border-gray-300 rounded-xl p-3 text-gray-900 placeholder:text-gray-500"
-        />
+        <div className="relative">
+          <input
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full border border-gray-300 rounded-xl p-3 pr-20 text-gray-900 placeholder:text-gray-500"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600"
+          >
+            {showConfirmPassword ? "Ocultar" : "Ver"}
+          </button>
+        </div>
 
         {error && <p className="text-red-600 text-sm break-all">{error}</p>}
         {success && <p className="text-green-700 text-sm break-all">{success}</p>}
@@ -173,7 +201,3 @@ await sendEmailVerification(result.user);
     </main>
   );
 }
-
-
-
-

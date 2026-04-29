@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -53,7 +53,6 @@ type ChatMessage = {
   createdAt: number;
   expiresAt?: number;
   replyTo?: ReplyTo | null;
-  seenBy?: Record<string, number>;
 };
 
 type UserImage = {
@@ -138,27 +137,6 @@ async function uploadToSupabase(file: File) {
   if (uploadResult.error) throw uploadResult.error;
 
   return supabase.storage.from("chat-images").getPublicUrl(fileName).data.publicUrl;
-}
-
-function formatChatTime(timestamp?: number) {
-  if (!timestamp) return "";
-  return new Date(timestamp).toLocaleTimeString("es-MX", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatSeenTime(timestamp: number) {
-  return new Date(timestamp).toLocaleString("es-MX", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function seenEntriesForMessage(message: ChatMessage) {
-  return Object.entries(message.seenBy ?? {}).sort((a, b) => a[1] - b[1]);
 }
 
 function ChatContent() {
@@ -315,37 +293,12 @@ function ChatContent() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const now = Date.now();
 
-      const expiredDocs = snapshot.docs.filter((item) => {
-        const data = item.data() as Omit<ChatMessage, "id">;
-        const expiresAt = data.expiresAt ?? ((data.createdAt ?? 0) + MESSAGE_TTL_MS);
-        return expiresAt <= now;
-      });
-
-      expiredDocs.forEach(async (item) => {
-        const reactionQuery = query(
-          collection(db, "message_reactions"),
-          where("messageId", "==", item.id)
-        );
-
-        const reactionSnapshot = await getDocs(reactionQuery);
-
-        await Promise.all([
-          ...reactionSnapshot.docs.map((reaction) =>
-            deleteDoc(doc(db, "message_reactions", reaction.id))
-          ),
-          deleteDoc(doc(db, "messages", item.id)),
-        ]);
-      });
-
       const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
         }))
-        .filter((msg) => {
-          const expiresAt = msg.expiresAt ?? ((msg.createdAt ?? 0) + MESSAGE_TTL_MS);
-          return expiresAt > now;
-        });
+        .filter((msg) => !msg.expiresAt || msg.expiresAt > now);
 
       const newest = msgs[msgs.length - 1];
 
@@ -414,38 +367,6 @@ function ChatContent() {
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [selectedImages]);
-
-  // SEEN_BY_AUTO_MARKER
-  useEffect(() => {
-    if (!firebaseUser || messages.length === 0) return;
-
-    const now = Date.now();
-
-    const pendingSeenUpdates = messages
-      .filter((msg) => {
-        if (!msg.senderId) return false;
-        if (msg.senderId === firebaseUser.uid) return false;
-        if (msg.seenBy?.[firebaseUser.uid]) return false;
-        return true;
-      })
-      .map((msg) =>
-        setDoc(
-          doc(db, "messages", msg.id),
-          {
-            seenBy: {
-              [firebaseUser.uid]: now,
-            },
-          },
-          { merge: true }
-        )
-      );
-
-    if (pendingSeenUpdates.length > 0) {
-      Promise.all(pendingSeenUpdates).catch((error) => {
-        console.error("MARK_SEEN_ERROR", error);
-      });
-    }
-  }, [messages, firebaseUser]);
 
   function reactionsForMessage(messageId: string) {
     const related = reactions.filter((r) => r.messageId === messageId);
@@ -798,9 +719,6 @@ function ChatContent() {
           {messages.map((msg) => {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
-            const isAdmin = appUser?.role === "admin";
-            const seenEntries = seenEntriesForMessage(msg);
-            const seenCount = seenEntries.length;
             const groupedReactions = reactionsForMessage(msg.id);
 
             return (
@@ -1192,7 +1110,6 @@ export default function ChatPage() {
     </AuthGuard>
   );
 }
-
 
 
 
