@@ -825,7 +825,7 @@ const msgs = snapshot.docs
                                 className="w-7 h-7 rounded-full object-cover border border-gray-300 shrink-0"
                               />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
+                              <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-700 shrink-0">
                                 {safeName(msg.senderName).slice(0, 1).toUpperCase()}
                               </div>
                             )}
@@ -890,7 +890,7 @@ const msgs = snapshot.docs
                               setActionMenuPosition({ left, top });
                             }
                           }}
-                          className={darkMode ? "text-xs bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-xs bg-slate-800 text-white px-2 py-1 rounded-xl"}
+                          className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
                           ⋯
                         </button>
@@ -958,7 +958,21 @@ const msgs = snapshot.docs
                         {msg.text}
                       </p>
                     )}
-                    <div className={darkMode ? "mt-2 space-y-1 text-xs text-yellow-300" : "mt-2 space-y-1 text-xs text-gray-700"}>
+
+                    {msg.imageUrls && msg.imageUrls.length > 0 && (
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {msg.imageUrls.map((url) => (
+                          <a key={url} href={url} target="_blank" rel="noreferrer">
+                            <img
+                              src={url}
+                              alt="Imagen enviada"
+                              className="max-h-72 w-full object-cover rounded-xl border border-gray-300"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                    <div className={darkMode ? "mt-2 space-y-1 text-[10px] text-slate-300" : "mt-2 space-y-1 text-[10px] text-gray-500"}>
                       <p>Enviado: {formatChatTime(msg.createdAt)}</p>
 
                       <p>
@@ -986,20 +1000,6 @@ const msgs = snapshot.docs
                         </details>
                       )}
                     </div>
-
-                    {msg.imageUrls && msg.imageUrls.length > 0 && (
-                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {msg.imageUrls.map((url) => (
-                          <a key={url} href={url} target="_blank" rel="noreferrer">
-                            <img
-                              src={url}
-                              alt="Imagen enviada"
-                              className="max-h-72 w-full object-cover rounded-xl border border-gray-300"
-                            />
-                          </a>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1059,7 +1059,7 @@ const msgs = snapshot.docs
             </div>
 
             {userImages.length === 0 ? (
-              <p className={darkMode ? "text-xs text-yellow-300" : "text-xs text-gray-600"}>
+              <p className={darkMode ? "text-xs text-slate-300" : "text-xs text-gray-600"}>
                 Aún no tienes imágenes guardadas.
               </p>
             ) : (
@@ -1146,7 +1146,7 @@ const msgs = snapshot.docs
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleTextKeyDown}
-              className={darkMode ? "flex-1 min-w-0 border border-slate-600 bg-slate-800 rounded-xl p-2 md:p-3 text-sm text-slate-100 placeholder:text-slate-400" : "flex-1 min-w-0 border border-gray-300 rounded-xl p-2 md:p-3 text-sm text-gray-900 placeholder:text-gray-700"}
+              className={darkMode ? "flex-1 min-w-0 border border-slate-600 bg-slate-800 rounded-xl p-2 md:p-3 text-sm text-slate-100 placeholder:text-slate-400" : "flex-1 min-w-0 border border-gray-300 rounded-xl p-2 md:p-3 text-sm text-gray-900 placeholder:text-gray-500"}
               placeholder="Escribe un mensaje..."
             />
 
