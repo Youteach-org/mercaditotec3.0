@@ -318,7 +318,11 @@ const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
-        }));
+        }))
+        .filter((msg) => {
+          const expiresAt = msg.expiresAt ?? ((msg.createdAt ?? 0) + MESSAGE_TTL_MS);
+          return expiresAt > now;
+        });
 
       const newest = msgs[msgs.length - 1];
 
@@ -954,18 +958,17 @@ const msgs = snapshot.docs
                         {msg.text}
                       </p>
                     )}
-                    <div className={darkMode ? "mt-2 flex items-center gap-2 text-[10px] text-slate-300" : "mt-2 flex items-center gap-2 text-[10px] text-gray-500"}>
-                      <span>{formatChatTime(msg.createdAt)}</span>
+                    <div className={darkMode ? "mt-2 space-y-1 text-xs text-yellow-300" : "mt-2 space-y-1 text-xs text-gray-700"}>
+                      <p>Enviado: {formatChatTime(msg.createdAt)}</p>
 
-                      <span title={`Visto por ${seenCount} ${seenCount === 1 ? "persona" : "personas"}`} className="inline-flex items-center gap-1">
-                        <span className="text-[10px] leading-none">👁</span>
-                        <span>{seenCount}</span>
-                      </span>
+                      <p>
+                        Visto por {seenCount} {seenCount === 1 ? "persona" : "personas"}
+                      </p>
 
                       {isAdmin && seenEntries.length > 0 && (
                         <details className={darkMode ? "text-slate-200" : "text-gray-700"}>
-                          <summary className="cursor-pointer text-[10px] font-semibold">
-                            Detalle
+                          <summary className="cursor-pointer font-semibold">
+                            Ver quién lo vio
                           </summary>
 
                           <div className="mt-1 space-y-1">
