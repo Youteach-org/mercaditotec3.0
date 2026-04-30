@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -105,7 +105,7 @@ function ChatContent() {
 
                   <div className="flex items-center gap-2 text-[10px] text-gray-600 mt-1">
                     <span>{formatTime(msg.createdAt)}</span>
-                    <span title={Visto por }>👁 {seenCount}</span>
+                    <span title={`Visto por ${seenCount}`}>👁 {seenCount}</span>
                   </div>
                 </div>
               </div>
