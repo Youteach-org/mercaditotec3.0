@@ -164,7 +164,19 @@ function seenEntriesForMessage(message: ChatMessage) {
 function ChatContent() {
   const { firebaseUser, appUser, loading, logout } = useSession();
   const appUserAny = appUser as any;
-  const isAdmin = appUserAny?.role === "admin";
+  const appUserRole = String(
+    appUserAny?.role ??
+    appUserAny?.userRole ??
+    appUserAny?.type ??
+    appUserAny?.accountType ??
+    ""
+  ).toLowerCase();
+
+  const isAdmin =
+    appUserRole === "admin" ||
+    appUserRole === "administrator" ||
+    appUserAny?.isAdmin === true ||
+    appUserAny?.admin === true;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userImages, setUserImages] = useState<UserImage[]>([]);
@@ -1138,6 +1150,36 @@ const msgs = snapshot.docs
             >
               🖼
             </button>
+
+            <div className={darkMode ? "flex shrink-0 rounded-xl border border-slate-600 bg-slate-800 p-1" : "flex shrink-0 rounded-xl border border-gray-300 bg-gray-100 p-1"}>
+              <button
+                type="button"
+                onClick={() => setSenderRole("buyer")}
+                className={
+                  senderRole === "buyer"
+                    ? "rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white"
+                    : darkMode
+                    ? "rounded-lg px-3 py-2 text-xs font-semibold text-slate-200"
+                    : "rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
+                }
+              >
+                Comprador
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSenderRole("seller")}
+                className={
+                  senderRole === "seller"
+                    ? "rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
+                    : darkMode
+                    ? "rounded-lg px-3 py-2 text-xs font-semibold text-slate-200"
+                    : "rounded-lg px-3 py-2 text-xs font-semibold text-slate-700"
+                }
+              >
+                Vendedor
+              </button>
+            </div>
 
             <input
               value={text}
