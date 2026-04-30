@@ -19,15 +19,15 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 
-const QUICK_EMOJIS = ["ðŸ‘", "â¤ï¸", "ðŸ˜‚", "ðŸ˜®", "ðŸ˜¢", "ðŸ”¥"];
+const QUICK_EMOJIS = ["Ã°Å¸â€˜Â", "Ã¢ÂÂ¤Ã¯Â¸Â", "Ã°Å¸Ëœâ€š", "Ã°Å¸ËœÂ®", "Ã°Å¸ËœÂ¢", "Ã°Å¸â€Â¥"];
 const TEMPLATE_MESSAGES = [
   "Ok",
-  "Â¿Sigue disponible?",
+  "Ã‚Â¿Sigue disponible?",
   "Me interesa",
-  "Â¿CuÃ¡nto? y Â¿por quÃ© tan caro?",
-  "Â¿DÃ³nde entregas?",
+  "Ã‚Â¿CuÃƒÂ¡nto? y Ã‚Â¿por quÃƒÂ© tan caro?",
+  "Ã‚Â¿DÃƒÂ³nde entregas?",
   "Quiero comprar",
-  "Â¿Tienes mÃ¡s fotos?",
+  "Ã‚Â¿Tienes mÃƒÂ¡s fotos?",
 ];
 
 const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000;
@@ -522,7 +522,7 @@ const msgs = snapshot.docs
       .slice(0, 10);
 
     if (picked.length === 0) {
-      setToast("Solo se permiten imÃ¡genes.");
+      setToast("Solo se permiten imÃƒÂ¡genes.");
       window.setTimeout(() => setToast(""), 2200);
       return;
     }
@@ -715,7 +715,7 @@ const msgs = snapshot.docs
                           <span className={darkMode ? "text-xs text-slate-100 break-all" : "text-xs text-slate-900 break-all"}>
                             {u.name || u.email || u.uid}
                           </span>
-                          {u.plan === "premium" && <span title="Premium">ðŸ‘‘</span>}
+                          {u.plan === "premium" && <span title="Premium">Ã°Å¸â€˜â€˜</span>}
                         </div>
                       ))}
                     </div>
@@ -728,7 +728,7 @@ const msgs = snapshot.docs
           <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setActionMenuPosition(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
             >
-              {menuOpen ? "Cerrar menÃº" : "MenÃº"}
+              {menuOpen ? "Cerrar menÃƒÂº" : "MenÃƒÂº"}
             </button>
 
             {menuOpen && (
@@ -834,7 +834,7 @@ const msgs = snapshot.docs
 
                         <div className="min-w-0 flex-1">
                           <p className={darkMode ? "text-[11px] md:text-xs text-slate-100 font-bold leading-tight truncate" : "text-[11px] md:text-xs text-gray-900 font-bold leading-tight truncate"}>
-                            {isMine ? "TÃº" : safeName(msg.senderName)}
+                            {isMine ? "TÃƒÂº" : safeName(msg.senderName)}
                           </p>
                         </div>
                       </div>
@@ -842,7 +842,7 @@ const msgs = snapshot.docs
                       <div className="relative shrink-0" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
                         {msg.senderPlan === "premium" && (
                           <span className="text-sm md:text-base mr-1" title="Premium">
-                            ðŸ‘‘
+                            Ã°Å¸â€˜â€˜
                           </span>
                         )}
 
@@ -892,7 +892,7 @@ const msgs = snapshot.docs
                           }}
                           className={darkMode ? "text-[10px] bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-[10px] bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
-                          â‹¯
+                          Ã¢â€¹Â¯
                         </button>
 
                         {actionForMessage === msg.id && actionMenuPosition && (
@@ -976,15 +976,15 @@ const msgs = snapshot.docs
                       <p>{formatChatTime(msg.createdAt)}</p>
 
                       <p>
-                        <span title={Visto por  } className="inline-flex items-center gap-1">
-  <span className="text-[10px] leading-none">👁</span>
+                        <span>
+  <span className="text-[10px] leading-none">ðŸ‘</span>
   <span>{seenCount}</span>
 </span>
 
                       {isAdmin && seenEntries.length > 0 && (
                         <details className={darkMode ? "text-slate-200" : "text-gray-700"}>
                           <summary className="cursor-pointer font-semibold">
-                            Ver quiÃ©n lo vio
+                            Ver quiÃƒÂ©n lo vio
                           </summary>
 
                           <div className="mt-1 space-y-1">
@@ -994,7 +994,7 @@ const msgs = snapshot.docs
 
                               return (
                                 <p key={userId} className="break-all">
-                                  {label} â€” {formatSeenTime(seenAt)}
+                                  {label} Ã¢â‚¬â€ {formatSeenTime(seenAt)}
                                 </p>
                               );
                             })}
@@ -1050,7 +1050,7 @@ const msgs = snapshot.docs
           >
             <div className="flex items-center justify-between mb-2">
               <p className={darkMode ? "text-xs md:text-sm font-semibold text-slate-100" : "text-xs md:text-sm font-semibold text-gray-800"}>
-                Tus imÃ¡genes anteriores
+                Tus imÃƒÂ¡genes anteriores
               </p>
               <button
                 onClick={() => setGalleryOpen(false)}
@@ -1062,7 +1062,7 @@ const msgs = snapshot.docs
 
             {userImages.length === 0 ? (
               <p className={darkMode ? "text-xs text-slate-300" : "text-xs text-gray-600"}>
-                AÃºn no tienes imÃ¡genes guardadas.
+                AÃƒÂºn no tienes imÃƒÂ¡genes guardadas.
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1114,9 +1114,9 @@ const msgs = snapshot.docs
             <button
               onClick={() => setTemplatesOpen((prev) => !prev)}
               className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm"
-              title="Mensajes rÃ¡pidos"
+              title="Mensajes rÃƒÂ¡pidos"
             >
-              âš¡
+              Ã¢Å¡Â¡
             </button>
 
             <input
@@ -1131,17 +1131,17 @@ const msgs = snapshot.docs
             <button
               onClick={() => fileInputRef.current?.click()}
               className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm"
-              title="Adjuntar imÃ¡genes nuevas"
+              title="Adjuntar imÃƒÂ¡genes nuevas"
             >
-              ðŸ“Ž
+              Ã°Å¸â€œÅ½
             </button>
 
             <button
               onClick={() => setGalleryOpen((prev) => !prev)}
               className="bg-amber-500 text-white px-3 py-2 rounded-xl text-sm"
-              title="Usar imÃ¡genes anteriores"
+              title="Usar imÃƒÂ¡genes anteriores"
             >
-              ðŸ–¼
+              Ã°Å¸â€“Â¼
             </button>
 
             <input
