@@ -1,13 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
+import { addDoc, collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
@@ -16,7 +10,6 @@ type ChatMessage = {
   id: string;
   text: string;
   senderId?: string;
-  senderName?: string;
   createdAt: number;
   seenBy?: Record<string, number>;
 };
@@ -31,16 +24,13 @@ function formatTime(ts?: number) {
 
 function ChatContent() {
   const { firebaseUser } = useSession();
-
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
-
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
-
     return () => {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
@@ -74,7 +64,6 @@ function ChatContent() {
     await addDoc(collection(db, "messages"), {
       text,
       senderId: firebaseUser.uid,
-      senderName: firebaseUser.email || "Usuario",
       createdAt: Date.now(),
       seenBy: {},
     });
@@ -99,7 +88,7 @@ function ChatContent() {
             const seenCount = Object.keys(msg.seenBy || {}).length;
 
             return (
-              <div key={msg.id} className={lex }>
+              <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[80%] bg-gray-200 rounded-xl p-2">
                   <p className="text-sm">{msg.text}</p>
 
