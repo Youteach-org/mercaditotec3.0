@@ -1328,9 +1328,23 @@ function ChatContent() {
                     </div>
 
                     {msg.imageUrls && msg.imageUrls.length > 0 && (
-                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className={
+                        (msg.imageUrls?.length ?? 0) === 1
+                          ? "mt-2 grid grid-cols-1 gap-2"
+                          : "mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2"
+                      }>
                         {msg.imageUrls.map((url) => (
-                          <a key={url} href={url} target="_blank" rel="noreferrer">
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={
+                              (msg.imageUrls?.length ?? 0) === 1
+                                ? "flex w-full justify-center"
+                                : "block"
+                            }
+                          >
                             <img
                               src={url}
                               alt="Imagen enviada"
@@ -1339,7 +1353,11 @@ function ChatContent() {
                                 const el = scrollRef.current;
                                 if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
                               }}
-                              className="max-h-72 w-full object-cover rounded-xl border border-gray-300"
+                              className={
+                              (msg.imageUrls?.length ?? 0) === 1
+                                ? "w-full h-auto max-h-[36rem] object-contain rounded-xl border border-gray-300"
+                                : "max-h-72 w-full object-cover rounded-xl border border-gray-300"
+                            }
                             />
                           </a>
                         ))}
