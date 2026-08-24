@@ -145,10 +145,10 @@ async function uploadToSupabase(
   personalImages: UserImage[]
 ) {
   const compressed = await imageCompression(file, {
-    maxSizeMB: 0.7,
-    maxWidthOrHeight: 1600,
+    maxSizeMB: 0.4,
+    maxWidthOrHeight: 1280,
     useWebWorker: true,
-    initialQuality: 0.72,
+    initialQuality: 0.68,
   });
 
   const sha256 = await sha256OfBlob(compressed);
@@ -1392,8 +1392,9 @@ function ChatContent() {
                   key={url}
                   src={url}
                   alt="preview"
-                  className="max-h-44 w-full object-cover rounded-xl border border-gray-300"
-                />
+                  className="max-h-44 w-full object-cover rounded-xl border border-gray-300 mx-auto"
+
+                            decoding="async"/>
               ))}
             </div>
           </div>
