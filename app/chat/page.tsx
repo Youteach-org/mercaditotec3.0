@@ -19,15 +19,15 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+const QUICK_EMOJIS = ["ðŸ‘", "â¤ï¸", "ðŸ˜‚", "ðŸ˜®", "ðŸ˜¢", "ðŸ”¥"];
 const TEMPLATE_MESSAGES = [
   "Ok",
-  "¿Sigue disponible?",
+  "Â¿Sigue disponible?",
   "Me interesa",
-  "¿Cuánto? y ¿por qué tan caro?",
-  "¿Dónde entregas?",
+  "Â¿CuÃ¡nto? y Â¿por quÃ© tan caro?",
+  "Â¿DÃ³nde entregas?",
   "Quiero comprar",
-  "¿Tienes más fotos?",
+  "Â¿Tienes mÃ¡s fotos?",
 ];
 
 const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000;
@@ -187,6 +187,7 @@ function ChatContent() {
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
+  const [newMessagesWaiting, setNewMessagesWaiting] = useState(0);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -210,7 +211,8 @@ function ChatContent() {
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
-  const lastMessageIdRef = useRef<string | null>(null);
+  const lastMessageCreatedAtRef = useRef(0);
+  const isNearBottomRef = useRef(true);
 
   useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
@@ -325,33 +327,65 @@ function ChatContent() {
   useEffect(() => {
     const q = query(collection(db, "messages"), orderBy("createdAt"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const now = Date.now();
-const msgs = snapshot.docs
-        .map((item) => ({
-          id: item.id,
-          ...(item.data() as Omit<ChatMessage, "id">),
-        }));
+      const msgs = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...(item.data() as Omit<ChatMessage, "id">),
+      }));
 
       const newest = msgs[msgs.length - 1];
+      const wasInitialized = initializedRef.current;
+      const previousNewestCreatedAt = lastMessageCreatedAtRef.current;
+      const newlyArrived = wasInitialized
+        ? msgs.filter((msg) => msg.createdAt > previousNewestCreatedAt)
+        : [];
+      const hasNewMessage = newlyArrived.length > 0;
+      const newestNewMessage = hasNewMessage ? newlyArrived[newlyArrived.length - 1] : null;
 
-      if (initializedRef.current && newest && newest.id !== lastMessageIdRef.current) {
-        if (newest.senderId !== firebaseUser?.uid) {
-          setToast(`Nuevo mensaje de ${safeName(newest.senderName)}`);
-          window.setTimeout(() => setToast(""), 2200);
-        }
-      }
-
-      if (newest) lastMessageIdRef.current = newest.id;
-
-      initializedRef.current = true;
       setMessages(msgs);
 
-      window.setTimeout(() => {
-        scrollRef.current?.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: "smooth",
-        });
-      }, 60);
+      if (!wasInitialized) {
+        initializedRef.current = true;
+        if (newest) {
+          lastMessageCreatedAtRef.current = newest.createdAt || 0;
+        }
+
+        window.setTimeout(() => {
+          const el = scrollRef.current;
+          if (!el) return;
+          el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+          isNearBottomRef.current = true;
+          setNewMessagesWaiting(0);
+        }, 60);
+        return;
+      }
+
+      if (newest) {
+        lastMessageCreatedAtRef.current = Math.max(
+          lastMessageCreatedAtRef.current,
+          newest.createdAt || 0
+        );
+      }
+
+      if (!hasNewMessage || !newestNewMessage) return;
+
+      const newestIsMine = newestNewMessage.senderId === firebaseUser?.uid;
+
+      if (!newestIsMine) {
+        setToast(`Nuevo mensaje de ${safeName(newestNewMessage.senderName)}`);
+        window.setTimeout(() => setToast(""), 2200);
+      }
+
+      if (newestIsMine || isNearBottomRef.current) {
+        window.setTimeout(() => {
+          const el = scrollRef.current;
+          if (!el) return;
+          el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+          isNearBottomRef.current = true;
+          setNewMessagesWaiting(0);
+        }, 60);
+      } else {
+        setNewMessagesWaiting((count) => count + newlyArrived.length);
+      }
     });
 
     return () => unsubscribe();
@@ -431,6 +465,28 @@ const msgs = snapshot.docs
       });
     }
   }, [messages, firebaseUser]);
+
+  function handleChatScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const nearBottom = distanceFromBottom <= 120;
+    isNearBottomRef.current = nearBottom;
+
+    if (nearBottom && newMessagesWaiting > 0) {
+      setNewMessagesWaiting(0);
+    }
+  }
+
+  function scrollToLatestMessages() {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    isNearBottomRef.current = true;
+    setNewMessagesWaiting(0);
+  }
 
   function reactionsForMessage(messageId: string) {
     const related = reactions.filter((r) => r.messageId === messageId);
@@ -530,7 +586,7 @@ const msgs = snapshot.docs
       .slice(0, 10);
 
     if (picked.length === 0) {
-      setToast("Solo se permiten imágenes.");
+      setToast("Solo se permiten imÃ¡genes.");
       window.setTimeout(() => setToast(""), 2200);
       return;
     }
@@ -723,7 +779,7 @@ const msgs = snapshot.docs
                           <span className={darkMode ? "text-xs text-slate-100 break-all" : "text-xs text-slate-900 break-all"}>
                             {u.name || u.email || u.uid}
                           </span>
-                          {u.plan === "premium" && <span title="Premium">👑</span>}
+                          {u.plan === "premium" && <span title="Premium">ðŸ‘‘</span>}
                         </div>
                       ))}
                     </div>
@@ -736,7 +792,7 @@ const msgs = snapshot.docs
           <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setActionMenuPosition(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
             >
-              {menuOpen ? "Cerrar menú" : "Menú"}
+              {menuOpen ? "Cerrar menÃº" : "MenÃº"}
             </button>
 
             {menuOpen && (
@@ -776,10 +832,12 @@ const msgs = snapshot.docs
           </div>
         )}
 
-        <div
-          ref={scrollRef}
-          className={darkMode ? "flex-1 overflow-y-auto space-y-4 pr-1 text-slate-100" : "flex-1 overflow-y-auto space-y-4 pr-1"}
-        >
+        <div className="relative flex-1 min-h-0">
+          <div
+            ref={scrollRef}
+            onScroll={handleChatScroll}
+            className={darkMode ? "h-full overflow-y-auto overscroll-contain space-y-4 pr-1 text-slate-100" : "h-full overflow-y-auto overscroll-contain space-y-4 pr-1"}
+          >
           {messages.map((msg) => {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
@@ -842,7 +900,7 @@ const msgs = snapshot.docs
 
                         <div className="min-w-0 flex-1">
                           <p className={darkMode ? "text-[11px] md:text-xs text-slate-100 font-bold leading-tight truncate" : "text-[11px] md:text-xs text-gray-900 font-bold leading-tight truncate"}>
-                            {isMine ? "Tú" : safeName(msg.senderName)}
+                            {isMine ? "TÃº" : safeName(msg.senderName)}
                           </p>
                         </div>
                       </div>
@@ -850,7 +908,7 @@ const msgs = snapshot.docs
                       <div className="relative shrink-0" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
                         {msg.senderPlan === "premium" && (
                           <span className="text-sm md:text-base mr-1" title="Premium">
-                            👑
+                            ðŸ‘‘
                           </span>
                         )}
 
@@ -900,7 +958,7 @@ const msgs = snapshot.docs
                           }}
                           className={darkMode ? "text-xs bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-xs bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
-                          ⋯
+                          â‹¯
                         </button>
 
                         {actionForMessage === msg.id && actionMenuPosition && (
@@ -970,7 +1028,7 @@ const msgs = snapshot.docs
                       <span>{formatChatTime(msg.createdAt)}</span>
 
                       <span title={`Visto por ${seenCount} ${seenCount === 1 ? "persona" : "personas"}`} className="inline-flex items-center gap-1">
-                        <span className="text-[10px] leading-none">👁</span>
+                        <span className="text-[10px] leading-none">ðŸ‘</span>
                         <span>{seenCount}</span>
                       </span>
 
@@ -987,7 +1045,7 @@ const msgs = snapshot.docs
 
                               return (
                                 <p key={userId} className="break-all">
-                                  {label} — {formatSeenTime(seenAt)}
+                                  {label} â€” {formatSeenTime(seenAt)}
                                 </p>
                               );
                             })}
@@ -1003,6 +1061,11 @@ const msgs = snapshot.docs
                             <img
                               src={url}
                               alt="Imagen enviada"
+                              onLoad={() => {
+                                if (!isNearBottomRef.current) return;
+                                const el = scrollRef.current;
+                                if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+                              }}
                               className="max-h-72 w-full object-cover rounded-xl border border-gray-300"
                             />
                           </a>
@@ -1014,6 +1077,19 @@ const msgs = snapshot.docs
               </div>
             );
           })}
+          </div>
+
+          {newMessagesWaiting > 0 && (
+            <button
+              type="button"
+              onClick={scrollToLatestMessages}
+              className={darkMode
+                ? "absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-100 shadow-lg hover:bg-slate-700"
+                : "absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg hover:bg-gray-50"}
+            >
+              â†“ {newMessagesWaiting === 1 ? "Nuevo mensaje" : `${newMessagesWaiting} nuevos mensajes`}
+            </button>
+          )}
         </div>
 
         {replyingTo && (
@@ -1057,7 +1133,7 @@ const msgs = snapshot.docs
           >
             <div className="flex items-center justify-between mb-2">
               <p className={darkMode ? "text-xs md:text-sm font-semibold text-slate-100" : "text-xs md:text-sm font-semibold text-gray-800"}>
-                Tus imágenes anteriores
+                Tus imÃ¡genes anteriores
               </p>
               <button
                 onClick={() => setGalleryOpen(false)}
@@ -1069,7 +1145,7 @@ const msgs = snapshot.docs
 
             {userImages.length === 0 ? (
               <p className={darkMode ? "text-xs text-yellow-300" : "text-xs text-gray-600"}>
-                Aún no tienes imágenes guardadas.
+                AÃºn no tienes imÃ¡genes guardadas.
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1121,9 +1197,9 @@ const msgs = snapshot.docs
             <button
               onClick={() => setTemplatesOpen((prev) => !prev)}
               className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm"
-              title="Mensajes rápidos"
+              title="Mensajes rÃ¡pidos"
             >
-              ⚡
+              âš¡
             </button>
 
             <input
@@ -1136,19 +1212,32 @@ const msgs = snapshot.docs
             />
 
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm"
-              title="Adjuntar imágenes nuevas"
+              className="inline-flex items-center justify-center bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm shadow-sm transition hover:bg-emerald-700 active:scale-95"
+              title="Adjuntar imÃ¡genes nuevas"
+              aria-label="Adjuntar imÃ¡genes nuevas"
             >
-              📎
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H9l1.2-1.7A1 1 0 0 1 11 4h2a1 1 0 0 1 .8.3L15 6h2.5A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M18.5 3.5v4M16.5 5.5h4" />
+              </svg>
             </button>
 
             <button
+              type="button"
               onClick={() => setGalleryOpen((prev) => !prev)}
-              className="bg-amber-500 text-white px-3 py-2 rounded-xl text-sm"
-              title="Usar imágenes anteriores"
+              className="inline-flex items-center justify-center bg-amber-500 text-white px-3 py-2 rounded-xl text-sm shadow-sm transition hover:bg-amber-600 active:scale-95"
+              title="Usar imÃ¡genes anteriores"
+              aria-label="Usar imÃ¡genes anteriores"
             >
-              🖼
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="5" width="14" height="14" rx="2" />
+                <path d="m8 15 3-3 2.2 2.2 1.6-1.6L18 16" />
+                <circle cx="14.5" cy="9.5" r="1.2" />
+                <path d="M3 8V5a2 2 0 0 1 2-2h11" />
+              </svg>
             </button>
 
             <div className={darkMode ? "flex shrink-0 rounded-xl border border-slate-600 bg-slate-800 p-1" : "flex shrink-0 rounded-xl border border-gray-300 bg-gray-100 p-1"}>
