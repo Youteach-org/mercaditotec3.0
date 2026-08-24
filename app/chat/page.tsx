@@ -347,6 +347,7 @@ function ChatContent() {
   const [imageReuseMode, setImageReuseMode] =
     useState<"shared" | "product">("shared");
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const zoomTouchStartYRef = useRef<number | null>(null);
 
   const [senderRole, setSenderRole] = useState<SenderRole>("buyer");
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -360,6 +361,28 @@ function ChatContent() {
   const initializedRef = useRef(false);
   const lastMessageCreatedAtRef = useRef(0);
   const isNearBottomRef = useRef(true);
+
+  useEffect(() => {
+    if (!zoomImageUrl) return;
+
+    function handleZoomKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setZoomImageUrl(null);
+      }
+    }
+
+    window.addEventListener(
+      "keydown",
+      handleZoomKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleZoomKeyDown
+      );
+    };
+  }, [zoomImageUrl]);
 
   useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
@@ -1714,7 +1737,32 @@ function ChatContent() {
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 md:p-8"
           onClick={() => setZoomImageUrl(null)}
+          onTouchStart={(event) => {
+            zoomTouchStartYRef.current =
+              event.touches[0]?.clientY ?? null;
+          }}
+          onTouchEnd={(event) => {
+            const startY =
+              zoomTouchStartYRef.current;
+
+            const endY =
+              event.changedTouches[0]?.clientY;
+
+            if (
+              startY !== null &&
+              endY !== undefined &&
+              endY - startY > 80
+            ) {
+              setZoomImageUrl(null);
+            }
+
+            zoomTouchStartYRef.current = null;
+          }}
         >
+          <div className="fixed bottom-5 left-1/2 z-[101] -translate-x-1/2 rounded-full bg-black/65 px-4 py-2 text-xs text-white md:hidden">
+            Desliza hacia abajo para cerrar
+          </div>
+
           <button
             type="button"
             onClick={() => setZoomImageUrl(null)}
