@@ -60,6 +60,18 @@ type UserImage = {
   id: string;
   url: string;
   createdAt: number;
+  source?: "chat" | "product" | "shared";
+  shared?: boolean;
+  sha256?: string;
+  originalOwnerUid?: string;
+};
+
+type SharedImage = {
+  id: string;
+  url: string;
+  ownerUid: string;
+  sha256: string;
+  createdAt: string;
 };
 
 type ReactionRecord = {
@@ -117,7 +129,21 @@ function bubbleClasses(darkMode: boolean, isMine: boolean, role: SenderRole) {
     : "max-w-[85%] min-w-[280px] p-2 md:p-3 bg-gray-100 rounded-2xl border border-gray-200 transition-all";
 }
 
-async function uploadToSupabase(file: File) {
+async function sha256OfBlob(blob: Blob) {
+  const buffer = await blob.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function uploadToSupabase(
+  file: File,
+  userId: string,
+  shareInLibrary: boolean,
+  personalImages: UserImage[]
+) {
   const compressed = await imageCompression(file, {
     maxSizeMB: 0.7,
     maxWidthOrHeight: 1600,
@@ -125,19 +151,136 @@ async function uploadToSupabase(file: File) {
     initialQuality: 0.72,
   });
 
-  const ext = file.name.split(".").pop() || "jpg";
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const sha256 = await sha256OfBlob(compressed);
 
-  const uploadResult = await supabase.storage
+  const personalMatch = personalImages.find(
+    (image) => image.sha256 === sha256
+  );
+
+  if (personalMatch?.url) {
+    return {
+      url: personalMatch.url,
+      sha256,
+      ownerUid: personalMatch.originalOwnerUid || userId,
+      shared: personalMatch.shared === true,
+      reused: true,
+    };
+  }
+
+  if (shareInLibrary) {
+    const existing = await supabase
+      .from("chat_image_library")
+      .select("url, owner_uid, sha256")
+      .eq("sha256", sha256)
+      .eq("shared", true)
+      .maybeSingle();
+
+    if (existing.error) throw existing.error;
+
+    if (existing.data?.url) {
+      return {
+        url: existing.data.url,
+        sha256,
+        ownerUid: existing.data.owner_uid,
+        shared: true,
+        reused: true,
+      };
+    }
+  }
+
+  const mimeType =
+    compressed.type ||
+    file.type ||
+    "image/jpeg";
+
+  const extensionByMime: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+
+  const ext =
+    extensionByMime[mimeType] ||
+    file.name.split(".").pop()?.toLowerCase() ||
+    "jpg";
+
+  const now = new Date();
+
+  const monthFolder =
+    `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+  const safeUserId =
+    userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+
+  const privacyFolder =
+    shareInLibrary ? "shared" : "product";
+
+  const fileName =
+    `${sha256.slice(0, 20)}-${Date.now()}.${ext}`;
+
+  const filePath =
+    `chat/${safeUserId}/${privacyFolder}/${monthFolder}/${fileName}`;
+
+  const uploaded = await supabase.storage
     .from("chat-images")
-    .upload(fileName, compressed, {
+    .upload(filePath, compressed, {
       upsert: false,
-      contentType: compressed.type || file.type || "image/jpeg",
+      contentType: mimeType,
+      cacheControl: "31536000",
     });
 
-  if (uploadResult.error) throw uploadResult.error;
+  if (uploaded.error) throw uploaded.error;
 
-  return supabase.storage.from("chat-images").getPublicUrl(fileName).data.publicUrl;
+  const url = supabase.storage
+    .from("chat-images")
+    .getPublicUrl(filePath)
+    .data.publicUrl;
+
+  if (shareInLibrary) {
+    const inserted = await supabase
+      .from("chat_image_library")
+      .insert({
+        url,
+        storage_path: filePath,
+        owner_uid: userId,
+        sha256,
+        source: "chat",
+        shared: true,
+      });
+
+    if (inserted.error) {
+      if (inserted.error.code === "23505") {
+        const existing = await supabase
+          .from("chat_image_library")
+          .select("url, owner_uid, sha256")
+          .eq("sha256", sha256)
+          .maybeSingle();
+
+        if (existing.data?.url) {
+          return {
+            url: existing.data.url,
+            sha256,
+            ownerUid: existing.data.owner_uid,
+            shared: true,
+            reused: true,
+          };
+        }
+      }
+
+      throw inserted.error;
+    }
+  }
+
+  return {
+    url,
+    sha256,
+    ownerUid: userId,
+    shared: shareInLibrary,
+    reused: false,
+  };
 }
 
 function formatChatTime(timestamp?: number) {
@@ -180,6 +323,7 @@ function ChatContent() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userImages, setUserImages] = useState<UserImage[]>([]);
+  const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
 
@@ -200,6 +344,8 @@ function ChatContent() {
   const [selectedSavedUrls, setSelectedSavedUrls] = useState<string[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [sendingImages, setSendingImages] = useState(false);
+  const [imageReuseMode, setImageReuseMode] =
+    useState<"shared" | "product">("shared");
 
   const [senderRole, setSenderRole] = useState<SenderRole>("buyer");
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -412,6 +558,44 @@ function ChatContent() {
   }, [firebaseUser]);
 
   useEffect(() => {
+    if (!firebaseUser || !galleryOpen) return;
+
+    let cancelled = false;
+
+    async function loadSharedImages() {
+      const result = await supabase
+        .from("chat_image_library")
+        .select("id, url, owner_uid, sha256, created_at")
+        .eq("shared", true)
+        .order("created_at", { ascending: false })
+        .limit(250);
+
+      if (result.error) {
+        console.error("SHARED_IMAGE_LIBRARY_ERROR", result.error);
+        return;
+      }
+
+      if (cancelled) return;
+
+      setSharedImages(
+        (result.data ?? []).map((item) => ({
+          id: item.id,
+          url: item.url,
+          ownerUid: item.owner_uid,
+          sha256: item.sha256,
+          createdAt: item.created_at,
+        }))
+      );
+    }
+
+    void loadSharedImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser, galleryOpen]);
+
+  useEffect(() => {
     const q = query(collection(db, "message_reactions"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setReactions(
@@ -593,22 +777,50 @@ function ChatContent() {
 
     setSelectedImages(picked);
     setSelectedSavedUrls([]);
+    setImageReuseMode("shared");
   }
 
   function toggleSavedUrl(url: string) {
     setSelectedImages([]);
+    setImageReuseMode("shared");
+
     setSelectedSavedUrls((prev) =>
-      prev.includes(url) ? prev.filter((x) => x !== url) : [...prev, url]
+      prev.includes(url)
+        ? prev.filter((x) => x !== url)
+        : [...prev, url]
     );
   }
 
-  async function saveImageReference(url: string) {
+  async function saveImageReference(
+    url: string,
+    options?: {
+      source?: "chat" | "product" | "shared";
+      shared?: boolean;
+      sha256?: string;
+      originalOwnerUid?: string;
+    }
+  ) {
     if (!firebaseUser) return;
 
-    const imageDoc = doc(collection(db, "users", firebaseUser!.uid, "images"));
+    const imagesCollection =
+      collection(db, "users", firebaseUser.uid, "images");
+
+    const existing = await getDocs(
+      query(imagesCollection, where("url", "==", url))
+    );
+
+    if (!existing.empty) return;
+
+    const imageDoc = doc(imagesCollection);
+
     await setDoc(imageDoc, {
       url,
       createdAt: Date.now(),
+      source: options?.source ?? "chat",
+      shared: options?.shared ?? false,
+      sha256: options?.sha256 ?? "",
+      originalOwnerUid:
+        options?.originalOwnerUid ?? firebaseUser.uid,
     });
   }
 
@@ -668,21 +880,56 @@ function ChatContent() {
 
   async function sendImages() {
     if (!firebaseUser) return;
-    if (selectedImages.length === 0 && selectedSavedUrls.length === 0) return;
+
+    if (
+      selectedImages.length === 0 &&
+      selectedSavedUrls.length === 0
+    ) return;
 
     try {
       setSendingImages(true);
+
       const urls: string[] = [...selectedSavedUrls];
 
+      for (const selectedUrl of selectedSavedUrls) {
+        const sharedImage =
+          sharedImages.find((image) => image.url === selectedUrl);
+
+        if (sharedImage) {
+          await saveImageReference(selectedUrl, {
+            source: "shared",
+            shared: true,
+            sha256: sharedImage.sha256,
+            originalOwnerUid: sharedImage.ownerUid,
+          });
+        }
+      }
+
       for (const file of selectedImages) {
-        const url = await uploadToSupabase(file);
-        urls.push(url);
-        await saveImageReference(url);
+        const shareInLibrary =
+          imageReuseMode === "shared";
+
+        const uploaded =
+          await uploadToSupabase(
+            file,
+            firebaseUser.uid,
+            shareInLibrary,
+            userImages
+          );
+
+        urls.push(uploaded.url);
+
+        await saveImageReference(uploaded.url, {
+          source: uploaded.shared ? "chat" : "product",
+          shared: uploaded.shared,
+          sha256: uploaded.sha256,
+          originalOwnerUid: uploaded.ownerUid,
+        });
       }
 
       await addDoc(collection(db, "messages"), {
         text: text.trim(),
-        senderId: firebaseUser!.uid,
+        senderId: firebaseUser.uid,
         senderName: safeName(appUserAny?.displayName),
         senderPhotoURL: appUserAny?.photoURL ?? "",
         senderRole,
@@ -702,25 +949,51 @@ function ChatContent() {
 
       setSelectedImages([]);
       setSelectedSavedUrls([]);
+      setImageReuseMode("shared");
       setText("");
       clearReply();
       setGalleryOpen(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       setToast("Imagen enviada.");
       window.setTimeout(() => setToast(""), 1800);
+
     } catch (error) {
+
       console.error("SEND_IMAGE_ERROR", error);
+
       setToast("No se pudo subir la imagen.");
       window.setTimeout(() => setToast(""), 2500);
+
     } finally {
+
       setSendingImages(false);
     }
   }
 
-  function handleTextKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  async function sendCurrentMessage() {
+    if (sendingImages) return;
+
+    if (
+      selectedImages.length > 0 ||
+      selectedSavedUrls.length > 0
+    ) {
+      await sendImages();
+      return;
+    }
+
+    await sendCustomMessage();
+  }
+
+  function handleTextKeyDown(
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      sendCustomMessage();
+      void sendCurrentMessage();
     }
   }
 
@@ -1133,7 +1406,7 @@ function ChatContent() {
           >
             <div className="flex items-center justify-between mb-2">
               <p className={darkMode ? "text-xs md:text-sm font-semibold text-slate-100" : "text-xs md:text-sm font-semibold text-gray-800"}>
-                Tus imágenes anteriores
+                Biblioteca de imágenes
               </p>
               <button
                 onClick={() => setGalleryOpen(false)}
@@ -1167,6 +1440,85 @@ function ChatContent() {
                 })}
               </div>
             )}
+
+            <div
+              className={
+                darkMode
+                  ? "mt-4 border-t border-slate-600 pt-3"
+                  : "mt-4 border-t border-gray-300 pt-3"
+              }
+            >
+              <p
+                className={
+                  darkMode
+                    ? "mb-1 text-xs md:text-sm font-semibold text-slate-100"
+                    : "mb-1 text-xs md:text-sm font-semibold text-gray-800"
+                }
+              >
+                Compartidas por estudiantes
+              </p>
+
+              <p
+                className={
+                  darkMode
+                    ? "mb-3 text-[11px] text-slate-400"
+                    : "mb-3 text-[11px] text-gray-500"
+                }
+              >
+                Reutilizarlas no vuelve a subir el archivo.
+              </p>
+
+              {sharedImages.filter(
+                (shared) =>
+                  !userImages.some(
+                    (own) => own.url === shared.url
+                  )
+              ).length === 0 ? (
+                <p
+                  className={
+                    darkMode
+                      ? "text-xs text-slate-400"
+                      : "text-xs text-gray-500"
+                  }
+                >
+                  Todavía no hay imágenes compartidas nuevas.
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {sharedImages
+                    .filter(
+                      (shared) =>
+                        !userImages.some(
+                          (own) => own.url === shared.url
+                        )
+                    )
+                    .map((img) => {
+                      const selected =
+                        selectedSavedUrls.includes(img.url);
+
+                      return (
+                        <button
+                          key={img.id}
+                          onClick={() => toggleSavedUrl(img.url)}
+                          className={
+                            selected
+                              ? "rounded-xl border-2 border-blue-600 p-1 bg-blue-50"
+                              : darkMode
+                              ? "rounded-xl border border-slate-600 p-1 bg-slate-900"
+                              : "rounded-xl border border-gray-300 p-1 bg-white"
+                          }
+                        >
+                          <img
+                            src={img.url}
+                            alt="compartida"
+                            className="w-full h-24 object-cover rounded-lg"
+                          />
+                        </button>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1279,31 +1631,57 @@ function ChatContent() {
             />
 
             <button
-              onClick={sendCustomMessage}
-              className="bg-violet-600 text-white px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm"
+              type="button"
+              onClick={() => void sendCurrentMessage()}
+              disabled={
+                sendingImages ||
+                (
+                  !text.trim() &&
+                  selectedImages.length === 0 &&
+                  selectedSavedUrls.length === 0
+                )
+              }
+              className="bg-violet-600 text-white px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              Enviar
+              {sendingImages ? "Subiendo..." : "Enviar"}
             </button>
           </div>
 
           {(selectedImages.length > 0 || selectedSavedUrls.length > 0) && (
-            <div className="relative flex items-center gap-2">
+            <div className="relative flex flex-wrap items-center gap-2">
+
+              {selectedImages.length > 0 && (
+                <label
+                  className={
+                    darkMode
+                      ? "w-full flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs text-slate-100"
+                      : "w-full flex items-center gap-2 rounded-xl border border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-800"
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={imageReuseMode === "product"}
+                    onChange={(e) =>
+                      setImageReuseMode(
+                        e.target.checked ? "product" : "shared"
+                      )
+                    }
+                  />
+
+                  Foto de mi producto · solo yo puedo reutilizarla
+                </label>
+              )}
+
               <p className={darkMode ? "text-xs md:text-sm text-slate-200 break-all flex-1" : "text-xs md:text-sm text-gray-700 break-all flex-1"}>
                 {selectedImages.length > 0
                   ? `${selectedImages.length} imagen(es) nueva(s) seleccionada(s)`
                   : `${selectedSavedUrls.length} imagen(es) guardada(s) seleccionada(s)`}
               </p>
               <button
-                onClick={sendImages}
-                disabled={sendingImages}
-                className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm disabled:bg-gray-400"
-              >
-                {sendingImages ? "Subiendo..." : "Enviar"}
-              </button>
-              <button
                 onClick={() => {
                   setSelectedImages([]);
                   setSelectedSavedUrls([]);
+                  setImageReuseMode("shared");
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 className="bg-red-600 text-white px-3 py-2 rounded-xl text-sm"
