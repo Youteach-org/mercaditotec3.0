@@ -10,6 +10,7 @@ import {
   onSnapshot,
   orderBy,
   query,
+  runTransaction,
   setDoc,
   where,
 } from "firebase/firestore";
@@ -326,6 +327,16 @@ function ChatContent() {
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [publicNicknames, setPublicNicknames] =
+    useState<Record<string, string>>({});
+  const [nicknameEditorOpen, setNicknameEditorOpen] =
+    useState(false);
+  const [nicknameInput, setNicknameInput] =
+    useState("");
+  const [nicknameSaving, setNicknameSaving] =
+    useState(false);
+  const [nicknameError, setNicknameError] =
+    useState("");
 
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
@@ -355,12 +366,251 @@ function ChatContent() {
     return localStorage.getItem("mercaditotec_dark_mode") === "true";
   });
 
+  const savedNickname = String(
+    appUserAny?.nickname ||
+    publicNicknames[firebaseUser?.uid || ""] ||
+    ""
+  ).trim();
+
+  const currentNickname = safeName(
+    savedNickname ||
+    appUserAny?.displayName ||
+    firebaseUser?.displayName ||
+    firebaseUser?.email ||
+    "Usuario"
+  );
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
   const lastMessageCreatedAtRef = useRef(0);
   const isNearBottomRef = useRef(true);
+
+  function normalizeNicknameKey(value: string) {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("es-MX")
+      .replace(/[._-]/g, "")
+      .trim();
+  }
+
+  function validateNickname(value: string) {
+    const nickname = value.trim();
+
+    if (nickname.length < 3) {
+      return "El nickname debe tener al menos 3 caracteres.";
+    }
+
+    if (nickname.length > 20) {
+      return "El nickname puede tener máximo 20 caracteres.";
+    }
+
+    if (!/^[\p{L}\p{N}._-]+$/u.test(nickname)) {
+      return "Usa solo letras, números, punto, guion o _.";
+    }
+
+    const normalized =
+      normalizeNicknameKey(nickname);
+
+    if (
+      ["tu", "admin", "administrador", "mercaditotec", "sistema"]
+        .includes(normalized)
+    ) {
+      return "Ese nickname está reservado.";
+    }
+
+    return "";
+  }
+
+  async function saveNickname() {
+    if (!firebaseUser) return;
+
+    const nickname =
+      nicknameInput.trim();
+
+    const validation =
+      validateNickname(nickname);
+
+    if (validation) {
+      setNicknameError(validation);
+      return;
+    }
+
+    const uid =
+      firebaseUser.uid;
+
+    const newKey =
+      normalizeNicknameKey(nickname);
+
+    const oldKey =
+      savedNickname
+        ? normalizeNicknameKey(savedNickname)
+        : "";
+
+    const nicknameRef =
+      doc(db, "nicknames", newKey);
+
+    const userRef =
+      doc(db, "users", uid);
+
+    const publicProfileRef =
+      doc(db, "public_profiles", uid);
+
+    const oldNicknameRef =
+      oldKey && oldKey !== newKey
+        ? doc(db, "nicknames", oldKey)
+        : null;
+
+    try {
+      setNicknameSaving(true);
+      setNicknameError("");
+
+      await runTransaction(
+        db,
+        async (transaction) => {
+
+          /*
+           * Todas las lecturas se hacen antes
+           * de cualquier escritura.
+           */
+          const newReservation =
+            await transaction.get(nicknameRef);
+
+          const oldReservation =
+            oldNicknameRef
+              ? await transaction.get(oldNicknameRef)
+              : null;
+
+          if (
+            newReservation.exists() &&
+            newReservation.data()?.uid !== uid
+          ) {
+            throw new Error(
+              "__NICKNAME_TAKEN__"
+            );
+          }
+
+          const now =
+            Date.now();
+
+          transaction.set(
+            nicknameRef,
+            {
+              uid,
+              nickname,
+              normalized: newKey,
+              updatedAt: now,
+            }
+          );
+
+          transaction.set(
+            userRef,
+            {
+              nickname,
+              nicknameNormalized: newKey,
+              nicknameUpdatedAt: now,
+            },
+            { merge: true }
+          );
+
+          /*
+           * Aquí solo se publica nickname + uid.
+           * No correo ni número de control.
+           */
+          transaction.set(
+            publicProfileRef,
+            {
+              uid,
+              nickname,
+              updatedAt: now,
+            },
+            { merge: true }
+          );
+
+          if (
+            oldNicknameRef &&
+            oldReservation?.exists() &&
+            oldReservation.data()?.uid === uid
+          ) {
+            transaction.delete(
+              oldNicknameRef
+            );
+          }
+        }
+      );
+
+      /*
+       * Actualización inmediata mientras
+       * llega el snapshot de Firebase.
+       */
+      setPublicNicknames(
+        (prev) => ({
+          ...prev,
+          [uid]: nickname,
+        })
+      );
+
+      setNicknameInput(nickname);
+      setNicknameEditorOpen(false);
+      setNicknameError("");
+
+      setToast(
+        `Nickname actualizado: ${nickname}`
+      );
+
+      window.setTimeout(
+        () => setToast(""),
+        2200
+      );
+
+    } catch (error) {
+
+      if (
+        error instanceof Error &&
+        error.message ===
+          "__NICKNAME_TAKEN__"
+      ) {
+        setNicknameError(
+          "Ese nickname ya está siendo usado por otra persona."
+        );
+      } else {
+        console.error(
+          "SAVE_NICKNAME_ERROR",
+          error
+        );
+
+        setNicknameError(
+          "No se pudo guardar el nickname."
+        );
+      }
+
+    } finally {
+      setNicknameSaving(false);
+    }
+  }
+
+  function ensureNicknameReady() {
+    if (savedNickname) {
+      return true;
+    }
+
+    setNicknameInput("");
+    setNicknameError("");
+    setNicknameEditorOpen(true);
+
+    setToast(
+      "Elige un nickname antes de enviar mensajes."
+    );
+
+    window.setTimeout(
+      () => setToast(""),
+      2500
+    );
+
+    return false;
+  }
 
   useEffect(() => {
     if (!zoomImageUrl) return;
@@ -434,6 +684,60 @@ function ChatContent() {
   useEffect(() => {
     if (!firebaseUser) return;
 
+    const unsubscribe =
+      onSnapshot(
+        collection(db, "public_profiles"),
+        (snapshot) => {
+          const next:
+            Record<string, string> = {};
+
+          snapshot.docs.forEach((item) => {
+            const data = item.data();
+
+            if (
+              typeof data.nickname === "string" &&
+              data.nickname.trim()
+            ) {
+              next[item.id] =
+                data.nickname.trim();
+            }
+          });
+
+          setPublicNicknames(next);
+        },
+        (error) => {
+          console.warn(
+            "PUBLIC_NICKNAMES_READ_ERROR",
+            error
+          );
+        }
+      );
+
+    return () => unsubscribe();
+  }, [firebaseUser?.uid]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      !firebaseUser ||
+      savedNickname
+    ) {
+      return;
+    }
+
+    setNicknameInput("");
+    setNicknameError("");
+    setNicknameEditorOpen(true);
+
+  }, [
+    loading,
+    firebaseUser?.uid,
+    savedNickname,
+  ]);
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+
     const presenceRef = doc(db, "active_users", firebaseUser!.uid);
 
     async function pushPresence() {
@@ -442,7 +746,7 @@ function ChatContent() {
         presenceRef,
         {
           uid: firebaseUser!.uid,
-          name: safeName(appUserAny?.displayName || firebaseUser!.displayName || firebaseUser!.email || "Usuario"),
+          name: currentNickname,
           email: firebaseUser!.email || "",
           plan: appUserAny?.plan || "free",
           updatedAt: Date.now(),
@@ -472,7 +776,7 @@ function ChatContent() {
 
       setActiveUsers(users.length > 0 ? users : [{
         uid: firebaseUser!.uid,
-        name: safeName(appUserAny?.displayName || firebaseUser!.displayName || firebaseUser!.email || "Usuario"),
+        name: currentNickname,
         email: firebaseUser!.email || "",
         plan: appUserAny?.plan || "free",
         updatedAt: Date.now(),
@@ -481,7 +785,7 @@ function ChatContent() {
       console.warn("ACTIVE_USERS_READ_ERROR", error);
       setActiveUsers([{
         uid: firebaseUser!.uid,
-        name: safeName(appUserAny?.displayName || firebaseUser!.displayName || firebaseUser!.email || "Usuario"),
+        name: currentNickname,
         email: firebaseUser!.email || "",
         plan: appUserAny?.plan || "free",
         updatedAt: Date.now(),
@@ -761,7 +1065,12 @@ function ChatContent() {
   function startReply(message: ChatMessage) {
     setReplyingTo({
       id: message.id,
-      senderName: safeName(message.senderName),
+      senderName: safeName(
+        publicNicknames[
+          message.senderId || ""
+        ] ||
+        message.senderName
+      ),
       text: message.text || (message.imageUrls?.length ? "Imagen" : ""),
     });
 
@@ -850,11 +1159,12 @@ function ChatContent() {
 
   async function sendTemplateMessage(templateText: string) {
     if (!firebaseUser) return;
+    if (!ensureNicknameReady()) return;
 
     await addDoc(collection(db, "messages"), {
       text: templateText,
       senderId: firebaseUser!.uid,
-      senderName: safeName(appUserAny?.displayName),
+      senderName: currentNickname,
       senderPhotoURL: appUserAny?.photoURL ?? "",
       senderRole,
       createdAt: Date.now(),
@@ -877,11 +1187,12 @@ function ChatContent() {
 
   async function sendCustomMessage() {
     if (!firebaseUser || !text.trim()) return;
+    if (!ensureNicknameReady()) return;
 
     await addDoc(collection(db, "messages"), {
       text: text.trim(),
       senderId: firebaseUser!.uid,
-      senderName: safeName(appUserAny?.displayName),
+      senderName: currentNickname,
       senderPhotoURL: appUserAny?.photoURL ?? "",
       senderRole,
       createdAt: Date.now(),
@@ -904,6 +1215,7 @@ function ChatContent() {
 
   async function sendImages() {
     if (!firebaseUser) return;
+    if (!ensureNicknameReady()) return;
 
     if (
       selectedImages.length === 0 &&
@@ -954,7 +1266,7 @@ function ChatContent() {
       await addDoc(collection(db, "messages"), {
         text: text.trim(),
         senderId: firebaseUser.uid,
-        senderName: safeName(appUserAny?.displayName),
+        senderName: currentNickname,
         senderPhotoURL: appUserAny?.photoURL ?? "",
         senderRole,
         createdAt: Date.now(),
@@ -1106,6 +1418,28 @@ function ChatContent() {
                 <a href="/profile" className={darkMode ? "block px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700" : "block px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"}>
                   Perfil
                 </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNicknameInput(
+                      savedNickname
+                    );
+                    setNicknameError("");
+                    setNicknameEditorOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  className={
+                    darkMode
+                      ? "block w-full text-left px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700"
+                      : "block w-full text-left px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"
+                  }
+                >
+                  Nickname
+                  {savedNickname
+                    ? `: ${savedNickname}`
+                    : ": elegir"}
+                </button>
                 <button
                   onClick={() => setDarkMode((prev) => !prev)}
                   className={darkMode ? "mt-2 w-full text-left px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700" : "mt-2 w-full text-left px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"}
@@ -1122,6 +1456,152 @@ function ChatContent() {
             )}
           </div>
         </div>
+
+        {nicknameEditorOpen && (
+          <div
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4"
+            onClick={() => {
+              if (savedNickname) {
+                setNicknameEditorOpen(false);
+              }
+            }}
+          >
+            <div
+              data-popup-root="true"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+              className={
+                darkMode
+                  ? "w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+                  : "w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl"
+              }
+            >
+              <div className="mb-4">
+                <h2
+                  className={
+                    darkMode
+                      ? "text-lg font-bold text-white"
+                      : "text-lg font-bold text-gray-900"
+                  }
+                >
+                  Elige tu nickname
+                </h2>
+
+                <p
+                  className={
+                    darkMode
+                      ? "mt-1 text-xs text-slate-400"
+                      : "mt-1 text-xs text-gray-500"
+                  }
+                >
+                  Será el nombre que verán los demás en el chat.
+                  No se mostrará tu número de control como nombre.
+                </p>
+              </div>
+
+              <input
+                type="text"
+                value={nicknameInput}
+                maxLength={20}
+                autoFocus
+                autoComplete="off"
+                placeholder="Ej. Batman25"
+                onChange={(e) => {
+                  setNicknameInput(
+                    e.target.value
+                  );
+                  setNicknameError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void saveNickname();
+                  }
+
+                  if (
+                    e.key === "Escape" &&
+                    savedNickname
+                  ) {
+                    setNicknameEditorOpen(false);
+                  }
+                }}
+                className={
+                  darkMode
+                    ? "w-full rounded-xl border border-slate-600 bg-slate-800 px-3 py-3 text-white outline-none focus:border-violet-400"
+                    : "w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-violet-500"
+                }
+              />
+
+              <p
+                className={
+                  darkMode
+                    ? "mt-2 text-[11px] text-slate-400"
+                    : "mt-2 text-[11px] text-gray-500"
+                }
+              >
+                3–20 caracteres. Letras, números, punto,
+                guion o _. Mayúsculas y acentos no permiten
+                crear duplicados.
+              </p>
+
+              {nicknameError && (
+                <p className="mt-3 rounded-xl bg-red-100 px-3 py-2 text-xs font-semibold text-red-700">
+                  {nicknameError}
+                </p>
+              )}
+
+              <div className="mt-4 flex justify-end gap-2">
+
+                {savedNickname && (
+                  <button
+                    type="button"
+                    disabled={nicknameSaving}
+                    onClick={() =>
+                      setNicknameEditorOpen(false)
+                    }
+                    className={
+                      darkMode
+                        ? "rounded-xl bg-slate-700 px-4 py-2 text-sm text-white"
+                        : "rounded-xl bg-gray-200 px-4 py-2 text-sm text-gray-800"
+                    }
+                  >
+                    Cancelar
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={
+                    nicknameSaving ||
+                    !nicknameInput.trim()
+                  }
+                  onClick={() =>
+                    void saveNickname()
+                  }
+                  className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white disabled:bg-gray-400"
+                >
+                  {nicknameSaving
+                    ? "Guardando..."
+                    : "Guardar nickname"}
+                </button>
+
+              </div>
+
+              {!savedNickname && (
+                <p
+                  className={
+                    darkMode
+                      ? "mt-3 text-center text-[11px] text-slate-500"
+                      : "mt-3 text-center text-[11px] text-gray-400"
+                  }
+                >
+                  Necesitas elegir uno para participar en el chat.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {toast && (
           <div className="mb-2 rounded-xl bg-slate-900 text-white px-3 py-2 text-xs md:text-sm">
@@ -1189,7 +1669,14 @@ function ChatContent() {
                               />
                             ) : (
                               <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
-                                {safeName(msg.senderName).slice(0, 1).toUpperCase()}
+                                {safeName(
+                                  publicNicknames[
+                                    msg.senderId || ""
+                                  ] ||
+                                  msg.senderName
+                                )
+                                  .slice(0, 1)
+                                  .toUpperCase()}
                               </div>
                             )}
                           </>
@@ -1197,7 +1684,14 @@ function ChatContent() {
 
                         <div className="min-w-0 flex-1">
                           <p className={darkMode ? "text-[11px] md:text-xs text-slate-100 font-bold leading-tight truncate" : "text-[11px] md:text-xs text-gray-900 font-bold leading-tight truncate"}>
-                            {isMine ? "Tú" : safeName(msg.senderName)}
+                            {isMine
+                              ? currentNickname
+                              : safeName(
+                                  publicNicknames[
+                                    msg.senderId || ""
+                                  ] ||
+                                  msg.senderName
+                                )}
                           </p>
                         </div>
                       </div>
