@@ -346,6 +346,7 @@ function ChatContent() {
   const [sendingImages, setSendingImages] = useState(false);
   const [imageReuseMode, setImageReuseMode] =
     useState<"shared" | "product">("shared");
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
   const [senderRole, setSenderRole] = useState<SenderRole>("buyer");
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -1334,32 +1335,29 @@ function ChatContent() {
                           : "mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2"
                       }>
                         {msg.imageUrls.map((url) => (
-                          <a
+                          <button
                             key={url}
-                            href={url}
-                            target="_blank"
-                            rel="noreferrer"
+                            type="button"
+                            onClick={() => setZoomImageUrl(url)}
+                            title="Haz clic para ampliar"
                             className={
                               (msg.imageUrls?.length ?? 0) === 1
-                                ? "flex w-full justify-center"
-                                : "block"
+                                ? "flex w-full justify-center overflow-hidden rounded-xl"
+                                : "block w-full overflow-hidden rounded-xl"
                             }
                           >
                             <img
                               src={url}
-                              alt="Imagen enviada"
-                              onLoad={() => {
-                                if (!isNearBottomRef.current) return;
-                                const el = scrollRef.current;
-                                if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
-                              }}
+                              alt="Imagen del mensaje"
+                              loading="lazy"
+                              decoding="async"
                               className={
-                              (msg.imageUrls?.length ?? 0) === 1
-                                ? "w-full h-auto max-h-[36rem] object-contain rounded-xl border border-gray-300"
-                                : "max-h-72 w-full object-cover rounded-xl border border-gray-300"
-                            }
+                                (msg.imageUrls?.length ?? 0) === 1
+                                  ? "w-full max-w-[520px] max-h-[360px] h-auto object-contain rounded-xl border border-gray-300"
+                                  : "w-full max-h-72 object-cover rounded-xl border border-gray-300"
+                              }
                             />
-                          </a>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -1711,7 +1709,31 @@ function ChatContent() {
           )}
         </div>
       </div>
-    </main>
+
+      {zoomImageUrl && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 md:p-8"
+          onClick={() => setZoomImageUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setZoomImageUrl(null)}
+            aria-label="Cerrar imagen ampliada"
+            className="fixed right-4 top-4 z-[101] flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-3xl text-white hover:bg-black"
+          >
+            ×
+          </button>
+
+          <img
+            src={zoomImageUrl}
+            alt="Imagen ampliada"
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[92vh] max-w-[94vw] object-contain"
+          />
+        </div>
+      )}
+
+</main>
   );
 }
 
