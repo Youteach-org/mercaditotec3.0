@@ -19,15 +19,15 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 
-const QUICK_EMOJIS = ["ðŸ‘", "â¤ï¸", "ðŸ˜‚", "ðŸ˜®", "ðŸ˜¢", "ðŸ”¥"];
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 const TEMPLATE_MESSAGES = [
   "Ok",
-  "Â¿Sigue disponible?",
+  "¿Sigue disponible?",
   "Me interesa",
-  "Â¿CuÃ¡nto? y Â¿por quÃ© tan caro?",
-  "Â¿DÃ³nde entregas?",
+  "¿Cuánto? y ¿por qué tan caro?",
+  "¿Dónde entregas?",
   "Quiero comprar",
-  "Â¿Tienes mÃ¡s fotos?",
+  "¿Tienes más fotos?",
 ];
 
 const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000;
@@ -586,7 +586,7 @@ function ChatContent() {
       .slice(0, 10);
 
     if (picked.length === 0) {
-      setToast("Solo se permiten imÃ¡genes.");
+      setToast("Solo se permiten imágenes.");
       window.setTimeout(() => setToast(""), 2200);
       return;
     }
@@ -779,7 +779,7 @@ function ChatContent() {
                           <span className={darkMode ? "text-xs text-slate-100 break-all" : "text-xs text-slate-900 break-all"}>
                             {u.name || u.email || u.uid}
                           </span>
-                          {u.plan === "premium" && <span title="Premium">ðŸ‘‘</span>}
+                          {u.plan === "premium" && <span title="Premium">👑</span>}
                         </div>
                       ))}
                     </div>
@@ -792,7 +792,7 @@ function ChatContent() {
           <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={(e) => { e.stopPropagation(); setActionForMessage(null); setActionMenuPosition(null); setMenuOpen((prev) => !prev); }} className={menuButtonClasses(darkMode)}
             >
-              {menuOpen ? "Cerrar menÃº" : "MenÃº"}
+              {menuOpen ? "Cerrar menú" : "Menú"}
             </button>
 
             {menuOpen && (
@@ -900,7 +900,7 @@ function ChatContent() {
 
                         <div className="min-w-0 flex-1">
                           <p className={darkMode ? "text-[11px] md:text-xs text-slate-100 font-bold leading-tight truncate" : "text-[11px] md:text-xs text-gray-900 font-bold leading-tight truncate"}>
-                            {isMine ? "TÃº" : safeName(msg.senderName)}
+                            {isMine ? "Tú" : safeName(msg.senderName)}
                           </p>
                         </div>
                       </div>
@@ -908,7 +908,7 @@ function ChatContent() {
                       <div className="relative shrink-0" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
                         {msg.senderPlan === "premium" && (
                           <span className="text-sm md:text-base mr-1" title="Premium">
-                            ðŸ‘‘
+                            👑
                           </span>
                         )}
 
@@ -958,7 +958,7 @@ function ChatContent() {
                           }}
                           className={darkMode ? "text-xs bg-slate-700 text-slate-100 px-2 py-1 rounded-xl" : "text-xs bg-slate-800 text-white px-2 py-1 rounded-xl"}
                         >
-                          â‹¯
+                          ⋯
                         </button>
 
                         {actionForMessage === msg.id && actionMenuPosition && (
@@ -1028,7 +1028,7 @@ function ChatContent() {
                       <span>{formatChatTime(msg.createdAt)}</span>
 
                       <span title={`Visto por ${seenCount} ${seenCount === 1 ? "persona" : "personas"}`} className="inline-flex items-center gap-1">
-                        <span className="text-[10px] leading-none">ðŸ‘</span>
+                        <span className="text-[10px] leading-none">👁</span>
                         <span>{seenCount}</span>
                       </span>
 
@@ -1045,7 +1045,7 @@ function ChatContent() {
 
                               return (
                                 <p key={userId} className="break-all">
-                                  {label} â€” {formatSeenTime(seenAt)}
+                                  {label} — {formatSeenTime(seenAt)}
                                 </p>
                               );
                             })}
@@ -1087,7 +1087,7 @@ function ChatContent() {
                 ? "absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-slate-600 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-100 shadow-lg hover:bg-slate-700"
                 : "absolute bottom-3 left-1/2 z-20 -translate-x-1/2 rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-slate-800 shadow-lg hover:bg-gray-50"}
             >
-              â†“ {newMessagesWaiting === 1 ? "Nuevo mensaje" : `${newMessagesWaiting} nuevos mensajes`}
+              ↓ {newMessagesWaiting === 1 ? "Nuevo mensaje" : `${newMessagesWaiting} nuevos mensajes`}
             </button>
           )}
         </div>
@@ -1133,7 +1133,7 @@ function ChatContent() {
           >
             <div className="flex items-center justify-between mb-2">
               <p className={darkMode ? "text-xs md:text-sm font-semibold text-slate-100" : "text-xs md:text-sm font-semibold text-gray-800"}>
-                Tus imÃ¡genes anteriores
+                Tus imágenes anteriores
               </p>
               <button
                 onClick={() => setGalleryOpen(false)}
@@ -1145,7 +1145,7 @@ function ChatContent() {
 
             {userImages.length === 0 ? (
               <p className={darkMode ? "text-xs text-yellow-300" : "text-xs text-gray-600"}>
-                AÃºn no tienes imÃ¡genes guardadas.
+                Aún no tienes imágenes guardadas.
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1197,9 +1197,9 @@ function ChatContent() {
             <button
               onClick={() => setTemplatesOpen((prev) => !prev)}
               className="bg-blue-600 text-white px-3 py-2 rounded-xl text-sm"
-              title="Mensajes rÃ¡pidos"
+              title="Mensajes rápidos"
             >
-              âš¡
+              ⚡
             </button>
 
             <input
@@ -1215,8 +1215,8 @@ function ChatContent() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="inline-flex items-center justify-center bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm shadow-sm transition hover:bg-emerald-700 active:scale-95"
-              title="Adjuntar imÃ¡genes nuevas"
-              aria-label="Adjuntar imÃ¡genes nuevas"
+              title="Adjuntar imágenes nuevas"
+              aria-label="Adjuntar imágenes nuevas"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H9l1.2-1.7A1 1 0 0 1 11 4h2a1 1 0 0 1 .8.3L15 6h2.5A2.5 2.5 0 0 1 20 8.5v7A2.5 2.5 0 0 1 17.5 18h-11A2.5 2.5 0 0 1 4 15.5v-7Z" />
@@ -1229,8 +1229,8 @@ function ChatContent() {
               type="button"
               onClick={() => setGalleryOpen((prev) => !prev)}
               className="inline-flex items-center justify-center bg-amber-500 text-white px-3 py-2 rounded-xl text-sm shadow-sm transition hover:bg-amber-600 active:scale-95"
-              title="Usar imÃ¡genes anteriores"
-              aria-label="Usar imÃ¡genes anteriores"
+              title="Usar imágenes anteriores"
+              aria-label="Usar imágenes anteriores"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="5" y="5" width="14" height="14" rx="2" />
