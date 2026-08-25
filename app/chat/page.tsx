@@ -10,7 +10,6 @@ import {
   onSnapshot,
   orderBy,
   query,
-  runTransaction,
   setDoc,
   where,
 } from "firebase/firestore";
@@ -337,6 +336,8 @@ function ChatContent() {
     useState(false);
   const [nicknameError, setNicknameError] =
     useState("");
+  const [nicknameLookupReady, setNicknameLookupReady] =
+    useState(false);
 
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
@@ -367,8 +368,10 @@ function ChatContent() {
   });
 
   const savedNickname = String(
+    publicNicknames[
+      firebaseUser?.uid || ""
+    ] ||
     appUserAny?.nickname ||
-    publicNicknames[firebaseUser?.uid || ""] ||
     ""
   ).trim();
 
@@ -425,173 +428,153 @@ function ChatContent() {
   }
 
   async function saveNickname() {
-    if (!firebaseUser) return;
+
+    if (!firebaseUser) {
+      return;
+    }
 
     const nickname =
       nicknameInput.trim();
 
     const validation =
-      validateNickname(nickname);
+      validateNickname(
+        nickname
+      );
 
     if (validation) {
-      setNicknameError(validation);
+      setNicknameError(
+        validation
+      );
+
       return;
     }
 
-    const uid =
-      firebaseUser.uid;
-
-    const newKey =
-      normalizeNicknameKey(nickname);
-
-    const oldKey =
-      savedNickname
-        ? normalizeNicknameKey(savedNickname)
-        : "";
-
-    const nicknameRef =
-      doc(db, "nicknames", newKey);
-
-    const userRef =
-      doc(db, "users", uid);
-
-    const publicProfileRef =
-      doc(db, "public_profiles", uid);
-
-    const oldNicknameRef =
-      oldKey && oldKey !== newKey
-        ? doc(db, "nicknames", oldKey)
-        : null;
-
     try {
-      setNicknameSaving(true);
-      setNicknameError("");
 
-      await runTransaction(
-        db,
-        async (transaction) => {
-
-          /*
-           * Todas las lecturas se hacen antes
-           * de cualquier escritura.
-           */
-          const newReservation =
-            await transaction.get(nicknameRef);
-
-          const oldReservation =
-            oldNicknameRef
-              ? await transaction.get(oldNicknameRef)
-              : null;
-
-          if (
-            newReservation.exists() &&
-            newReservation.data()?.uid !== uid
-          ) {
-            throw new Error(
-              "__NICKNAME_TAKEN__"
-            );
-          }
-
-          const now =
-            Date.now();
-
-          transaction.set(
-            nicknameRef,
-            {
-              uid,
-              nickname,
-              normalized: newKey,
-              updatedAt: now,
-            }
-          );
-
-          transaction.set(
-            userRef,
-            {
-              nickname,
-              nicknameNormalized: newKey,
-              nicknameUpdatedAt: now,
-            },
-            { merge: true }
-          );
-
-          /*
-           * Aquí solo se publica nickname + uid.
-           * No correo ni número de control.
-           */
-          transaction.set(
-            publicProfileRef,
-            {
-              uid,
-              nickname,
-              updatedAt: now,
-            },
-            { merge: true }
-          );
-
-          if (
-            oldNicknameRef &&
-            oldReservation?.exists() &&
-            oldReservation.data()?.uid === uid
-          ) {
-            transaction.delete(
-              oldNicknameRef
-            );
-          }
-        }
+      setNicknameSaving(
+        true
       );
 
-      /*
-       * Actualización inmediata mientras
-       * llega el snapshot de Firebase.
-       */
+      setNicknameError(
+        ""
+      );
+
+      const token =
+        await firebaseUser
+          .getIdToken(true);
+
+      const response =
+        await fetch(
+          "/api/nickname",
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Authorization:
+                `Bearer ${token}`,
+            },
+
+            body:
+              JSON.stringify({
+                nickname,
+              }),
+          }
+        );
+
+      const result =
+        await response
+          .json()
+          .catch(
+            () => ({})
+          );
+
+      if (
+        !response.ok
+      ) {
+
+        setNicknameError(
+          result?.error ||
+            "No se pudo guardar el nickname."
+        );
+
+        return;
+      }
+
       setPublicNicknames(
-        (prev) => ({
-          ...prev,
-          [uid]: nickname,
+        (previous) => ({
+          ...previous,
+
+          [firebaseUser.uid]:
+            nickname,
         })
       );
 
-      setNicknameInput(nickname);
-      setNicknameEditorOpen(false);
-      setNicknameError("");
+      setNicknameLookupReady(
+        true
+      );
+
+      setNicknameInput(
+        nickname
+      );
+
+      setNicknameEditorOpen(
+        false
+      );
+
+      setNicknameError(
+        ""
+      );
 
       setToast(
         `Nickname actualizado: ${nickname}`
       );
 
       window.setTimeout(
-        () => setToast(""),
+        () =>
+          setToast(""),
         2200
       );
 
     } catch (error) {
 
-      if (
-        error instanceof Error &&
-        error.message ===
-          "__NICKNAME_TAKEN__"
-      ) {
-        setNicknameError(
-          "Ese nickname ya está siendo usado por otra persona."
-        );
-      } else {
-        console.error(
-          "SAVE_NICKNAME_ERROR",
-          error
-        );
+      console.error(
+        "SAVE_NICKNAME_ERROR",
+        error
+      );
 
-        setNicknameError(
-          "No se pudo guardar el nickname."
-        );
-      }
+      setNicknameError(
+        "No se pudo guardar el nickname."
+      );
 
     } finally {
-      setNicknameSaving(false);
+
+      setNicknameSaving(
+        false
+      );
     }
   }
 
   function ensureNicknameReady() {
+
+    if (!nicknameLookupReady) {
+
+      setToast(
+        "Cargando tu nickname..."
+      );
+
+      window.setTimeout(
+        () =>
+          setToast(""),
+        1500
+      );
+
+      return false;
+    }
+
     if (savedNickname) {
       return true;
     }
@@ -682,44 +665,131 @@ function ChatContent() {
   }, []);
 
   useEffect(() => {
-    if (!firebaseUser) return;
 
-    const unsubscribe =
-      onSnapshot(
-        collection(db, "public_profiles"),
-        (snapshot) => {
-          const next:
-            Record<string, string> = {};
+    const currentUser =
+      firebaseUser;
 
-          snapshot.docs.forEach((item) => {
-            const data = item.data();
+    if (!currentUser) {
 
-            if (
-              typeof data.nickname === "string" &&
-              data.nickname.trim()
-            ) {
-              next[item.id] =
-                data.nickname.trim();
-            }
-          });
-
-          setPublicNicknames(next);
-        },
-        (error) => {
-          console.warn(
-            "PUBLIC_NICKNAMES_READ_ERROR",
-            error
-          );
-        }
+      setPublicNicknames(
+        {}
       );
 
-    return () => unsubscribe();
+      setNicknameLookupReady(
+        false
+      );
+
+      return;
+    }
+
+    const authenticatedUser =
+      currentUser;
+
+    let cancelled =
+      false;
+
+    setNicknameLookupReady(
+      false
+    );
+
+    async function loadPublicNicknames() {
+
+      try {
+
+        const token =
+          await authenticatedUser
+            .getIdToken();
+
+        const response =
+          await fetch(
+            "/api/nickname",
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              cache:
+                "no-store",
+            }
+          );
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => ({})
+            );
+
+        if (
+          cancelled
+        ) {
+          return;
+        }
+
+        if (
+          !response.ok
+        ) {
+
+          console.warn(
+            "PUBLIC_NICKNAMES_HTTP_ERROR",
+            result
+          );
+
+          return;
+        }
+
+        setPublicNicknames(
+          result?.nicknames ||
+            {}
+        );
+
+      } catch (error) {
+
+        console.warn(
+          "PUBLIC_NICKNAMES_READ_ERROR",
+          error
+        );
+
+      } finally {
+
+        if (
+          !cancelled
+        ) {
+          setNicknameLookupReady(
+            true
+          );
+        }
+      }
+    }
+
+    void loadPublicNicknames();
+
+    const timer =
+      window.setInterval(
+        () => {
+          void loadPublicNicknames();
+        },
+        30000
+      );
+
+    return () => {
+
+      cancelled =
+        true;
+
+      window.clearInterval(
+        timer
+      );
+    };
+
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (
       loading ||
       !firebaseUser ||
+      !nicknameLookupReady ||
       savedNickname
     ) {
       return;
@@ -732,6 +802,7 @@ function ChatContent() {
   }, [
     loading,
     firebaseUser?.uid,
+    nicknameLookupReady,
     savedNickname,
   ]);
 
