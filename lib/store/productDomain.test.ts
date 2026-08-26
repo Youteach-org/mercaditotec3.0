@@ -1,0 +1,182 @@
+﻿import { describe, expect, it } from "vitest";
+
+import {
+  validateProductInput,
+} from "./productDomain";
+
+describe("validateProductInput", () => {
+  it("acepta un producto con precio fijo", () => {
+    expect(
+      validateProductInput({
+        title: "Brownie",
+        description: "Chocolate",
+        imageUrls: [
+          "https://example.com/1.jpg",
+        ],
+        categoryId: "postres",
+        priceType: "fixed",
+        priceAmount: 45,
+        visibility: "published",
+      }),
+    ).toEqual({
+      title: "Brownie",
+      description: "Chocolate",
+      imageUrls: [
+        "https://example.com/1.jpg",
+      ],
+      categoryId: "postres",
+      priceType: "fixed",
+      priceAmount: 45,
+      visibility: "published",
+    });
+  });
+
+  it("acepta precio a tratar con precio base", () => {
+    expect(
+      validateProductInput({
+        title: "Audífonos",
+        description: "",
+        imageUrls: [],
+        categoryId: "electronica",
+        priceType: "negotiable",
+        priceAmount: 300,
+        visibility: "hidden",
+      }).priceAmount,
+    ).toBe(300);
+  });
+
+  it("acepta preguntar al vendedor sin precio numerico", () => {
+    const result =
+      validateProductInput({
+        title: "Servicio de dibujo",
+        description: "",
+        imageUrls: [],
+        categoryId: "servicios",
+        priceType: "ask",
+        priceAmount: null,
+        visibility: "hidden",
+      });
+
+    expect(result.priceType).toBe("ask");
+    expect(result.priceAmount).toBeNull();
+  });
+
+  it("rechaza precio numerico cuando es preguntar al vendedor", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "ask",
+        priceAmount: 50,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "Preguntar al vendedor no debe tener precio numérico.",
+    );
+  });
+
+  it("exige precio positivo para fijo", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 0,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "El precio debe ser mayor que cero.",
+    );
+  });
+
+  it("exige precio positivo para precio a tratar", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "negotiable",
+        priceAmount: -5,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "El precio debe ser mayor que cero.",
+    );
+  });
+
+  it("rechaza mas de cinco imagenes", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [
+          "https://example.com/1.jpg",
+          "https://example.com/2.jpg",
+          "https://example.com/3.jpg",
+          "https://example.com/4.jpg",
+          "https://example.com/5.jpg",
+          "https://example.com/6.jpg",
+        ],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "Un producto puede tener máximo 5 imágenes.",
+    );
+  });
+
+  it("exige categoria", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "Debes seleccionar una categoría.",
+    );
+  });
+
+  it("exige nombre de producto", () => {
+    expect(() =>
+      validateProductInput({
+        title: "",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "hidden",
+      }),
+    ).toThrow(
+      "El nombre del producto debe tener entre 2 y 100 caracteres.",
+    );
+  });
+
+  it("rechaza visibilidad desconocida", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "publico",
+      }),
+    ).toThrow(
+      "Visibilidad de producto inválida.",
+    );
+  });
+});
