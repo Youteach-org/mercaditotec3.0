@@ -67,6 +67,21 @@ export function serializeStore(
     suspensionReason:
       store.suspensionReason,
 
+    logoUrl:
+      store.logoUrl,
+
+    coverUrl:
+      store.coverUrl,
+
+    schedule:
+      store.schedule,
+
+    operationalMode:
+      store.operationalMode,
+
+    manualOpen:
+      store.manualOpen,
+
     createdAt:
       timestampToIso(
         store.createdAt,
@@ -123,3 +138,4 @@ export function toApiError(
       "Ocurrió un error interno.",
   };
 }
+

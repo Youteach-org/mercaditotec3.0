@@ -16,6 +16,13 @@ import {
   type StoreStatus,
 } from "./domain";
 
+import {
+  createEmptyStoreSchedule,
+  normalizeStoredSchedule,
+  type StoreOperationalMode,
+  type StoreSchedule,
+} from "./schedule";
+
 export interface StoreRuleRecord {
   id: string;
   ownerUid: string;
@@ -41,6 +48,16 @@ export interface StoreBaseRecord {
 
   reviewMessage: string | null;
   suspensionReason: string | null;
+
+  logoUrl: string | null;
+  coverUrl: string | null;
+
+  schedule: StoreSchedule;
+
+  operationalMode:
+    StoreOperationalMode;
+
+  manualOpen: boolean | null;
 }
 
 export interface StoreRecord
@@ -277,6 +294,35 @@ function toStoreRecord(
         ? data.suspensionReason
         : null,
 
+    logoUrl:
+      typeof data.logoUrl ===
+      "string"
+        ? data.logoUrl
+        : null,
+
+    coverUrl:
+      typeof data.coverUrl ===
+      "string"
+        ? data.coverUrl
+        : null,
+
+    schedule:
+      normalizeStoredSchedule(
+        data.schedule,
+      ),
+
+    operationalMode:
+      data.operationalMode ===
+      "manual"
+        ? "manual"
+        : "automatic",
+
+    manualOpen:
+      typeof data.manualOpen ===
+      "boolean"
+        ? data.manualOpen
+        : null,
+
     createdAt:
       data.createdAt as Timestamp,
 
@@ -413,6 +459,17 @@ export async function createStoreDraft(
       const store: StoreRecord = {
         ...mutation.store,
         slug,
+
+        logoUrl: null,
+        coverUrl: null,
+
+        schedule:
+          createEmptyStoreSchedule(),
+
+        operationalMode:
+          "automatic",
+
+        manualOpen: null,
 
         createdAt: now,
         updatedAt: now,
@@ -934,3 +991,4 @@ export async function getStoreForAdmin(
     snapshot.data()!,
   );
 }
+
