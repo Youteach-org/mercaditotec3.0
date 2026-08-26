@@ -171,10 +171,17 @@ export function buildAdminStatusMutation(
   target: StoreStatus,
   message?: string,
 ) {
-  assertAdminTransition(
-    current.status,
-    target,
-  );
+  try {
+    assertAdminTransition(
+      current.status,
+      target,
+    );
+  } catch {
+    throw new StoreRepositoryError(
+      409,
+      "Cambio de estado no permitido.",
+    );
+  }
 
   if (
     target === "changes_required"
@@ -875,4 +882,55 @@ export async function adminSetStoreStatus(
   }
 
   return result;
+}
+
+export async function listStoresForAdmin(
+  status?: StoreStatus | null,
+): Promise<StoreRecord[]> {
+  const db = getAdminDb();
+  const collection = db.collection("stores");
+
+  const snapshot = status
+    ? await collection
+        .where("status", "==", status)
+        .limit(100)
+        .get()
+    : await collection
+        .limit(100)
+        .get();
+
+  return snapshot.docs
+    .map((document) =>
+      toStoreRecord(
+        document.id,
+        document.data(),
+      ),
+    )
+    .sort(
+      (a, b) =>
+        b.updatedAt.toMillis() -
+        a.updatedAt.toMillis(),
+    );
+}
+
+export async function getStoreForAdmin(
+  storeId: string,
+): Promise<StoreRecord> {
+  const snapshot =
+    await getAdminDb()
+      .collection("stores")
+      .doc(storeId)
+      .get();
+
+  if (!snapshot.exists) {
+    throw new StoreRepositoryError(
+      404,
+      "Tienda no encontrada.",
+    );
+  }
+
+  return toStoreRecord(
+    snapshot.id,
+    snapshot.data()!,
+  );
 }
