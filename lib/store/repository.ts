@@ -19,6 +19,7 @@ import {
 import {
   createEmptyStoreSchedule,
   normalizeStoredSchedule,
+  validateStoreOperationalSettings,
   type StoreOperationalMode,
   type StoreSchedule,
 } from "./schedule";
@@ -990,5 +991,59 @@ export async function getStoreForAdmin(
     snapshot.id,
     snapshot.data()!,
   );
+}
+
+
+export async function updateStoreOperationalSettingsByOwner(
+  ownerUid: string,
+  storeId: string,
+  input: unknown,
+): Promise<StoreRecord> {
+  const store =
+    await getStoreForOwner(
+      ownerUid,
+      storeId,
+    );
+
+  if (
+    !canOwnerEditStore(
+      store.status,
+    )
+  ) {
+    throw new StoreRepositoryError(
+      409,
+      "La tienda está en revisión y no puede editarse.",
+    );
+  }
+
+  const settings =
+    validateStoreOperationalSettings(
+      input,
+    );
+
+  const now =
+    Timestamp.now();
+
+  await getAdminDb()
+    .collection("stores")
+    .doc(storeId)
+    .update({
+      schedule:
+        settings.schedule,
+
+      operationalMode:
+        settings.operationalMode,
+
+      manualOpen:
+        settings.manualOpen,
+
+      updatedAt: now,
+    });
+
+  return {
+    ...store,
+    ...settings,
+    updatedAt: now,
+  };
 }
 

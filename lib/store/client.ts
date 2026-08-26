@@ -1,6 +1,11 @@
 ﻿import type { User } from "firebase/auth";
 
 import type {
+  StoreOperationalMode,
+  StoreSchedule,
+} from "./schedule";
+
+import type {
   StoreStatus,
 } from "./domain";
 
@@ -17,6 +22,17 @@ export interface StoreApiRecord {
 
   reviewMessage: string | null;
   suspensionReason: string | null;
+
+  logoUrl: string | null;
+  coverUrl: string | null;
+
+  schedule: StoreSchedule;
+
+  operationalMode:
+    StoreOperationalMode;
+
+  manualOpen:
+    boolean | null;
 
   createdAt: string | null;
   updatedAt: string | null;
@@ -123,3 +139,4 @@ export async function storeApiFetch(
     headers,
   });
 }
+

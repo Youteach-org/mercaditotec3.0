@@ -10,8 +10,8 @@ import {
 } from "@/lib/store/http";
 
 import {
-  submitCompleteStore,
-} from "@/lib/store/submission";
+  updateStoreOperationalSettingsByOwner,
+} from "@/lib/store/repository";
 
 export const runtime = "nodejs";
 
@@ -21,7 +21,7 @@ interface RouteContext {
   }>;
 }
 
-export async function POST(
+export async function PATCH(
   request: Request,
   context: RouteContext,
 ) {
@@ -35,10 +35,28 @@ export async function POST(
       storeId,
     } = await context.params;
 
+    let body: unknown;
+
+    try {
+      body =
+        await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "La solicitud no contiene datos válidos.",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
     const store =
-      await submitCompleteStore(
+      await updateStoreOperationalSettingsByOwner(
         user.uid,
         storeId,
+        body,
       );
 
     return NextResponse.json({
@@ -48,19 +66,18 @@ export async function POST(
         ),
     });
   } catch (error) {
-    const apiError =
+    const result =
       toApiError(error);
 
     return NextResponse.json(
       {
         error:
-          apiError.message,
+          result.message,
       },
       {
         status:
-          apiError.status,
+          result.status,
       },
     );
   }
 }
-

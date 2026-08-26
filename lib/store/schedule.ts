@@ -282,3 +282,79 @@ export function isStoreOpenNow(
       )
   );
 }
+
+export interface StoreOperationalSettings {
+  schedule: StoreSchedule;
+
+  operationalMode:
+    StoreOperationalMode;
+
+  manualOpen:
+    boolean | null;
+}
+
+export function validateStoreOperationalSettings(
+  input: unknown,
+): StoreOperationalSettings {
+  if (
+    !input ||
+    typeof input !== "object"
+  ) {
+    throw new Error(
+      "Configuración de horario inválida.",
+    );
+  }
+
+  const data =
+    input as Record<
+      string,
+      unknown
+    >;
+
+  const schedule =
+    validateStoreSchedule(
+      data.schedule,
+    );
+
+  const mode =
+    data.operationalMode;
+
+  if (
+    mode !== "automatic" &&
+    mode !== "manual"
+  ) {
+    throw new Error(
+      "Modo operativo inválido.",
+    );
+  }
+
+  if (mode === "manual") {
+    if (
+      typeof data.manualOpen !==
+      "boolean"
+    ) {
+      throw new Error(
+        "Debes indicar si la tienda estará activa o inactiva manualmente.",
+      );
+    }
+
+    return {
+      schedule,
+
+      operationalMode:
+        "manual",
+
+      manualOpen:
+        data.manualOpen,
+    };
+  }
+
+  return {
+    schedule,
+
+    operationalMode:
+      "automatic",
+
+    manualOpen: null,
+  };
+}

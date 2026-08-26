@@ -146,3 +146,78 @@ describe("isStoreOpenNow", () => {
     ).toBe(false);
   });
 });
+
+describe("validateStoreOperationalSettings", () => {
+  it("acepta modo automatico", async () => {
+    const { validateStoreOperationalSettings } =
+      await import("./schedule");
+
+    const schedule =
+      createEmptyStoreSchedule();
+
+    schedule.monday = {
+      enabled: true,
+      open: "09:00",
+      close: "17:00",
+    };
+
+    expect(
+      validateStoreOperationalSettings({
+        schedule,
+        operationalMode: "automatic",
+        manualOpen: null,
+      }),
+    ).toEqual({
+      schedule,
+      operationalMode: "automatic",
+      manualOpen: null,
+    });
+  });
+
+  it("acepta pausa manual", async () => {
+    const { validateStoreOperationalSettings } =
+      await import("./schedule");
+
+    expect(
+      validateStoreOperationalSettings({
+        schedule:
+          createEmptyStoreSchedule(),
+
+        operationalMode: "manual",
+        manualOpen: false,
+      }).manualOpen,
+    ).toBe(false);
+  });
+
+  it("exige booleano en modo manual", async () => {
+    const { validateStoreOperationalSettings } =
+      await import("./schedule");
+
+    expect(() =>
+      validateStoreOperationalSettings({
+        schedule:
+          createEmptyStoreSchedule(),
+
+        operationalMode: "manual",
+        manualOpen: null,
+      }),
+    ).toThrow(
+      "Debes indicar si la tienda estará activa o inactiva manualmente.",
+    );
+  });
+
+  it("modo automatico elimina override manual", async () => {
+    const { validateStoreOperationalSettings } =
+      await import("./schedule");
+
+    expect(
+      validateStoreOperationalSettings({
+        schedule:
+          createEmptyStoreSchedule(),
+
+        operationalMode: "automatic",
+        manualOpen: true,
+      }).manualOpen,
+    ).toBeNull();
+  });
+});
