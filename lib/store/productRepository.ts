@@ -23,6 +23,10 @@ import {
 } from "./categoryRepository";
 
 import {
+  assertProductImageUrlsForStore,
+} from "./media";
+
+import {
   validateProductInput,
   type ProductEditableInput,
   type ProductPriceType,
@@ -229,6 +233,12 @@ export async function createProduct(
       input,
     );
 
+  assertProductImageUrlsForStore(
+    base.imageUrls,
+    storeId,
+    reference.id,
+  );
+
   if (
     base.visibility ===
     "published"
@@ -348,6 +358,12 @@ export async function updateProduct(
   const validated =
     validateProductInput(input);
 
+  assertProductImageUrlsForStore(
+    validated.imageUrls,
+    storeId,
+    productId,
+  );
+
   if (
     validated.visibility ===
     "published"
@@ -447,4 +463,5 @@ export async function listProductsForAdmin(
         a.updatedAt.toMillis(),
     );
 }
+
 
