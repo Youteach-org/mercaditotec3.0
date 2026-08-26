@@ -19,6 +19,10 @@ import {
 } from "./repository";
 
 import {
+  requireActiveCategory,
+} from "./categoryRepository";
+
+import {
   validateProductInput,
   type ProductEditableInput,
   type ProductPriceType,
@@ -225,6 +229,15 @@ export async function createProduct(
       input,
     );
 
+  if (
+    base.visibility ===
+    "published"
+  ) {
+    await requireActiveCategory(
+      base.categoryId,
+    );
+  }
+
   const now =
     Timestamp.now();
 
@@ -335,6 +348,15 @@ export async function updateProduct(
   const validated =
     validateProductInput(input);
 
+  if (
+    validated.visibility ===
+    "published"
+  ) {
+    await requireActiveCategory(
+      validated.categoryId,
+    );
+  }
+
   const now =
     Timestamp.now();
 
@@ -425,3 +447,4 @@ export async function listProductsForAdmin(
         a.updatedAt.toMillis(),
     );
 }
+
