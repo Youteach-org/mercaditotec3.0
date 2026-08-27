@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { buildBootstrapStoreInput } from "./bootstrap";
 import {
   buildAdminStatusMutation,
-  buildBootstrapStoreMutation,
   buildCreateStoreMutation,
   buildOwnerStoreUpdate,
   buildSubmitMutation,
@@ -28,15 +28,11 @@ describe("store repository rules", () => {
     expect(result.store.slug).toBe("dulces-fer");
   });
 
-  it("crea un borrador temporal para abrir directamente el editor completo", () => {
-    const result = buildBootstrapStoreMutation("uid-owner", "abc123XYZ");
-
-    expect(result.store.id).toBe("abc123XYZ");
-    expect(result.store.ownerUid).toBe("uid-owner");
-    expect(result.store.status).toBe("draft");
-    expect(result.store.name).toBe("Nueva tienda abc123");
-    expect(result.store.description).toBe("");
-    expect(result.store.slug).toBe("nueva-tienda-abc123");
+  it("prepara un borrador temporal para abrir directamente el editor completo", () => {
+    expect(buildBootstrapStoreInput("ABC123-XYZ")).toEqual({
+      name: "Nueva tienda abc123",
+      description: "",
+    });
   });
 
   it("genera una clave de reserva segura incluso si el nombre contiene slash", () => {
