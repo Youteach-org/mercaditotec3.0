@@ -1,0 +1,225 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+import {
+  createAdminCategory,
+  loadAdminCategories,
+  updateAdminCategory,
+  type StoreCategoryApiRecord,
+} from "@/lib/store/categoryClient";
+import { useSession } from "@/lib/useSession";
+
+export default function AdminCategoriesPage() {
+  const router = useRouter();
+  const { firebaseUser, appUser, loading: sessionLoading } = useSession();
+  const isAdmin = appUser?.role === "admin";
+
+  const [categories, setCategories] = useState<StoreCategoryApiRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (sessionLoading) return;
+    if (!firebaseUser) {
+      router.replace("/login");
+      return;
+    }
+    if (!isAdmin) router.replace("/marketplace");
+  }, [firebaseUser, isAdmin, router, sessionLoading]);
+
+  const load = useCallback(async () => {
+    if (!firebaseUser || !isAdmin) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      setCategories(await loadAdminCategories(firebaseUser));
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "No se pudieron cargar las categorías.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [firebaseUser, isAdmin]);
+
+  useEffect(() => {
+    if (firebaseUser && isAdmin) void load();
+  }, [firebaseUser, isAdmin, load]);
+
+  async function createCategory(event: FormEvent) {
+    event.preventDefault();
+    if (!firebaseUser) return;
+
+    setCreating(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const category = await createAdminCategory(firebaseUser, {
+        name,
+        active: true,
+      });
+
+      setCategories((current) =>
+        [...current, category].sort((a, b) => a.name.localeCompare(b.name, "es")),
+      );
+      setName("");
+      setMessage("Categoría creada.");
+    } catch (createError) {
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "No se pudo crear la categoría.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function toggleCategory(category: StoreCategoryApiRecord) {
+    if (!firebaseUser) return;
+
+    setError("");
+    setMessage("");
+
+    try {
+      const updated = await updateAdminCategory(firebaseUser, category.id, {
+        name: category.name,
+        active: !category.active,
+      });
+
+      setCategories((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setMessage(updated.active ? "Categoría activada." : "Categoría desactivada.");
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "No se pudo actualizar la categoría.",
+      );
+    }
+  }
+
+  if (sessionLoading || !firebaseUser || !isAdmin) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-4">
+        <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow-md">
+          Verificando permisos...
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-100 p-4">
+      <div className="mx-auto max-w-5xl space-y-5">
+        <section className="rounded-2xl bg-white p-6 shadow-md">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Categorías de tiendas</h1>
+              <p className="mt-1 text-gray-600">
+                Estas son las categorías oficiales que los vendedores podrán asignar a sus productos.
+              </p>
+            </div>
+
+            <Link
+              href="/admin/stores"
+              className="font-semibold text-blue-700 hover:underline"
+            >
+              Administración de tiendas
+            </Link>
+          </div>
+        </section>
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
+            {error}
+          </div>
+        )}
+
+        {message && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700">
+            {message}
+          </div>
+        )}
+
+        <form onSubmit={createCategory} className="rounded-2xl bg-white p-6 shadow-md">
+          <h2 className="text-xl font-bold text-gray-900">Nueva categoría</h2>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              minLength={2}
+              maxLength={60}
+              placeholder="Ej. Alimentos y bebidas"
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={creating}
+              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:bg-blue-400"
+            >
+              {creating ? "Creando..." : "Agregar categoría"}
+            </button>
+          </div>
+        </form>
+
+        <section className="rounded-2xl bg-white p-6 shadow-md">
+          <h2 className="text-xl font-bold text-gray-900">Categorías oficiales</h2>
+
+          {loading ? (
+            <p className="mt-4 text-gray-600">Cargando...</p>
+          ) : categories.length === 0 ? (
+            <p className="mt-4 text-gray-600">Todavía no hay categorías. Crea la primera arriba.</p>
+          ) : (
+            <div className="mt-4 divide-y divide-gray-200">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <div className="font-semibold text-gray-900">{category.name}</div>
+                    <div
+                      className={
+                        category.active
+                          ? "mt-1 text-sm font-medium text-green-700"
+                          : "mt-1 text-sm font-medium text-gray-500"
+                      }
+                    >
+                      {category.active ? "Activa" : "Inactiva"}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => void toggleCategory(category)}
+                    className={
+                      category.active
+                        ? "rounded-xl border border-red-200 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
+                        : "rounded-xl border border-green-200 px-4 py-2 font-semibold text-green-700 hover:bg-green-50"
+                    }
+                  >
+                    {category.active ? "Desactivar" : "Activar"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
