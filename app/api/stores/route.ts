@@ -1,8 +1,14 @@
-﻿import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+
+import { NextResponse } from "next/server";
 
 import {
   requireFirebaseUser,
 } from "@/lib/store/auth";
+
+import {
+  buildBootstrapStoreInput,
+} from "@/lib/store/bootstrap";
 
 import {
   parseStoreEditableInput,
@@ -63,27 +69,25 @@ export async function POST(
         request,
       );
 
-    let body: unknown;
+    let body: unknown = {};
 
     try {
       body =
         await request.json();
     } catch {
-      return NextResponse.json(
-        {
-          error:
-            "La solicitud no contiene datos válidos.",
-        },
-        {
-          status: 400,
-        },
-      );
+      body = {};
     }
 
-    const input =
-      parseStoreEditableInput(
-        body,
+    const bootstrap =
+      Boolean(
+        body &&
+          typeof body === "object" &&
+          (body as Record<string, unknown>).bootstrap === true,
       );
+
+    const input = bootstrap
+      ? buildBootstrapStoreInput(randomUUID())
+      : parseStoreEditableInput(body);
 
     const store =
       await createStoreDraft(
