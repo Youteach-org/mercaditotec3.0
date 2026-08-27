@@ -32,7 +32,7 @@ export default function StoreScheduleSection({
   );
   const [manualOpen, setManualOpen] = useState<boolean>(store.manualOpen ?? true);
   const [saving, setSaving] = useState(false);
-  const [withdrawing, setWithdrawing] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -48,33 +48,38 @@ export default function StoreScheduleSection({
     setMessage("");
   }
 
-  async function withdrawFromReview() {
-    if (store.status !== "pending_review") return;
+  async function resetStoreSetup() {
+    if (resetting) return;
 
-    setWithdrawing(true);
+    const confirmed = window.confirm(
+      "Se borrará esta tienda de prueba y sus productos para comenzar el proceso desde cero. ¿Continuar?",
+    );
+
+    if (!confirmed) return;
+
+    setResetting(true);
     setError("");
     setMessage("");
 
     try {
-      const response = await storeApiFetch(user, `/api/stores/${store.id}/withdraw`, {
-        method: "POST",
+      const response = await storeApiFetch(user, `/api/stores/${store.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action: "reset" }),
       });
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo retirar la tienda de revisión.");
+        throw new Error(data.error ?? "No se pudo reiniciar el proceso de tienda.");
       }
 
-      onStoreChanged(data.store as StoreApiRecord);
-      setMessage("La tienda volvió a borrador. Ya puedes seguir editándola.");
-    } catch (withdrawError) {
+      window.location.assign("/mystore");
+    } catch (resetError) {
       setError(
-        withdrawError instanceof Error
-          ? withdrawError.message
-          : "No se pudo retirar la tienda de revisión.",
+        resetError instanceof Error
+          ? resetError.message
+          : "No se pudo reiniciar el proceso de tienda.",
       );
-    } finally {
-      setWithdrawing(false);
+      setResetting(false);
     }
   }
 
@@ -122,17 +127,17 @@ export default function StoreScheduleSection({
 
       {store.status === "pending_review" && (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-          <div className="font-semibold">La tienda está bloqueada porque está en revisión.</div>
+          <div className="font-semibold">Esta tienda de prueba está en revisión.</div>
           <p className="mt-1 text-sm">
-            Si todavía quieres cambiar información, imágenes, horarios o productos, retírala de revisión y volverá a borrador.
+            Para volver a probar el flujo desde el principio, reinicia el proceso. La tienda y sus productos se eliminarán y volverás a la pantalla de crear tienda.
           </p>
           <button
             type="button"
-            onClick={() => void withdrawFromReview()}
-            disabled={withdrawing}
+            onClick={() => void resetStoreSetup()}
+            disabled={resetting}
             className="mt-3 rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-amber-400"
           >
-            {withdrawing ? "Retirando..." : "Retirar de revisión y seguir editando"}
+            {resetting ? "Reiniciando..." : "Reiniciar proceso de tienda"}
           </button>
         </div>
       )}
