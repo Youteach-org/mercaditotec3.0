@@ -1,9 +1,8 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  FormEvent,
   useCallback,
   useEffect,
   useState,
@@ -31,26 +30,11 @@ export default function MyStorePage() {
   const [stores, setStores] =
     useState<StoreApiRecord[]>([]);
 
-  const [
-    storesLoading,
-    setStoresLoading,
-  ] = useState(true);
+  const [storesLoading, setStoresLoading] =
+    useState(true);
 
   const [error, setError] =
     useState("");
-
-  const [
-    createOpen,
-    setCreateOpen,
-  ] = useState(false);
-
-  const [name, setName] =
-    useState("");
-
-  const [
-    description,
-    setDescription,
-  ] = useState("");
 
   const [creating, setCreating] =
     useState(false);
@@ -119,12 +103,8 @@ export default function MyStorePage() {
     loadStores,
   ]);
 
-  async function createStore(
-    event: FormEvent,
-  ) {
-    event.preventDefault();
-
-    if (!firebaseUser) {
+  async function createStore() {
+    if (!firebaseUser || creating) {
       return;
     }
 
@@ -139,8 +119,7 @@ export default function MyStorePage() {
           {
             method: "POST",
             body: JSON.stringify({
-              name,
-              description,
+              bootstrap: true,
             }),
           },
         );
@@ -151,13 +130,9 @@ export default function MyStorePage() {
       if (!response.ok) {
         throw new Error(
           data.error ??
-            "No se pudo crear la tienda.",
+            "No se pudo iniciar la tienda.",
         );
       }
-
-      setName("");
-      setDescription("");
-      setCreateOpen(false);
 
       router.push(
         `/mystore/${data.store.id}`,
@@ -166,9 +141,8 @@ export default function MyStorePage() {
       setError(
         createError instanceof Error
           ? createError.message
-          : "No se pudo crear la tienda.",
+          : "No se pudo iniciar la tienda.",
       );
-    } finally {
       setCreating(false);
     }
   }
@@ -200,18 +174,19 @@ export default function MyStorePage() {
               </h1>
 
               <p className="mt-1 text-gray-600">
-                Crea y administra únicamente las tiendas que quieras usar para vender.
+                Crea una tienda y configúrala completa antes de enviarla a revisión.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={() =>
-                setCreateOpen(true)
-              }
-              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+              onClick={() => void createStore()}
+              disabled={creating}
+              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400"
             >
-              Crear mi tienda
+              {creating
+                ? "Abriendo editor..."
+                : "Crear mi tienda"}
             </button>
           </div>
         </section>
@@ -235,17 +210,18 @@ export default function MyStorePage() {
             </h2>
 
             <p className="mx-auto mt-2 max-w-xl text-gray-600">
-              MercaditoTec3 no crea una tienda automáticamente. Si quieres vender algo, crea tu primera tienda y prepárala antes de enviarla a revisión.
+              Al crear tu tienda entrarás directamente al editor completo para configurar nombre, imágenes, horario y productos.
             </p>
 
             <button
               type="button"
-              onClick={() =>
-                setCreateOpen(true)
-              }
-              className="mt-5 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+              onClick={() => void createStore()}
+              disabled={creating}
+              className="mt-5 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400"
             >
-              Crear mi tienda
+              {creating
+                ? "Abriendo editor..."
+                : "Crear mi tienda"}
             </button>
           </section>
         ) : (
@@ -284,7 +260,7 @@ export default function MyStorePage() {
                     </p>
                   ) : (
                     <p className="mt-4 text-sm italic text-gray-500">
-                      Sin descripción todavía.
+                      Completa la información de esta tienda.
                     </p>
                   )}
 
@@ -326,102 +302,13 @@ export default function MyStorePage() {
 
         <div>
           <Link
-            href="/marketplace"
+            href="/"
             className="text-sm font-semibold text-blue-700 hover:underline"
           >
-            Volver al Mercadito
+            ← Volver al Mercadito
           </Link>
         </div>
       </div>
-
-      {createOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onMouseDown={(event) => {
-            if (
-              event.currentTarget ===
-              event.target
-            ) {
-              setCreateOpen(false);
-            }
-          }}
-        >
-          <form
-            onSubmit={createStore}
-            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
-          >
-            <h2 className="text-2xl font-bold text-gray-900">
-              Crear mi tienda
-            </h2>
-
-            <p className="mt-1 text-sm text-gray-600">
-              Primero crea el espacio de tu tienda. Después podrás prepararlo antes de enviarlo a revisión.
-            </p>
-
-            <label className="mt-5 block">
-              <span className="mb-1 block text-sm font-semibold text-gray-700">
-                Nombre de la tienda
-              </span>
-
-              <input
-                value={name}
-                onChange={(event) =>
-                  setName(
-                    event.target.value,
-                  )
-                }
-                required
-                minLength={3}
-                maxLength={60}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
-                placeholder="Ej. Dulces Fer"
-              />
-            </label>
-
-            <label className="mt-4 block">
-              <span className="mb-1 block text-sm font-semibold text-gray-700">
-                Descripción
-              </span>
-
-              <textarea
-                value={description}
-                onChange={(event) =>
-                  setDescription(
-                    event.target.value,
-                  )
-                }
-                maxLength={600}
-                rows={4}
-                className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
-                placeholder="¿Qué venderás en esta tienda?"
-              />
-            </label>
-
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() =>
-                  setCreateOpen(false)
-                }
-                disabled={creating}
-                className="rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-700"
-              >
-                Cancelar
-              </button>
-
-              <button
-                type="submit"
-                disabled={creating}
-                className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:bg-blue-400"
-              >
-                {creating
-                  ? "Creando..."
-                  : "Crear tienda"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
     </main>
   );
 }
