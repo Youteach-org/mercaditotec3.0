@@ -1,8 +1,6 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import {
-  validateProductInput,
-} from "./productDomain";
+import { validateProductInput } from "./productDomain";
 
 describe("validateProductInput", () => {
   it("acepta un producto con precio fijo", () => {
@@ -10,9 +8,7 @@ describe("validateProductInput", () => {
       validateProductInput({
         title: "Brownie",
         description: "Chocolate",
-        imageUrls: [
-          "https://example.com/1.jpg",
-        ],
+        imageUrls: ["https://example.com/1.jpg"],
         categoryId: "postres",
         priceType: "fixed",
         priceAmount: 45,
@@ -21,14 +17,43 @@ describe("validateProductInput", () => {
     ).toEqual({
       title: "Brownie",
       description: "Chocolate",
-      imageUrls: [
-        "https://example.com/1.jpg",
-      ],
+      imageUrls: ["https://example.com/1.jpg"],
       categoryId: "postres",
       priceType: "fixed",
       priceAmount: 45,
       visibility: "published",
     });
+  });
+
+  it("acepta una categoria sugerida sin crear categoria global", () => {
+    const result = validateProductInput({
+      title: "Kit Arduino",
+      description: "",
+      imageUrls: [],
+      categoryId: "",
+      suggestedCategoryName: "Robótica educativa",
+      priceType: "fixed",
+      priceAmount: 250,
+      visibility: "published",
+    });
+
+    expect(result.categoryId).toBe("");
+    expect(result.suggestedCategoryName).toBe("Robótica educativa");
+  });
+
+  it("rechaza categoria sugerida demasiado corta", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "",
+        suggestedCategoryName: "X",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "hidden",
+      }),
+    ).toThrow("La categoría sugerida debe tener entre 2 y 60 caracteres.");
   });
 
   it("acepta precio a tratar con precio base", () => {
@@ -46,16 +71,15 @@ describe("validateProductInput", () => {
   });
 
   it("acepta preguntar al vendedor sin precio numerico", () => {
-    const result =
-      validateProductInput({
-        title: "Servicio de dibujo",
-        description: "",
-        imageUrls: [],
-        categoryId: "servicios",
-        priceType: "ask",
-        priceAmount: null,
-        visibility: "hidden",
-      });
+    const result = validateProductInput({
+      title: "Servicio de dibujo",
+      description: "",
+      imageUrls: [],
+      categoryId: "servicios",
+      priceType: "ask",
+      priceAmount: null,
+      visibility: "hidden",
+    });
 
     expect(result.priceType).toBe("ask");
     expect(result.priceAmount).toBeNull();
@@ -72,9 +96,7 @@ describe("validateProductInput", () => {
         priceAmount: 50,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "Preguntar al vendedor no debe tener precio numérico.",
-    );
+    ).toThrow("Preguntar al vendedor no debe tener precio numérico.");
   });
 
   it("exige precio positivo para fijo", () => {
@@ -88,9 +110,7 @@ describe("validateProductInput", () => {
         priceAmount: 0,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "El precio debe ser mayor que cero.",
-    );
+    ).toThrow("El precio debe ser mayor que cero.");
   });
 
   it("exige precio positivo para precio a tratar", () => {
@@ -104,9 +124,7 @@ describe("validateProductInput", () => {
         priceAmount: -5,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "El precio debe ser mayor que cero.",
-    );
+    ).toThrow("El precio debe ser mayor que cero.");
   });
 
   it("rechaza mas de cinco imagenes", () => {
@@ -127,12 +145,10 @@ describe("validateProductInput", () => {
         priceAmount: 20,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "Un producto puede tener máximo 5 imágenes.",
-    );
+    ).toThrow("Un producto puede tener máximo 5 imágenes.");
   });
 
-  it("exige categoria", () => {
+  it("exige categoria o sugerencia", () => {
     expect(() =>
       validateProductInput({
         title: "Producto",
@@ -143,9 +159,7 @@ describe("validateProductInput", () => {
         priceAmount: 20,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "Debes seleccionar una categoría.",
-    );
+    ).toThrow("Debes seleccionar o sugerir una categoría.");
   });
 
   it("exige nombre de producto", () => {
@@ -159,9 +173,7 @@ describe("validateProductInput", () => {
         priceAmount: 20,
         visibility: "hidden",
       }),
-    ).toThrow(
-      "El nombre del producto debe tener entre 2 y 100 caracteres.",
-    );
+    ).toThrow("El nombre del producto debe tener entre 2 y 100 caracteres.");
   });
 
   it("rechaza visibilidad desconocida", () => {
@@ -175,8 +187,6 @@ describe("validateProductInput", () => {
         priceAmount: 20,
         visibility: "publico",
       }),
-    ).toThrow(
-      "Visibilidad de producto inválida.",
-    );
+    ).toThrow("Visibilidad de producto inválida.");
   });
 });
