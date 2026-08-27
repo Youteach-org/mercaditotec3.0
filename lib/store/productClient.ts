@@ -15,6 +15,7 @@ export interface StoreProductApiRecord {
   description: string;
   imageUrls: string[];
   categoryId: string;
+  suggestedCategoryName: string | null;
   priceType: ProductPriceType;
   priceAmount: number | null;
   visibility: ProductVisibility;
