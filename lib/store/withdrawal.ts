@@ -3,6 +3,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "../firebaseAdmin";
 import {
   getStoreForOwner,
+  reservationKeyForName,
   StoreRepositoryError,
   type StoreRecord,
   type StoreRuleRecord,
@@ -39,15 +40,24 @@ export async function withdrawStoreFromReview(
   const store = await getStoreForOwner(ownerUid, storeId);
   const mutation = buildWithdrawReviewMutation(ownerUid, store);
   const now = Timestamp.now();
+  const db = getAdminDb();
+  const batch = db.batch();
 
-  await getAdminDb()
-    .collection("stores")
-    .doc(storeId)
-    .update({
-      ...mutation,
-      submittedAt: null,
-      updatedAt: now,
-    });
+  batch.update(db.collection("stores").doc(storeId), {
+    ...mutation,
+    submittedAt: null,
+    updatedAt: now,
+  });
+
+  if (store.nameNormalized) {
+    batch.delete(
+      db
+        .collection("store_name_reservations")
+        .doc(reservationKeyForName(store.nameNormalized)),
+    );
+  }
+
+  await batch.commit();
 
   return {
     ...store,
