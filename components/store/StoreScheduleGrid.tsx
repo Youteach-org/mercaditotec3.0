@@ -18,12 +18,30 @@ const DAY_LABELS: Record<StoreWeekDay, string> = {
   sunday: "Dom",
 };
 
+const MOBILE_DAY_LABELS: Record<StoreWeekDay, string> = {
+  monday: "L",
+  tuesday: "M",
+  wednesday: "X",
+  thursday: "J",
+  friday: "V",
+  saturday: "S",
+  sunday: "D",
+};
+
 function formatHour(hour: StoreHour) {
   const value = Number(hour.slice(0, 2));
 
   if (value === 12) return "12 p. m.";
   if (value > 12) return `${value - 12} p. m.`;
   return `${value} a. m.`;
+}
+
+function formatCompactHour(hour: StoreHour) {
+  const value = Number(hour.slice(0, 2));
+
+  if (value === 12) return "12p";
+  if (value > 12) return `${value - 12}p`;
+  return `${value}a`;
 }
 
 interface Props {
@@ -40,11 +58,12 @@ export default function StoreScheduleGrid({
   onToggle,
 }: Props) {
   return (
-    <div className="overflow-x-auto overscroll-x-contain pb-1">
+    <div className="w-full max-w-full overflow-hidden">
       <div
         className={[
-          "grid min-w-[720px] grid-cols-[74px_repeat(7,minmax(72px,1fr))]",
-          compact ? "gap-1" : "gap-1.5",
+          "grid w-full min-w-0 grid-cols-[28px_repeat(7,minmax(0,1fr))] gap-0.5",
+          "sm:grid-cols-[48px_repeat(7,minmax(0,1fr))] sm:gap-1",
+          "md:grid-cols-[58px_repeat(7,minmax(0,1fr))]",
         ].join(" ")}
       >
         <div />
@@ -53,11 +72,14 @@ export default function StoreScheduleGrid({
           <div
             key={day}
             className={[
-              "flex items-center justify-center rounded-lg bg-slate-900 font-bold text-white",
-              compact ? "h-8 text-[11px]" : "h-10 text-xs sm:text-sm",
+              "flex min-w-0 items-center justify-center rounded-md bg-slate-900 font-bold text-white",
+              compact
+                ? "h-5 text-[9px] sm:h-6 sm:text-[10px]"
+                : "h-6 text-[10px] sm:h-8 sm:text-xs md:h-9",
             ].join(" ")}
           >
-            {DAY_LABELS[day]}
+            <span className="sm:hidden">{MOBILE_DAY_LABELS[day]}</span>
+            <span className="hidden sm:inline">{DAY_LABELS[day]}</span>
           </div>
         ))}
 
@@ -65,18 +87,20 @@ export default function StoreScheduleGrid({
           <div key={hour} className="contents">
             <div
               className={[
-                "flex items-center justify-end pr-2 font-semibold text-gray-500",
-                compact ? "h-7 text-[10px]" : "h-10 text-xs",
+                "flex min-w-0 items-center justify-end pr-1 font-semibold text-gray-500 sm:pr-2",
+                compact
+                  ? "h-5 text-[9px] sm:h-6 sm:text-[10px]"
+                  : "h-7 text-[9px] sm:h-8 sm:text-xs md:h-9",
               ].join(" ")}
             >
-              {formatHour(hour)}
+              <span className="sm:hidden">{formatCompactHour(hour)}</span>
+              <span className="hidden sm:inline">{formatHour(hour)}</span>
             </div>
 
             {STORE_WEEK_DAYS.map((day) => {
               const selected = schedule[day].slots.includes(hour);
-              const label = `${DAY_LABELS[day]} ${formatHour(hour)} a ${formatHour(
-                `${String(Number(hour.slice(0, 2)) + 1).padStart(2, "0")}:00` as StoreHour,
-              )}`;
+              const nextHour = `${String(Number(hour.slice(0, 2)) + 1).padStart(2, "0")}:00` as StoreHour;
+              const label = `${DAY_LABELS[day]} ${formatHour(hour)} a ${formatHour(nextHour)}`;
 
               return (
                 <button
@@ -88,8 +112,10 @@ export default function StoreScheduleGrid({
                   disabled={!editable}
                   onClick={() => editable && onToggle?.(day, hour)}
                   className={[
-                    "border transition-colors touch-manipulation",
-                    compact ? "h-7 rounded-md" : "h-10 rounded-lg",
+                    "min-w-0 border transition-colors touch-manipulation select-none",
+                    compact
+                      ? "h-5 rounded-[4px] sm:h-6 sm:rounded-md"
+                      : "h-7 rounded-[5px] sm:h-8 sm:rounded-md md:h-9 md:rounded-lg",
                     selected
                       ? "border-blue-700 bg-blue-600 shadow-sm"
                       : "border-gray-200 bg-white",
