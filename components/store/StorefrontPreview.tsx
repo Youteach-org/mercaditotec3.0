@@ -1,6 +1,6 @@
 import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
 import type { StoreProductApiRecord } from "@/lib/store/productClient";
-import type { StoreSchedule } from "@/lib/store/schedule";
+import { STORE_WEEK_DAYS, type StoreSchedule } from "@/lib/store/schedule";
 
 interface Props {
   name: string;
@@ -30,6 +30,10 @@ export default function StorefrontPreview({
   compact = false,
 }: Props) {
   const visibleProducts = products.filter((product) => product.visibility === "published");
+  const selectedHours = STORE_WEEK_DAYS.reduce(
+    (total, day) => total + schedule[day].slots.length,
+    0,
+  );
 
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
@@ -73,11 +77,27 @@ export default function StorefrontPreview({
         </p>
 
         <div className="mt-4 border-t border-gray-100 pt-4">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Horario</h3>
-            <span className="text-[10px] text-gray-400">7 a. m. – 9 p. m.</span>
-          </div>
-          <StoreScheduleGrid schedule={schedule} compact />
+          {compact ? (
+            <details className="group rounded-xl bg-gray-50 p-3">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600">
+                <span>Horario</span>
+                <span className="normal-case tracking-normal text-gray-400">
+                  {selectedHours > 0 ? `${selectedHours} bloque(s) · ver` : "Sin horario · ver"}
+                </span>
+              </summary>
+              <div className="mt-3">
+                <StoreScheduleGrid schedule={schedule} compact />
+              </div>
+            </details>
+          ) : (
+            <>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Horario</h3>
+                <span className="text-[10px] text-gray-400">7 a. m. – 9 p. m.</span>
+              </div>
+              <StoreScheduleGrid schedule={schedule} compact />
+            </>
+          )}
         </div>
 
         <div className="mt-5 border-t border-gray-100 pt-4">
