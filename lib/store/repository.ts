@@ -1,6 +1,7 @@
 import {
   Timestamp,
   type DocumentData,
+  type DocumentReference,
   type Transaction,
 } from "firebase-admin/firestore";
 
@@ -390,8 +391,8 @@ export async function adminSetStoreStatus(
     const now = Timestamp.now();
 
     let nextSlug = current.slug;
-    let slugReference: ReturnType<ReturnType<typeof getAdminDb>["collection"]>["doc"] extends (...args: never[]) => infer R ? R : never;
-    let nameReference: ReturnType<ReturnType<typeof getAdminDb>["collection"]>["doc"] extends (...args: never[]) => infer R ? R : never;
+    let slugReference: DocumentReference | null = null;
+    let nameReference: DocumentReference | null = null;
 
     if (current.status === "pending_review" && target === "active") {
       const slugBase = makeStoreSlug(current.name);
