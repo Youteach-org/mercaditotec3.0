@@ -5,9 +5,9 @@ import {
   buildCreateStoreMutation,
   buildOwnerStoreUpdate,
   buildSubmitMutation,
-  buildWithdrawReviewMutation,
   reservationKeyForName,
 } from "./repository";
+import { buildWithdrawReviewMutation } from "./withdrawal";
 
 describe("store repository rules", () => {
   it("crea una tienda como draft ligada al propietario", () => {
