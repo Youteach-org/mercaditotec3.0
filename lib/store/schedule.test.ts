@@ -1,16 +1,26 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
+  STORE_HOURS,
   createEmptyStoreSchedule,
   isStoreOpenNow,
   normalizeStoredSchedule,
+  toggleScheduleHour,
+  validateStoreOperationalSettings,
   validateStoreSchedule,
 } from "./schedule";
 
+describe("STORE_HOURS", () => {
+  it("usa bloques de una hora de 7 am a 9 pm", () => {
+    expect(STORE_HOURS[0]).toBe("07:00");
+    expect(STORE_HOURS.at(-1)).toBe("20:00");
+    expect(STORE_HOURS).toHaveLength(14);
+  });
+});
+
 describe("createEmptyStoreSchedule", () => {
-  it("crea los siete dias de la semana", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+  it("crea los siete dias sin bloques seleccionados", () => {
+    const schedule = createEmptyStoreSchedule();
 
     expect(Object.keys(schedule)).toEqual([
       "monday",
@@ -22,93 +32,104 @@ describe("createEmptyStoreSchedule", () => {
       "sunday",
     ]);
 
-    expect(schedule.monday.enabled).toBe(false);
-    expect(schedule.sunday.enabled).toBe(false);
+    expect(schedule.monday.slots).toEqual([]);
+    expect(schedule.sunday.slots).toEqual([]);
+  });
+});
+
+describe("toggleScheduleHour", () => {
+  it("ilumina y apaga un bloque con el mismo click", () => {
+    const schedule = createEmptyStoreSchedule();
+
+    const selected = toggleScheduleHour(schedule, "monday", "09:00");
+    expect(selected.monday.slots).toEqual(["09:00"]);
+
+    const cleared = toggleScheduleHour(selected, "monday", "09:00");
+    expect(cleared.monday.slots).toEqual([]);
+  });
+
+  it("permite varios periodos separados el mismo dia", () => {
+    let schedule = createEmptyStoreSchedule();
+    schedule = toggleScheduleHour(schedule, "monday", "08:00");
+    schedule = toggleScheduleHour(schedule, "monday", "09:00");
+    schedule = toggleScheduleHour(schedule, "monday", "13:00");
+    schedule = toggleScheduleHour(schedule, "monday", "14:00");
+
+    expect(schedule.monday.slots).toEqual([
+      "08:00",
+      "09:00",
+      "13:00",
+      "14:00",
+    ]);
   });
 });
 
 describe("validateStoreSchedule", () => {
-  it("acepta un horario semanal valido", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+  it("acepta bloques horarios validos", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["08:00", "09:00", "16:00", "17:00"];
 
-    schedule.monday = {
-      enabled: true,
-      open: "08:00",
-      close: "14:00",
-    };
-
-    expect(
-      validateStoreSchedule(schedule)
-        .monday,
-    ).toEqual({
-      enabled: true,
-      open: "08:00",
-      close: "14:00",
-    });
+    expect(validateStoreSchedule(schedule).monday.slots).toEqual([
+      "08:00",
+      "09:00",
+      "16:00",
+      "17:00",
+    ]);
   });
 
-  it("rechaza horas invalidas", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+  it("rechaza horas fuera de la cuadricula", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["06:00"];
 
-    schedule.monday = {
-      enabled: true,
-      open: "25:00",
-      close: "14:00",
-    };
-
-    expect(() =>
-      validateStoreSchedule(schedule),
-    ).toThrow(
-      "El horario de monday no es válido.",
+    expect(() => validateStoreSchedule(schedule)).toThrow(
+      "El horario de monday contiene una hora no permitida.",
     );
   });
 
-  it("rechaza cierre anterior o igual a apertura", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+  it("elimina duplicados y ordena los bloques", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["17:00", "09:00", "09:00", "08:00"];
 
-    schedule.monday = {
-      enabled: true,
-      open: "14:00",
-      close: "10:00",
-    };
-
-    expect(() =>
-      validateStoreSchedule(schedule),
-    ).toThrow(
-      "La hora de cierre de monday debe ser posterior a la apertura.",
-    );
+    expect(validateStoreSchedule(schedule).monday.slots).toEqual([
+      "08:00",
+      "09:00",
+      "17:00",
+    ]);
   });
 });
 
 describe("normalizeStoredSchedule", () => {
   it("tolera tiendas antiguas sin horario", () => {
-    expect(
-      normalizeStoredSchedule(null),
-    ).toEqual(
-      createEmptyStoreSchedule(),
-    );
+    expect(normalizeStoredSchedule(null)).toEqual(createEmptyStoreSchedule());
+  });
+
+  it("convierte el formato antiguo open-close a bloques de una hora", () => {
+    const legacy = createEmptyStoreSchedule() as unknown as Record<
+      string,
+      { enabled: boolean; open: string; close: string }
+    >;
+
+    legacy.monday = {
+      enabled: true,
+      open: "09:00",
+      close: "12:00",
+    };
+
+    expect(normalizeStoredSchedule(legacy).monday.slots).toEqual([
+      "09:00",
+      "10:00",
+      "11:00",
+    ]);
   });
 });
 
 describe("isStoreOpenNow", () => {
-  it("calcula apertura automatica usando zona horaria", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+  it("calcula apertura automatica por bloque seleccionado", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["09:00", "10:00"];
 
-    schedule.monday = {
-      enabled: true,
-      open: "09:00",
-      close: "17:00",
-    };
-
-    // Monday 10:00 in Mexico City.
-    const now =
-      new Date(
-        "2026-08-24T16:00:00.000Z",
-      );
+    // Monday 10:25 in Mexico City.
+    const now = new Date("2026-08-24T16:25:00.000Z");
 
     expect(
       isStoreOpenNow(
@@ -121,9 +142,26 @@ describe("isStoreOpenNow", () => {
     ).toBe(true);
   });
 
+  it("cierra durante un hueco entre bloques del mismo dia", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["09:00", "13:00"];
+
+    // Monday 10:25 in Mexico City is not selected.
+    const now = new Date("2026-08-24T16:25:00.000Z");
+
+    expect(
+      isStoreOpenNow(
+        schedule,
+        "automatic",
+        null,
+        now,
+        "America/Mexico_City",
+      ),
+    ).toBe(false);
+  });
+
   it("el modo manual tiene prioridad sobre el horario", () => {
-    const schedule =
-      createEmptyStoreSchedule();
+    const schedule = createEmptyStoreSchedule();
 
     expect(
       isStoreOpenNow(
@@ -148,18 +186,9 @@ describe("isStoreOpenNow", () => {
 });
 
 describe("validateStoreOperationalSettings", () => {
-  it("acepta modo automatico", async () => {
-    const { validateStoreOperationalSettings } =
-      await import("./schedule");
-
-    const schedule =
-      createEmptyStoreSchedule();
-
-    schedule.monday = {
-      enabled: true,
-      open: "09:00",
-      close: "17:00",
-    };
+  it("acepta modo automatico", () => {
+    const schedule = createEmptyStoreSchedule();
+    schedule.monday.slots = ["09:00", "10:00"];
 
     expect(
       validateStoreOperationalSettings({
@@ -174,30 +203,20 @@ describe("validateStoreOperationalSettings", () => {
     });
   });
 
-  it("acepta pausa manual", async () => {
-    const { validateStoreOperationalSettings } =
-      await import("./schedule");
-
+  it("acepta pausa manual", () => {
     expect(
       validateStoreOperationalSettings({
-        schedule:
-          createEmptyStoreSchedule(),
-
+        schedule: createEmptyStoreSchedule(),
         operationalMode: "manual",
         manualOpen: false,
       }).manualOpen,
     ).toBe(false);
   });
 
-  it("exige booleano en modo manual", async () => {
-    const { validateStoreOperationalSettings } =
-      await import("./schedule");
-
+  it("exige booleano en modo manual", () => {
     expect(() =>
       validateStoreOperationalSettings({
-        schedule:
-          createEmptyStoreSchedule(),
-
+        schedule: createEmptyStoreSchedule(),
         operationalMode: "manual",
         manualOpen: null,
       }),
@@ -206,15 +225,10 @@ describe("validateStoreOperationalSettings", () => {
     );
   });
 
-  it("modo automatico elimina override manual", async () => {
-    const { validateStoreOperationalSettings } =
-      await import("./schedule");
-
+  it("modo automatico elimina override manual", () => {
     expect(
       validateStoreOperationalSettings({
-        schedule:
-          createEmptyStoreSchedule(),
-
+        schedule: createEmptyStoreSchedule(),
         operationalMode: "automatic",
         manualOpen: true,
       }).manualOpen,
