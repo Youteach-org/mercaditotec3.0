@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
   requireFirebaseUser,
@@ -14,6 +14,10 @@ import {
   getStoreForOwner,
   updateStoreByOwner,
 } from "@/lib/store/repository";
+
+import {
+  resetStoreForOwner,
+} from "@/lib/store/reset";
 
 export const runtime = "nodejs";
 
@@ -95,6 +99,23 @@ export async function PATCH(
           status: 400,
         },
       );
+    }
+
+    if (
+      body &&
+      typeof body === "object" &&
+      (body as Record<string, unknown>).action === "reset"
+    ) {
+      const result =
+        await resetStoreForOwner(
+          user.uid,
+          storeId,
+        );
+
+      return NextResponse.json({
+        ok: true,
+        ...result,
+      });
     }
 
     const input =
