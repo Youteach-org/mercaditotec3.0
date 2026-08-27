@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
 import { storeApiFetch, type StoreApiRecord } from "@/lib/store/client";
@@ -18,6 +18,7 @@ interface Props {
   store: StoreApiRecord;
   editable: boolean;
   onStoreChanged: (store: StoreApiRecord) => void;
+  onScheduleChanged?: (schedule: StoreSchedule) => void;
 }
 
 export default function StoreScheduleSection({
@@ -25,133 +26,111 @@ export default function StoreScheduleSection({
   store,
   editable,
   onStoreChanged,
+  onScheduleChanged,
 }: Props) {
   const [schedule, setSchedule] = useState<StoreSchedule>(store.schedule);
-  const [operationalMode, setOperationalMode] = useState<StoreOperationalMode>(
-    store.operationalMode,
-  );
+  const [operationalMode, setOperationalMode] = useState<StoreOperationalMode>(store.operationalMode);
   const [manualOpen, setManualOpen] = useState<boolean>(store.manualOpen ?? true);
   const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSchedule(store.schedule);
     setOperationalMode(store.operationalMode);
     setManualOpen(store.manualOpen ?? true);
-  }, [store.schedule, store.operationalMode, store.manualOpen]);
+    onScheduleChanged?.(store.schedule);
+  }, [store.schedule, store.operationalMode, store.manualOpen, onScheduleChanged]);
 
-  function toggleHour(day: StoreWeekDay, hour: StoreHour) {
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  async function persistSchedule(nextSchedule: StoreSchedule) {
     if (!editable) return;
-    setSchedule((current) => toggleScheduleHour(current, day, hour));
-    setMessage("");
-  }
-
-  async function resetStoreSetup() {
-    if (resetting) return;
-
-    const confirmed = window.confirm(
-      "Se borrará esta tienda de prueba y sus productos para comenzar el proceso desde cero. ¿Continuar?",
-    );
-
-    if (!confirmed) return;
-
-    setResetting(true);
+    setSaving(true);
     setError("");
-    setMessage("");
 
     try {
-      const response = await storeApiFetch(user, `/api/stores/${store.id}`, {
+      const response = await storeApiFetch(user, `/api/stores/${store.id}/schedule`, {
         method: "PATCH",
-        body: JSON.stringify({ action: "reset" }),
+        body: JSON.stringify({
+          schedule: nextSchedule,
+          operationalMode: store.status === "active" ? operationalMode : "automatic",
+          manualOpen: store.status === "active" && operationalMode === "manual" ? manualOpen : null,
+        }),
       });
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo reiniciar el proceso de tienda.");
-      }
-
-      window.location.assign("/mystore");
-    } catch (resetError) {
-      setError(
-        resetError instanceof Error
-          ? resetError.message
-          : "No se pudo reiniciar el proceso de tienda.",
-      );
-      setResetting(false);
+      if (!response.ok) throw new Error(data.error ?? "No se pudo guardar el horario.");
+      onStoreChanged(data.store as StoreApiRecord);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "No se pudo guardar el horario.");
+    } finally {
+      setSaving(false);
     }
   }
 
-  async function save() {
+  function toggleHour(day: StoreWeekDay, hour: StoreHour) {
     if (!editable) return;
 
+    const next = toggleScheduleHour(schedule, day, hour);
+    setSchedule(next);
+    onScheduleChanged?.(next);
+
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => void persistSchedule(next), 450);
+  }
+
+  async function setOperational(mode: StoreOperationalMode, open: boolean | null) {
+    if (!editable || store.status !== "active") return;
+    setOperationalMode(mode);
+    if (typeof open === "boolean") setManualOpen(open);
     setSaving(true);
     setError("");
-    setMessage("");
 
     try {
       const response = await storeApiFetch(user, `/api/stores/${store.id}/schedule`, {
         method: "PATCH",
         body: JSON.stringify({
           schedule,
-          operationalMode,
-          manualOpen: operationalMode === "manual" ? manualOpen : null,
+          operationalMode: mode,
+          manualOpen: mode === "manual" ? open : null,
         }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? "No se pudo guardar el horario.");
-      }
-
+      if (!response.ok) throw new Error(data.error ?? "No se pudo cambiar el estado de la tienda.");
       onStoreChanged(data.store as StoreApiRecord);
-      setMessage("Horario guardado.");
     } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : "No se pudo guardar el horario.",
-      );
+      setError(saveError instanceof Error ? saveError.message : "No se pudo cambiar el estado de la tienda.");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <section className="rounded-2xl bg-white p-4 shadow-md sm:p-6">
-      <h2 className="text-xl font-bold text-gray-900">Horario</h2>
-      <p className="mt-1 text-sm text-gray-600">
-        Toca o haz clic directamente sobre cada hora en la que la tienda puede atender.
-        Los cuadros azules son horas abiertas. Cada cuadro representa una hora completa.
-      </p>
-
-      {store.status === "pending_review" && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
-          <div className="font-semibold">Esta tienda de prueba está en revisión.</div>
-          <p className="mt-1 text-sm">
-            Para volver a probar el flujo desde el principio, reinicia el proceso. La tienda y sus productos se eliminarán y volverás a la pantalla de crear tienda.
+    <section className="rounded-2xl bg-white p-4 shadow-md sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Horario</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Toca o haz clic en las horas en las que puedes atender. Los cuadros azules quedan disponibles.
           </p>
-          <button
-            type="button"
-            onClick={() => void resetStoreSetup()}
-            disabled={resetting}
-            className="mt-3 rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-amber-400"
-          >
-            {resetting ? "Reiniciando..." : "Reiniciar proceso de tienda"}
-          </button>
         </div>
-      )}
+        {saving && <span className="text-xs font-semibold text-gray-400">Guardando…</span>}
+      </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium text-gray-600">
         <span className="inline-flex items-center gap-2">
           <span className="h-4 w-4 rounded border border-blue-700 bg-blue-600" />
-          Abierto
+          Disponible
         </span>
         <span className="inline-flex items-center gap-2">
           <span className="h-4 w-4 rounded border border-gray-200 bg-white" />
-          Cerrado
+          No disponible
         </span>
-        <span className="text-gray-500">Horario disponible: 7 a. m. a 9 p. m.</span>
+        <span className="text-gray-500">7 a. m. a 9 p. m.</span>
       </div>
 
       {error && (
@@ -160,83 +139,45 @@ export default function StoreScheduleSection({
         </div>
       )}
 
-      {message && (
-        <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-          {message}
-        </div>
-      )}
-
-      <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-2 sm:p-4">
-        <StoreScheduleGrid
-          schedule={schedule}
-          editable={editable}
-          onToggle={toggleHour}
-        />
+      <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-1.5 sm:p-2 md:p-3">
+        <StoreScheduleGrid schedule={schedule} editable={editable} onToggle={toggleHour} />
       </div>
 
-      <div className="mt-6 rounded-xl bg-gray-50 p-4">
-        <div className="font-semibold text-gray-900">Estado operativo</div>
-        <p className="mt-1 text-xs text-gray-500">
-          El horario azul se usa automáticamente, salvo que pauses o actives manualmente la tienda.
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled={!editable}
-            onClick={() => setOperationalMode("automatic")}
-            className={
-              operationalMode === "automatic"
-                ? "rounded-xl bg-slate-900 px-4 py-2.5 font-semibold text-white"
-                : "rounded-xl border border-gray-300 bg-white px-4 py-2.5 font-semibold text-gray-700"
-            }
-          >
-            Volver al horario automáticamente
-          </button>
-
-          <button
-            type="button"
-            disabled={!editable}
-            onClick={() => {
-              setOperationalMode("manual");
-              setManualOpen(false);
-            }}
-            className={
-              operationalMode === "manual" && !manualOpen
-                ? "rounded-xl bg-red-600 px-4 py-2.5 font-semibold text-white"
-                : "rounded-xl border border-red-200 bg-white px-4 py-2.5 font-semibold text-red-700"
-            }
-          >
-            Pausar tienda
-          </button>
-
-          <button
-            type="button"
-            disabled={!editable}
-            onClick={() => {
-              setOperationalMode("manual");
-              setManualOpen(true);
-            }}
-            className={
-              operationalMode === "manual" && manualOpen
-                ? "rounded-xl bg-green-600 px-4 py-2.5 font-semibold text-white"
-                : "rounded-xl border border-green-200 bg-white px-4 py-2.5 font-semibold text-green-700"
-            }
-          >
-            Activar manualmente
-          </button>
+      {store.status === "active" && (
+        <div className="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <div className="font-semibold text-gray-900">Cambios temporales</div>
+          <p className="mt-1 text-xs text-gray-500">
+            Úsalos únicamente cuando necesites apartarte temporalmente del horario normal.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!editable || saving}
+              onClick={() => void setOperational("manual", false)}
+              className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700"
+            >
+              Pausar temporalmente
+            </button>
+            <button
+              type="button"
+              disabled={!editable || saving}
+              onClick={() => void setOperational("manual", true)}
+              className="rounded-xl border border-green-200 bg-white px-4 py-2.5 text-sm font-semibold text-green-700"
+            >
+              Abrir temporalmente
+            </button>
+            {operationalMode === "manual" && (
+              <button
+                type="button"
+                disabled={!editable || saving}
+                onClick={() => void setOperational("automatic", null)}
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Volver al horario automáticamente
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-
-      {editable && (
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={saving}
-          className="mt-5 rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white disabled:bg-slate-500"
-        >
-          {saving ? "Guardando..." : "Guardar horario"}
-        </button>
       )}
     </section>
   );
