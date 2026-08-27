@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -158,13 +158,24 @@ export default function AdminStoresPage() {
     <main className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-6xl space-y-5">
         <section className="rounded-2xl bg-white p-6 shadow-md">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Administración de tiendas
-          </h1>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Administración de tiendas
+              </h1>
 
-          <p className="mt-1 text-gray-600">
-            Revisa solicitudes y controla qué tiendas pueden aparecer públicamente.
-          </p>
+              <p className="mt-1 text-gray-600">
+                Revisa solicitudes y controla qué tiendas pueden aparecer públicamente.
+              </p>
+            </div>
+
+            <Link
+              href="/admin/categories"
+              className="inline-flex w-fit rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              Administrar categorías
+            </Link>
+          </div>
         </section>
 
         <section className="overflow-x-auto rounded-2xl bg-white p-3 shadow-md">
