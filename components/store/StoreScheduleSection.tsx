@@ -32,6 +32,7 @@ export default function StoreScheduleSection({
   );
   const [manualOpen, setManualOpen] = useState<boolean>(store.manualOpen ?? true);
   const [saving, setSaving] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -45,6 +46,36 @@ export default function StoreScheduleSection({
     if (!editable) return;
     setSchedule((current) => toggleScheduleHour(current, day, hour));
     setMessage("");
+  }
+
+  async function withdrawFromReview() {
+    if (store.status !== "pending_review") return;
+
+    setWithdrawing(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await storeApiFetch(user, `/api/stores/${store.id}/withdraw`, {
+        method: "POST",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo retirar la tienda de revisión.");
+      }
+
+      onStoreChanged(data.store as StoreApiRecord);
+      setMessage("La tienda volvió a borrador. Ya puedes seguir editándola.");
+    } catch (withdrawError) {
+      setError(
+        withdrawError instanceof Error
+          ? withdrawError.message
+          : "No se pudo retirar la tienda de revisión.",
+      );
+    } finally {
+      setWithdrawing(false);
+    }
   }
 
   async function save() {
@@ -88,6 +119,23 @@ export default function StoreScheduleSection({
         Toca o haz clic directamente sobre cada hora en la que la tienda puede atender.
         Los cuadros azules son horas abiertas. Cada cuadro representa una hora completa.
       </p>
+
+      {store.status === "pending_review" && (
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+          <div className="font-semibold">La tienda está bloqueada porque está en revisión.</div>
+          <p className="mt-1 text-sm">
+            Si todavía quieres cambiar información, imágenes, horarios o productos, retírala de revisión y volverá a borrador.
+          </p>
+          <button
+            type="button"
+            onClick={() => void withdrawFromReview()}
+            disabled={withdrawing}
+            className="mt-3 rounded-xl bg-amber-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-800 disabled:bg-amber-400"
+          >
+            {withdrawing ? "Retirando..." : "Retirar de revisión y seguir editando"}
+          </button>
+        </div>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-medium text-gray-600">
         <span className="inline-flex items-center gap-2">
