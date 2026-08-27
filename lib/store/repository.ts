@@ -1,11 +1,10 @@
-﻿import {
+import {
   Timestamp,
   type DocumentData,
   type Transaction,
 } from "firebase-admin/firestore";
 
 import { getAdminDb } from "../firebaseAdmin";
-
 import {
   assertAdminTransition,
   canOwnerEditStore,
@@ -15,7 +14,6 @@ import {
   type StoreEditableInput,
   type StoreStatus,
 } from "./domain";
-
 import {
   createEmptyStoreSchedule,
   normalizeStoredSchedule,
@@ -31,7 +29,7 @@ export interface StoreRuleRecord {
   description: string;
   status: StoreStatus;
   nameNormalized?: string;
-  slug?: string;
+  slug?: string | null;
   reviewMessage?: string | null;
   suspensionReason?: string | null;
 }
@@ -39,33 +37,23 @@ export interface StoreRuleRecord {
 export interface StoreBaseRecord {
   id: string;
   ownerUid: string;
-
   name: string;
   nameNormalized: string;
-  slug: string;
+  slug: string | null;
   description: string;
-
   status: StoreStatus;
-
   reviewMessage: string | null;
   suspensionReason: string | null;
-
   logoUrl: string | null;
   coverUrl: string | null;
-
   schedule: StoreSchedule;
-
-  operationalMode:
-    StoreOperationalMode;
-
+  operationalMode: StoreOperationalMode;
   manualOpen: boolean | null;
 }
 
-export interface StoreRecord
-  extends StoreBaseRecord {
+export interface StoreRecord extends StoreBaseRecord {
   createdAt: Timestamp;
   updatedAt: Timestamp;
-
   submittedAt: Timestamp | null;
   approvedAt: Timestamp | null;
   suspendedAt: Timestamp | null;
@@ -80,12 +68,8 @@ export class StoreRepositoryError extends Error {
   }
 }
 
-export function reservationKeyForName(
-  normalizedName: string,
-): string {
-  return encodeURIComponent(
-    normalizeStoreName(normalizedName),
-  );
+export function reservationKeyForName(normalizedName: string): string {
+  return encodeURIComponent(normalizeStoreName(normalizedName));
 }
 
 export function buildCreateStoreMutation(
@@ -93,14 +77,8 @@ export function buildCreateStoreMutation(
   input: StoreEditableInput,
   storeId: string,
 ) {
-  const validated =
-    validateStoreDraftInput(input);
-
-  const nameNormalized =
-    normalizeStoreName(validated.name);
-
-  const slug =
-    makeStoreSlug(validated.name);
+  const validated = validateStoreDraftInput(input);
+  const nameNormalized = normalizeStoreName(validated.name);
 
   return {
     store: {
@@ -108,17 +86,12 @@ export function buildCreateStoreMutation(
       ownerUid,
       name: validated.name,
       nameNormalized,
-      slug,
+      slug: null,
       description: validated.description,
       status: "draft" as const,
       reviewMessage: null,
       suspensionReason: null,
     },
-    nameReservationKey:
-      reservationKeyForName(
-        nameNormalized,
-      ),
-    slugBase: slug,
   };
 }
 
@@ -128,58 +101,30 @@ export function buildOwnerStoreUpdate(
   input: StoreEditableInput,
 ) {
   if (current.ownerUid !== ownerUid) {
-    throw new StoreRepositoryError(
-      403,
-      "No tienes permiso para editar esta tienda.",
-    );
+    throw new StoreRepositoryError(403, "No tienes permiso para editar esta tienda.");
   }
-
   if (!canOwnerEditStore(current.status)) {
-    throw new StoreRepositoryError(
-      409,
-      "La tienda está en revisión y no puede editarse.",
-    );
+    throw new StoreRepositoryError(409, "La tienda está en revisión y no puede editarse.");
   }
 
-  const validated =
-    validateStoreDraftInput(input);
-
+  const validated = validateStoreDraftInput(input);
   return {
     name: validated.name,
-    nameNormalized:
-      normalizeStoreName(validated.name),
-    slugBase:
-      makeStoreSlug(validated.name),
-    description:
-      validated.description,
+    nameNormalized: normalizeStoreName(validated.name),
+    description: validated.description,
   };
 }
 
-export function buildSubmitMutation(
-  ownerUid: string,
-  current: StoreRuleRecord,
-) {
+export function buildSubmitMutation(ownerUid: string, current: StoreRuleRecord) {
   if (current.ownerUid !== ownerUid) {
-    throw new StoreRepositoryError(
-      403,
-      "No tienes permiso para enviar esta tienda.",
-    );
+    throw new StoreRepositoryError(403, "No tienes permiso para enviar esta tienda.");
   }
-
-  if (
-    current.status !== "draft" &&
-    current.status !==
-      "changes_required"
-  ) {
-    throw new StoreRepositoryError(
-      409,
-      "Esta tienda no puede enviarse a revisión en su estado actual.",
-    );
+  if (current.status !== "draft" && current.status !== "changes_required") {
+    throw new StoreRepositoryError(409, "Esta tienda no puede enviarse a revisión en su estado actual.");
   }
 
   return {
-    status:
-      "pending_review" as const,
+    status: "pending_review" as const,
     reviewMessage: null,
   };
 }
@@ -190,163 +135,55 @@ export function buildAdminStatusMutation(
   message?: string,
 ) {
   try {
-    assertAdminTransition(
-      current.status,
-      target,
-    );
+    assertAdminTransition(current.status, target);
   } catch {
-    throw new StoreRepositoryError(
-      409,
-      "Cambio de estado no permitido.",
-    );
+    throw new StoreRepositoryError(409, "Cambio de estado no permitido.");
   }
 
-  if (
-    target === "changes_required"
-  ) {
-    const cleanMessage =
-      message?.trim() ?? "";
-
+  if (target === "changes_required") {
+    const cleanMessage = message?.trim() ?? "";
     if (!cleanMessage) {
-      throw new StoreRepositoryError(
-        400,
-        "Debes indicar qué cambios necesita la tienda.",
-      );
+      throw new StoreRepositoryError(400, "Debes indicar qué cambios necesita la tienda.");
     }
-
-    return {
-      status:
-        "changes_required" as const,
-      reviewMessage: cleanMessage,
-    };
+    return { status: "changes_required" as const, reviewMessage: cleanMessage };
   }
 
   if (target === "suspended") {
-    const cleanMessage =
-      message?.trim() ?? "";
-
+    const cleanMessage = message?.trim() ?? "";
     if (!cleanMessage) {
-      throw new StoreRepositoryError(
-        400,
-        "Debes indicar el motivo de la suspensión.",
-      );
+      throw new StoreRepositoryError(400, "Debes indicar el motivo de la suspensión.");
     }
-
-    return {
-      status: "suspended" as const,
-      suspensionReason: cleanMessage,
-    };
+    return { status: "suspended" as const, suspensionReason: cleanMessage };
   }
 
-  if (
-    current.status === "suspended" &&
-    target === "active"
-  ) {
-    return {
-      status: "active" as const,
-      suspensionReason: null,
-    };
+  if (current.status === "suspended" && target === "active") {
+    return { status: "active" as const, suspensionReason: null };
   }
 
-  return {
-    status: target,
-    reviewMessage: null,
-  };
+  return { status: target, reviewMessage: null };
 }
 
-function toStoreRecord(
-  id: string,
-  data: DocumentData,
-): StoreRecord {
+function toStoreRecord(id: string, data: DocumentData): StoreRecord {
   return {
     id,
-
-    ownerUid:
-      String(data.ownerUid ?? ""),
-
-    name:
-      String(data.name ?? ""),
-
-    nameNormalized:
-      String(
-        data.nameNormalized ?? "",
-      ),
-
-    slug:
-      String(data.slug ?? ""),
-
-    description:
-      String(
-        data.description ?? "",
-      ),
-
-    status:
-      data.status as StoreStatus,
-
-    reviewMessage:
-      typeof data.reviewMessage ===
-      "string"
-        ? data.reviewMessage
-        : null,
-
-    suspensionReason:
-      typeof data.suspensionReason ===
-      "string"
-        ? data.suspensionReason
-        : null,
-
-    logoUrl:
-      typeof data.logoUrl ===
-      "string"
-        ? data.logoUrl
-        : null,
-
-    coverUrl:
-      typeof data.coverUrl ===
-      "string"
-        ? data.coverUrl
-        : null,
-
-    schedule:
-      normalizeStoredSchedule(
-        data.schedule,
-      ),
-
-    operationalMode:
-      data.operationalMode ===
-      "manual"
-        ? "manual"
-        : "automatic",
-
-    manualOpen:
-      typeof data.manualOpen ===
-      "boolean"
-        ? data.manualOpen
-        : null,
-
-    createdAt:
-      data.createdAt as Timestamp,
-
-    updatedAt:
-      data.updatedAt as Timestamp,
-
-    submittedAt:
-      data.submittedAt instanceof
-      Timestamp
-        ? data.submittedAt
-        : null,
-
-    approvedAt:
-      data.approvedAt instanceof
-      Timestamp
-        ? data.approvedAt
-        : null,
-
-    suspendedAt:
-      data.suspendedAt instanceof
-      Timestamp
-        ? data.suspendedAt
-        : null,
+    ownerUid: String(data.ownerUid ?? ""),
+    name: String(data.name ?? ""),
+    nameNormalized: String(data.nameNormalized ?? ""),
+    slug: typeof data.slug === "string" && data.slug.trim() ? data.slug : null,
+    description: String(data.description ?? ""),
+    status: data.status as StoreStatus,
+    reviewMessage: typeof data.reviewMessage === "string" ? data.reviewMessage : null,
+    suspensionReason: typeof data.suspensionReason === "string" ? data.suspensionReason : null,
+    logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : null,
+    coverUrl: typeof data.coverUrl === "string" ? data.coverUrl : null,
+    schedule: normalizeStoredSchedule(data.schedule),
+    operationalMode: data.operationalMode === "manual" ? "manual" : "automatic",
+    manualOpen: typeof data.manualOpen === "boolean" ? data.manualOpen : null,
+    createdAt: data.createdAt as Timestamp,
+    updatedAt: data.updatedAt as Timestamp,
+    submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt : null,
+    approvedAt: data.approvedAt instanceof Timestamp ? data.approvedAt : null,
+    suspendedAt: data.suspendedAt instanceof Timestamp ? data.suspendedAt : null,
   };
 }
 
@@ -357,49 +194,53 @@ async function findAvailableSlug(
 ): Promise<string> {
   const db = getAdminDb();
 
-  for (
-    let attempt = 1;
-    attempt <= 100;
-    attempt += 1
-  ) {
-    const candidate =
-      attempt === 1
-        ? baseSlug
-        : `${baseSlug}-${attempt}`;
+  for (let attempt = 1; attempt <= 100; attempt += 1) {
+    const candidate = attempt === 1 ? baseSlug : `${baseSlug}-${attempt}`;
+    const reference = db.collection("store_slug_reservations").doc(candidate);
+    const snapshot = await transaction.get(reference);
 
-    const reference =
-      db.collection(
-        "store_slug_reservations",
-      ).doc(candidate);
+    if (!snapshot.exists) return candidate;
 
-    const snapshot =
-      await transaction.get(
-        reference,
-      );
-
-    if (!snapshot.exists) {
-      return candidate;
-    }
-
-    const existingStoreId =
-      String(
-        snapshot.data()?.storeId ??
-          "",
-      );
-
-    if (
-      currentStoreId &&
-      existingStoreId ===
-        currentStoreId
-    ) {
-      return candidate;
-    }
+    const existingStoreId = String(snapshot.data()?.storeId ?? "");
+    if (currentStoreId && existingStoreId === currentStoreId) return candidate;
   }
 
-  throw new StoreRepositoryError(
-    409,
-    "No se pudo generar una URL única para la tienda.",
-  );
+  throw new StoreRepositoryError(409, "No se pudo generar una URL única para la tienda.");
+}
+
+function makeNewStoreRecord(
+  ownerUid: string,
+  id: string,
+  input?: StoreEditableInput,
+): StoreRecord {
+  const now = Timestamp.now();
+  const base = input
+    ? buildCreateStoreMutation(ownerUid, input, id).store
+    : {
+        id,
+        ownerUid,
+        name: "",
+        nameNormalized: "",
+        slug: null,
+        description: "",
+        status: "draft" as const,
+        reviewMessage: null,
+        suspensionReason: null,
+      };
+
+  return {
+    ...base,
+    logoUrl: null,
+    coverUrl: null,
+    schedule: createEmptyStoreSchedule(),
+    operationalMode: "automatic",
+    manualOpen: null,
+    createdAt: now,
+    updatedAt: now,
+    submittedAt: null,
+    approvedAt: null,
+    suspendedAt: null,
+  };
 }
 
 export async function createStoreDraft(
@@ -407,179 +248,42 @@ export async function createStoreDraft(
   input: StoreEditableInput,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
-
-  const storeReference =
-    db.collection("stores").doc();
-
-  const mutation =
-    buildCreateStoreMutation(
-      ownerUid,
-      input,
-      storeReference.id,
-    );
-
-  let created:
-    | StoreRecord
-    | null = null;
-
-  await db.runTransaction(
-    async (transaction) => {
-      const nameReference =
-        db.collection(
-          "store_name_reservations",
-        ).doc(
-          mutation
-            .nameReservationKey,
-        );
-
-      const nameSnapshot =
-        await transaction.get(
-          nameReference,
-        );
-
-      if (nameSnapshot.exists) {
-        throw new StoreRepositoryError(
-          409,
-          "Ese nombre de tienda ya está en uso.",
-        );
-      }
-
-      const slug =
-        await findAvailableSlug(
-          transaction,
-          mutation.slugBase,
-        );
-
-      const slugReference =
-        db.collection(
-          "store_slug_reservations",
-        ).doc(slug);
-
-      const now = Timestamp.now();
-
-      const store: StoreRecord = {
-        ...mutation.store,
-        slug,
-
-        logoUrl: null,
-        coverUrl: null,
-
-        schedule:
-          createEmptyStoreSchedule(),
-
-        operationalMode:
-          "automatic",
-
-        manualOpen: null,
-
-        createdAt: now,
-        updatedAt: now,
-
-        submittedAt: null,
-        approvedAt: null,
-        suspendedAt: null,
-      };
-
-      transaction.set(
-        storeReference,
-        store,
-      );
-
-      transaction.set(
-        nameReference,
-        {
-          storeId:
-            storeReference.id,
-          ownerUid,
-          name: store.name,
-          createdAt: now,
-        },
-      );
-
-      transaction.set(
-        slugReference,
-        {
-          storeId:
-            storeReference.id,
-          ownerUid,
-          slug,
-          createdAt: now,
-        },
-      );
-
-      created = store;
-    },
-  );
-
-  if (!created) {
-    throw new StoreRepositoryError(
-      500,
-      "No se pudo crear la tienda.",
-    );
-  }
-
-  return created;
+  const reference = db.collection("stores").doc();
+  const store = makeNewStoreRecord(ownerUid, reference.id, input);
+  await reference.set(store);
+  return store;
 }
 
-export async function listStoresForOwner(
-  ownerUid: string,
-): Promise<StoreRecord[]> {
-  const snapshot =
-    await getAdminDb()
-      .collection("stores")
-      .where(
-        "ownerUid",
-        "==",
-        ownerUid,
-      )
-      .get();
+export async function createEmptyStoreDraft(ownerUid: string): Promise<StoreRecord> {
+  const db = getAdminDb();
+  const reference = db.collection("stores").doc();
+  const store = makeNewStoreRecord(ownerUid, reference.id);
+  await reference.set(store);
+  return store;
+}
+
+export async function listStoresForOwner(ownerUid: string): Promise<StoreRecord[]> {
+  const snapshot = await getAdminDb()
+    .collection("stores")
+    .where("ownerUid", "==", ownerUid)
+    .get();
 
   return snapshot.docs
-    .map((document) =>
-      toStoreRecord(
-        document.id,
-        document.data(),
-      ),
-    )
-    .sort(
-      (a, b) =>
-        b.updatedAt.toMillis() -
-        a.updatedAt.toMillis(),
-    );
+    .map((document) => toStoreRecord(document.id, document.data()))
+    .sort((a, b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
 }
 
 export async function getStoreForOwner(
   ownerUid: string,
   storeId: string,
 ): Promise<StoreRecord> {
-  const snapshot =
-    await getAdminDb()
-      .collection("stores")
-      .doc(storeId)
-      .get();
+  const snapshot = await getAdminDb().collection("stores").doc(storeId).get();
+  if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
 
-  if (!snapshot.exists) {
-    throw new StoreRepositoryError(
-      404,
-      "Tienda no encontrada.",
-    );
+  const store = toStoreRecord(snapshot.id, snapshot.data()!);
+  if (store.ownerUid !== ownerUid) {
+    throw new StoreRepositoryError(404, "Tienda no encontrada.");
   }
-
-  const store =
-    toStoreRecord(
-      snapshot.id,
-      snapshot.data()!,
-    );
-
-  if (
-    store.ownerUid !== ownerUid
-  ) {
-    throw new StoreRepositoryError(
-      404,
-      "Tienda no encontrada.",
-    );
-  }
-
   return store;
 }
 
@@ -589,191 +293,28 @@ export async function updateStoreByOwner(
   input: StoreEditableInput,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
+  const reference = db.collection("stores").doc(storeId);
+  let result: StoreRecord | null = null;
 
-  const storeReference =
-    db.collection("stores").doc(
-      storeId,
-    );
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reference);
+    if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
 
-  let result:
-    | StoreRecord
-    | null = null;
+    const current = toStoreRecord(snapshot.id, snapshot.data()!);
+    const update = buildOwnerStoreUpdate(ownerUid, current, input);
+    const now = Timestamp.now();
 
-  await db.runTransaction(
-    async (transaction) => {
-      const snapshot =
-        await transaction.get(
-          storeReference,
-        );
+    transaction.update(reference, {
+      name: update.name,
+      nameNormalized: update.nameNormalized,
+      description: update.description,
+      updatedAt: now,
+    });
 
-      if (!snapshot.exists) {
-        throw new StoreRepositoryError(
-          404,
-          "Tienda no encontrada.",
-        );
-      }
+    result = { ...current, ...update, updatedAt: now };
+  });
 
-      const current =
-        toStoreRecord(
-          snapshot.id,
-          snapshot.data()!,
-        );
-
-      const update =
-        buildOwnerStoreUpdate(
-          ownerUid,
-          current,
-          input,
-        );
-
-      let nextSlug =
-        current.slug;
-
-      const nameChanged =
-        update.nameNormalized !==
-        current.nameNormalized;
-
-      let nextNameReference = null;
-      let nextSlugReference = null;
-
-      if (nameChanged) {
-        nextNameReference =
-          db.collection(
-            "store_name_reservations",
-          ).doc(
-            reservationKeyForName(
-              update.nameNormalized,
-            ),
-          );
-
-        const nextNameSnapshot =
-          await transaction.get(
-            nextNameReference,
-          );
-
-        if (
-          nextNameSnapshot.exists &&
-          String(
-            nextNameSnapshot.data()
-              ?.storeId ?? "",
-          ) !== storeId
-        ) {
-          throw new StoreRepositoryError(
-            409,
-            "Ese nombre de tienda ya está en uso.",
-          );
-        }
-
-        nextSlug =
-          await findAvailableSlug(
-            transaction,
-            update.slugBase,
-            storeId,
-          );
-
-        nextSlugReference =
-          db.collection(
-            "store_slug_reservations",
-          ).doc(nextSlug);
-      }
-
-      const now = Timestamp.now();
-
-      const nextStore: StoreRecord = {
-        ...current,
-
-        name: update.name,
-        nameNormalized:
-          update.nameNormalized,
-        slug: nextSlug,
-        description:
-          update.description,
-
-        updatedAt: now,
-      };
-
-      transaction.update(
-        storeReference,
-        {
-          name: nextStore.name,
-          nameNormalized:
-            nextStore.nameNormalized,
-          slug: nextStore.slug,
-          description:
-            nextStore.description,
-          updatedAt: now,
-        },
-      );
-
-      if (
-        nameChanged &&
-        nextNameReference &&
-        nextSlugReference
-      ) {
-        transaction.set(
-          nextNameReference,
-          {
-            storeId,
-            ownerUid,
-            name: nextStore.name,
-            createdAt: now,
-          },
-        );
-
-        transaction.set(
-          nextSlugReference,
-          {
-            storeId,
-            ownerUid,
-            slug: nextStore.slug,
-            createdAt: now,
-          },
-        );
-
-        const oldNameReference =
-          db.collection(
-            "store_name_reservations",
-          ).doc(
-            reservationKeyForName(
-              current.nameNormalized,
-            ),
-          );
-
-        const oldSlugReference =
-          db.collection(
-            "store_slug_reservations",
-          ).doc(current.slug);
-
-        if (
-          oldNameReference.path !==
-          nextNameReference.path
-        ) {
-          transaction.delete(
-            oldNameReference,
-          );
-        }
-
-        if (
-          oldSlugReference.path !==
-          nextSlugReference.path
-        ) {
-          transaction.delete(
-            oldSlugReference,
-          );
-        }
-      }
-
-      result = nextStore;
-    },
-  );
-
-  if (!result) {
-    throw new StoreRepositoryError(
-      500,
-      "No se pudo actualizar la tienda.",
-    );
-  }
-
+  if (!result) throw new StoreRepositoryError(500, "No se pudo actualizar la tienda.");
   return result;
 }
 
@@ -782,69 +323,52 @@ export async function submitStore(
   storeId: string,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
+  const reference = db.collection("stores").doc(storeId);
+  let result: StoreRecord | null = null;
 
-  const reference =
-    db.collection("stores").doc(
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reference);
+    if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
+
+    const current = toStoreRecord(snapshot.id, snapshot.data()!);
+    const mutation = buildSubmitMutation(ownerUid, current);
+    const normalizedName = normalizeStoreName(current.name);
+    const nameReference = db.collection("store_name_reservations").doc(
+      reservationKeyForName(normalizedName),
+    );
+    const nameSnapshot = await transaction.get(nameReference);
+
+    if (
+      nameSnapshot.exists &&
+      String(nameSnapshot.data()?.storeId ?? "") !== storeId
+    ) {
+      throw new StoreRepositoryError(409, "Ese nombre de tienda ya está en uso.");
+    }
+
+    const now = Timestamp.now();
+    transaction.set(nameReference, {
       storeId,
-    );
+      ownerUid,
+      name: current.name,
+      createdAt: now,
+    });
+    transaction.update(reference, {
+      ...mutation,
+      slug: null,
+      submittedAt: now,
+      updatedAt: now,
+    });
 
-  let result:
-    | StoreRecord
-    | null = null;
+    result = {
+      ...current,
+      ...mutation,
+      slug: null,
+      submittedAt: now,
+      updatedAt: now,
+    };
+  });
 
-  await db.runTransaction(
-    async (transaction) => {
-      const snapshot =
-        await transaction.get(
-          reference,
-        );
-
-      if (!snapshot.exists) {
-        throw new StoreRepositoryError(
-          404,
-          "Tienda no encontrada.",
-        );
-      }
-
-      const current =
-        toStoreRecord(
-          snapshot.id,
-          snapshot.data()!,
-        );
-
-      const mutation =
-        buildSubmitMutation(
-          ownerUid,
-          current,
-        );
-
-      const now = Timestamp.now();
-
-      transaction.update(
-        reference,
-        {
-          ...mutation,
-          submittedAt: now,
-          updatedAt: now,
-        },
-      );
-
-      result = {
-        ...current,
-        ...mutation,
-        submittedAt: now,
-        updatedAt: now,
-      };
-    },
-  );
-
-  if (!result) {
-    throw new StoreRepositoryError(
-      500,
-      "No se pudo enviar la tienda a revisión.",
-    );
-  }
-
+  if (!result) throw new StoreRepositoryError(500, "No se pudo enviar la tienda a revisión.");
   return result;
 }
 
@@ -854,196 +378,115 @@ export async function adminSetStoreStatus(
   message?: string,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
+  const reference = db.collection("stores").doc(storeId);
+  let result: StoreRecord | null = null;
 
-  const reference =
-    db.collection("stores").doc(
-      storeId,
-    );
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(reference);
+    if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
 
-  let result:
-    | StoreRecord
-    | null = null;
+    const current = toStoreRecord(snapshot.id, snapshot.data()!);
+    const mutation = buildAdminStatusMutation(current, target, message);
+    const now = Timestamp.now();
 
-  await db.runTransaction(
-    async (transaction) => {
-      const snapshot =
-        await transaction.get(
-          reference,
-        );
+    let nextSlug = current.slug;
+    let slugReference: ReturnType<ReturnType<typeof getAdminDb>["collection"]>["doc"] extends (...args: never[]) => infer R ? R : never;
+    let nameReference: ReturnType<ReturnType<typeof getAdminDb>["collection"]>["doc"] extends (...args: never[]) => infer R ? R : never;
 
-      if (!snapshot.exists) {
-        throw new StoreRepositoryError(
-          404,
-          "Tienda no encontrada.",
-        );
-      }
+    if (current.status === "pending_review" && target === "active") {
+      const slugBase = makeStoreSlug(current.name);
+      if (!slugBase) throw new StoreRepositoryError(409, "El nombre no permite generar una URL pública.");
 
-      const current =
-        toStoreRecord(
-          snapshot.id,
-          snapshot.data()!,
-        );
-
-      const mutation =
-        buildAdminStatusMutation(
-          current,
-          target,
-          message,
-        );
-
-      const now = Timestamp.now();
-
-      const extra: {
-        approvedAt?: Timestamp;
-        suspendedAt?: Timestamp;
-      } = {};
-
-      if (
-        current.status ===
-          "pending_review" &&
-        target === "active"
-      ) {
-        extra.approvedAt = now;
-      }
-
-      if (
-        current.status ===
-          "active" &&
-        target === "suspended"
-      ) {
-        extra.suspendedAt = now;
-      }
-
-      transaction.update(
-        reference,
-        {
-          ...mutation,
-          ...extra,
-          updatedAt: now,
-        },
+      nextSlug = await findAvailableSlug(transaction, slugBase, storeId);
+      slugReference = db.collection("store_slug_reservations").doc(nextSlug);
+      nameReference = db.collection("store_name_reservations").doc(
+        reservationKeyForName(current.nameNormalized),
       );
+      await transaction.get(nameReference);
+    }
 
-      result = {
-        ...current,
-        ...mutation,
-        ...extra,
-        updatedAt: now,
-      };
-    },
-  );
+    if (current.status === "pending_review" && target === "changes_required" && current.nameNormalized) {
+      nameReference = db.collection("store_name_reservations").doc(
+        reservationKeyForName(current.nameNormalized),
+      );
+      await transaction.get(nameReference);
+    }
 
-  if (!result) {
-    throw new StoreRepositoryError(
-      500,
-      "No se pudo cambiar el estado de la tienda.",
-    );
-  }
+    const extra: {
+      approvedAt?: Timestamp;
+      suspendedAt?: Timestamp;
+      slug?: string | null;
+    } = {};
 
+    if (current.status === "pending_review" && target === "active") {
+      extra.approvedAt = now;
+      extra.slug = nextSlug;
+      transaction.set(slugReference!, {
+        storeId,
+        ownerUid: current.ownerUid,
+        slug: nextSlug,
+        createdAt: now,
+      });
+      transaction.set(nameReference!, {
+        storeId,
+        ownerUid: current.ownerUid,
+        name: current.name,
+        createdAt: now,
+      });
+    }
+
+    if (current.status === "pending_review" && target === "changes_required" && nameReference) {
+      transaction.delete(nameReference);
+    }
+
+    if (current.status === "active" && target === "suspended") {
+      extra.suspendedAt = now;
+    }
+
+    transaction.update(reference, { ...mutation, ...extra, updatedAt: now });
+    result = { ...current, ...mutation, ...extra, updatedAt: now };
+  });
+
+  if (!result) throw new StoreRepositoryError(500, "No se pudo cambiar el estado de la tienda.");
   return result;
 }
 
-export async function listStoresForAdmin(
-  status?: StoreStatus | null,
-): Promise<StoreRecord[]> {
-  const db = getAdminDb();
-  const collection = db.collection("stores");
-
+export async function listStoresForAdmin(status?: StoreStatus | null): Promise<StoreRecord[]> {
+  const collection = getAdminDb().collection("stores");
   const snapshot = status
-    ? await collection
-        .where("status", "==", status)
-        .limit(100)
-        .get()
-    : await collection
-        .limit(100)
-        .get();
+    ? await collection.where("status", "==", status).limit(100).get()
+    : await collection.limit(100).get();
 
   return snapshot.docs
-    .map((document) =>
-      toStoreRecord(
-        document.id,
-        document.data(),
-      ),
-    )
-    .sort(
-      (a, b) =>
-        b.updatedAt.toMillis() -
-        a.updatedAt.toMillis(),
-    );
+    .map((document) => toStoreRecord(document.id, document.data()))
+    .sort((a, b) => b.updatedAt.toMillis() - a.updatedAt.toMillis());
 }
 
-export async function getStoreForAdmin(
-  storeId: string,
-): Promise<StoreRecord> {
-  const snapshot =
-    await getAdminDb()
-      .collection("stores")
-      .doc(storeId)
-      .get();
-
-  if (!snapshot.exists) {
-    throw new StoreRepositoryError(
-      404,
-      "Tienda no encontrada.",
-    );
-  }
-
-  return toStoreRecord(
-    snapshot.id,
-    snapshot.data()!,
-  );
+export async function getStoreForAdmin(storeId: string): Promise<StoreRecord> {
+  const snapshot = await getAdminDb().collection("stores").doc(storeId).get();
+  if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
+  return toStoreRecord(snapshot.id, snapshot.data()!);
 }
-
 
 export async function updateStoreOperationalSettingsByOwner(
   ownerUid: string,
   storeId: string,
   input: unknown,
 ): Promise<StoreRecord> {
-  const store =
-    await getStoreForOwner(
-      ownerUid,
-      storeId,
-    );
-
-  if (
-    !canOwnerEditStore(
-      store.status,
-    )
-  ) {
-    throw new StoreRepositoryError(
-      409,
-      "La tienda está en revisión y no puede editarse.",
-    );
+  const store = await getStoreForOwner(ownerUid, storeId);
+  if (!canOwnerEditStore(store.status)) {
+    throw new StoreRepositoryError(409, "La tienda está en revisión y no puede editarse.");
   }
 
-  const settings =
-    validateStoreOperationalSettings(
-      input,
-    );
+  const settings = validateStoreOperationalSettings(input);
+  const now = Timestamp.now();
 
-  const now =
-    Timestamp.now();
-
-  await getAdminDb()
-    .collection("stores")
-    .doc(storeId)
-    .update({
-      schedule:
-        settings.schedule,
-
-      operationalMode:
-        settings.operationalMode,
-
-      manualOpen:
-        settings.manualOpen,
-
-      updatedAt: now,
-    });
-
-  return {
-    ...store,
-    ...settings,
+  await getAdminDb().collection("stores").doc(storeId).update({
+    schedule: settings.schedule,
+    operationalMode: settings.operationalMode,
+    manualOpen: settings.manualOpen,
     updatedAt: now,
-  };
-}
+  });
 
+  return { ...store, ...settings, updatedAt: now };
+}
