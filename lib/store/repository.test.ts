@@ -1,10 +1,11 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   buildAdminStatusMutation,
   buildCreateStoreMutation,
   buildOwnerStoreUpdate,
   buildSubmitMutation,
+  buildWithdrawReviewMutation,
   reservationKeyForName,
 } from "./repository";
 
@@ -97,6 +98,52 @@ describe("store repository rules", () => {
         },
       ),
     ).toThrow("No tienes permiso para enviar esta tienda.");
+  });
+
+  it("permite al dueño retirar su tienda de revisión y volver a draft", () => {
+    expect(
+      buildWithdrawReviewMutation(
+        "uid-owner",
+        {
+          id: "store-1",
+          ownerUid: "uid-owner",
+          name: "Dulces Fer",
+          description: "",
+          status: "pending_review",
+        },
+      ),
+    ).toEqual({
+      status: "draft",
+      reviewMessage: null,
+    });
+  });
+
+  it("impide retirar de revisión una tienda ajena o que no esté pendiente", () => {
+    expect(() =>
+      buildWithdrawReviewMutation(
+        "uid-attacker",
+        {
+          id: "store-1",
+          ownerUid: "uid-owner",
+          name: "Dulces Fer",
+          description: "",
+          status: "pending_review",
+        },
+      ),
+    ).toThrow("No tienes permiso para retirar esta tienda de revisión.");
+
+    expect(() =>
+      buildWithdrawReviewMutation(
+        "uid-owner",
+        {
+          id: "store-1",
+          ownerUid: "uid-owner",
+          name: "Dulces Fer",
+          description: "",
+          status: "active",
+        },
+      ),
+    ).toThrow("Esta tienda no está pendiente de revisión.");
   });
 
   it("permite aprobación administrativa solo desde pending_review", () => {
