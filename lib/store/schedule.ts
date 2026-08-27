@@ -140,21 +140,24 @@ function legacyDayToSlots(input: unknown): StoreHour[] | null {
     return null;
   }
 
-  const openIndex = STORE_HOURS.indexOf(data.open as StoreHour);
+  const open = data.open;
+  const close = data.close;
+  const openIndex = STORE_HOURS.indexOf(open as StoreHour);
 
   if (openIndex < 0) {
     return null;
   }
 
-  const closeHour = Number(data.close.slice(0, 2));
+  const openHour = Number(open.slice(0, 2));
+  const closeHour = Number(close.slice(0, 2));
 
-  if (!Number.isInteger(closeHour)) {
+  if (!Number.isInteger(openHour) || !Number.isInteger(closeHour)) {
     return null;
   }
 
   return STORE_HOURS.filter((hour) => {
     const hourNumber = Number(hour.slice(0, 2));
-    return hourNumber >= Number(data.open.slice(0, 2)) && hourNumber < closeHour;
+    return hourNumber >= openHour && hourNumber < closeHour;
   });
 }
 
