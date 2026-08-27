@@ -1,37 +1,26 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 import {
   listActiveCategories,
   serializeCategory,
 } from "@/lib/store/categoryRepository";
+import { ensureDefaultStoreCategories } from "@/lib/store/defaultCategories";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const categories =
-      await listActiveCategories();
+    await ensureDefaultStoreCategories();
+    const categories = await listActiveCategories();
 
     return NextResponse.json({
-      categories:
-        categories.map(
-          serializeCategory,
-        ),
+      categories: categories.map(serializeCategory),
     });
   } catch (error) {
-    console.error(
-      "GET_CATEGORIES_ERROR",
-      error,
-    );
-
+    console.error("GET_CATEGORIES_ERROR", error);
     return NextResponse.json(
-      {
-        error:
-          "No se pudieron cargar las categorías.",
-      },
-      {
-        status: 500,
-      },
+      { error: "No se pudieron cargar las categorías." },
+      { status: 500 },
     );
   }
 }
