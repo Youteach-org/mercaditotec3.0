@@ -1,16 +1,9 @@
-﻿import {
+import {
   CategoryRepositoryError,
   requireActiveCategory,
 } from "./categoryRepository";
-
-import {
-  validateStoreCompleteness,
-} from "./completeness";
-
-import {
-  listProductsForOwner,
-} from "./productRepository";
-
+import { validateStoreCompleteness } from "./completeness";
+import { listProductsForOwner } from "./productRepository";
 import {
   getStoreForOwner,
   StoreRepositoryError,
@@ -22,74 +15,36 @@ export async function submitCompleteStore(
   ownerUid: string,
   storeId: string,
 ): Promise<StoreRecord> {
-  const store =
-    await getStoreForOwner(
-      ownerUid,
-      storeId,
-    );
-
-  const products =
-    await listProductsForOwner(
-      ownerUid,
-      storeId,
-    );
+  const store = await getStoreForOwner(ownerUid, storeId);
+  const products = await listProductsForOwner(ownerUid, storeId);
 
   try {
-    validateStoreCompleteness(
-      store,
-      products,
-    );
+    validateStoreCompleteness(store, products);
   } catch (error) {
     throw new StoreRepositoryError(
       409,
-      error instanceof Error
-        ? error.message
-        : "La tienda todavía está incompleta.",
+      error instanceof Error ? error.message : "La tienda todavía está incompleta.",
     );
   }
 
-  const published =
-    products.filter(
-      (product) =>
-        product.visibility ===
-        "published",
-    );
+  const categoryIds = [
+    ...new Set(
+      products
+        .filter((product) => product.visibility === "published" && product.categoryId)
+        .map((product) => product.categoryId),
+    ),
+  ];
 
-  const categoryIds =
-    [
-      ...new Set(
-        published.map(
-          (product) =>
-            product.categoryId,
-        ),
-      ),
-    ];
-
-  for (
-    const categoryId of
-    categoryIds
-  ) {
+  for (const categoryId of categoryIds) {
     try {
-      await requireActiveCategory(
-        categoryId,
-      );
+      await requireActiveCategory(categoryId);
     } catch (error) {
-      if (
-        error instanceof
-        CategoryRepositoryError
-      ) {
-        throw new StoreRepositoryError(
-          409,
-          error.message,
-        );
+      if (error instanceof CategoryRepositoryError) {
+        throw new StoreRepositoryError(409, error.message);
       }
-
       throw error;
     }
   }
 
-  return submitStore(
-    ownerUid,
-    storeId,
-  );
+  return submitStore(ownerUid, storeId);
 }
