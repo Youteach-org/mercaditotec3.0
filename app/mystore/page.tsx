@@ -19,6 +19,8 @@ import {
   useSession,
 } from "@/lib/useSession";
 
+const LEGACY_TEST_STORE_ID = "SUgQWJTdrOHmFz4Vcde9";
+
 export default function MyStorePage() {
   const {
     firebaseUser,
@@ -37,6 +39,12 @@ export default function MyStorePage() {
     useState("");
 
   const [creating, setCreating] =
+    useState(false);
+
+  const [legacyResetAttempted, setLegacyResetAttempted] =
+    useState(false);
+
+  const [resettingLegacy, setResettingLegacy] =
     useState(false);
 
   useEffect(() => {
@@ -103,8 +111,69 @@ export default function MyStorePage() {
     loadStores,
   ]);
 
+  useEffect(() => {
+    if (
+      !firebaseUser ||
+      storesLoading ||
+      legacyResetAttempted
+    ) {
+      return;
+    }
+
+    const legacyStore = stores.find(
+      (store) => store.id === LEGACY_TEST_STORE_ID,
+    );
+
+    if (!legacyStore) {
+      setLegacyResetAttempted(true);
+      return;
+    }
+
+    setLegacyResetAttempted(true);
+    setResettingLegacy(true);
+    setError("");
+
+    void (async () => {
+      try {
+        const response = await storeApiFetch(
+          firebaseUser,
+          `/api/stores/${LEGACY_TEST_STORE_ID}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ action: "reset" }),
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error ??
+              "No se pudo reiniciar la tienda de prueba.",
+          );
+        }
+
+        await loadStores();
+      } catch (resetError) {
+        setError(
+          resetError instanceof Error
+            ? resetError.message
+            : "No se pudo reiniciar la tienda de prueba.",
+        );
+      } finally {
+        setResettingLegacy(false);
+      }
+    })();
+  }, [
+    firebaseUser,
+    legacyResetAttempted,
+    loadStores,
+    stores,
+    storesLoading,
+  ]);
+
   async function createStore() {
-    if (!firebaseUser || creating) {
+    if (!firebaseUser || creating || resettingLegacy) {
       return;
     }
 
@@ -181,12 +250,14 @@ export default function MyStorePage() {
             <button
               type="button"
               onClick={() => void createStore()}
-              disabled={creating}
+              disabled={creating || resettingLegacy}
               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400"
             >
-              {creating
-                ? "Abriendo editor..."
-                : "Crear mi tienda"}
+              {resettingLegacy
+                ? "Reiniciando proceso..."
+                : creating
+                  ? "Abriendo editor..."
+                  : "Crear mi tienda"}
             </button>
           </div>
         </section>
@@ -195,6 +266,12 @@ export default function MyStorePage() {
           <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
             {error}
           </div>
+        )}
+
+        {resettingLegacy && (
+          <section className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm font-medium text-blue-800">
+            Reiniciando la tienda de prueba anterior para comenzar desde cero...
+          </section>
         )}
 
         {storesLoading ? (
@@ -216,12 +293,14 @@ export default function MyStorePage() {
             <button
               type="button"
               onClick={() => void createStore()}
-              disabled={creating}
+              disabled={creating || resettingLegacy}
               className="mt-5 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400"
             >
-              {creating
-                ? "Abriendo editor..."
-                : "Crear mi tienda"}
+              {resettingLegacy
+                ? "Reiniciando proceso..."
+                : creating
+                  ? "Abriendo editor..."
+                  : "Crear mi tienda"}
             </button>
           </section>
         ) : (
