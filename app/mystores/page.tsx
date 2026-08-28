@@ -20,10 +20,6 @@ export default function MyStoresPage() {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    if (!sessionLoading && !firebaseUser) router.replace("/login");
-  }, [firebaseUser, router, sessionLoading]);
-
   const loadStores = useCallback(async () => {
     if (!firebaseUser) return;
     setStoresLoading(true);
@@ -75,11 +71,35 @@ export default function MyStoresPage() {
     }
   }
 
-  if (sessionLoading || (!firebaseUser && !sessionLoading)) {
+  if (sessionLoading) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow-md">
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600">Comprobando sesión...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!firebaseUser) {
+    return (
+      <main className="min-h-screen bg-gray-100 p-4">
+        <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 text-center shadow-md">
+          <h1 className="text-3xl font-bold text-gray-900">myStores</h1>
+          <p className="mt-3 text-gray-600">
+            Necesitas iniciar sesión en esta versión para administrar tus tiendas.
+          </p>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700"
+          >
+            Iniciar sesión
+          </Link>
+          <div className="mt-5">
+            <Link href="/" className="text-sm font-semibold text-blue-700 hover:underline">
+              ← Volver al Mercadito
+            </Link>
+          </div>
         </div>
       </main>
     );
