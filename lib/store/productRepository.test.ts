@@ -1,6 +1,7 @@
 ﻿import { describe, expect, it } from "vitest";
 
 import {
+  assertInitialProductCreationAllowed,
   assertProductOwnership,
   assertStoreAllowsProductEditing,
   buildNewProductRecord,
@@ -9,25 +10,13 @@ import {
 describe("assertStoreAllowsProductEditing", () => {
   it("permite editar productos en draft", () => {
     expect(() =>
-      assertStoreAllowsProductEditing({
-        id: "store-1",
-        ownerUid: "uid-1",
-        name: "Tienda",
-        description: "",
-        status: "draft",
-      }),
+      assertStoreAllowsProductEditing({ status: "draft" }),
     ).not.toThrow();
   });
 
   it("bloquea productos mientras la tienda esta en revision", () => {
     expect(() =>
-      assertStoreAllowsProductEditing({
-        id: "store-1",
-        ownerUid: "uid-1",
-        name: "Tienda",
-        description: "",
-        status: "pending_review",
-      }),
+      assertStoreAllowsProductEditing({ status: "pending_review" }),
     ).toThrow(
       "La tienda está en revisión y sus productos no pueden modificarse.",
     );
@@ -35,14 +24,25 @@ describe("assertStoreAllowsProductEditing", () => {
 
   it("permite corregir una tienda suspendida", () => {
     expect(() =>
-      assertStoreAllowsProductEditing({
-        id: "store-1",
-        ownerUid: "uid-1",
-        name: "Tienda",
-        description: "",
-        status: "suspended",
-      }),
+      assertStoreAllowsProductEditing({ status: "suspended" }),
     ).not.toThrow();
+  });
+});
+
+describe("assertInitialProductCreationAllowed", () => {
+  it("permite el primer producto mientras la tienda no esta aprobada", () => {
+    expect(() => assertInitialProductCreationAllowed("draft", 0)).not.toThrow();
+    expect(() => assertInitialProductCreationAllowed("changes_required", 0)).not.toThrow();
+  });
+
+  it("bloquea un segundo producto antes de aprobar la tienda", () => {
+    expect(() => assertInitialProductCreationAllowed("draft", 1)).toThrow(
+      "Antes de aprobar tu tienda solo puedes registrar un producto inicial.",
+    );
+  });
+
+  it("permite varios productos cuando la tienda ya esta activa", () => {
+    expect(() => assertInitialProductCreationAllowed("active", 8)).not.toThrow();
   });
 });
 
