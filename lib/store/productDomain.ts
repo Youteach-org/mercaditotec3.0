@@ -87,6 +87,10 @@ export function validateProductInput(input: unknown): ProductEditableInput {
     throw new Error("Visibilidad de producto inválida.");
   }
 
+  if (visibility === "published" && imageUrls.length === 0) {
+    throw new Error("Un producto visible debe tener al menos una imagen.");
+  }
+
   return {
     title,
     description,
