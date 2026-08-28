@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
@@ -24,36 +24,55 @@ export function useSession() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      setFirebaseUser(user);
+    let mounted = true;
+    let unsubDoc: (() => void) | null = null;
 
-      if (!user) {
+    const unsubAuth = onAuthStateChanged(
+      auth,
+      (user) => {
+        if (!mounted) return;
+
+        if (unsubDoc) {
+          unsubDoc();
+          unsubDoc = null;
+        }
+
+        setFirebaseUser(user);
+        // Auth ya resolvió. El perfil de Firestore se carga por separado y no debe
+        // mantener bloqueada toda la interfaz si tarda o falla.
+        setLoading(false);
+
+        if (!user) {
+          setAppUser(null);
+          return;
+        }
+
+        const userRef = doc(db, "users", user.uid);
+        unsubDoc = onSnapshot(
+          userRef,
+          (snap) => {
+            if (!mounted) return;
+            setAppUser(snap.exists() ? (snap.data() as AppUser) : null);
+          },
+          () => {
+            if (!mounted) return;
+            setAppUser(null);
+          },
+        );
+      },
+      () => {
+        if (!mounted) return;
+        setFirebaseUser(null);
         setAppUser(null);
         setLoading(false);
-        return;
-      }
+      },
+    );
 
-      const userRef = doc(db, "users", user.uid);
-
-      const unsubDoc = onSnapshot(
-        userRef,
-        (snap) => {
-          if (snap.exists()) {
-            setAppUser(snap.data() as AppUser);
-          } else {
-            setAppUser(null);
-          }
-          setLoading(false);
-        },
-        () => {
-          setLoading(false);
-        }
-      );
-
-      return () => unsubDoc();
-    });
-
-    return () => unsubAuth();
+    return () => {
+      mounted = false;
+      if (unsubDoc) unsubDoc();
+      unsubAuth();
+    };
   }, []);
 
   async function logout() {
@@ -67,4 +86,3 @@ export function useSession() {
     logout,
   };
 }
-
