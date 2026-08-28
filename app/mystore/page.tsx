@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function LegacyMyStorePage() {
+export default function LegacyMyStoresRedirectPage() {
   redirect("/mystores");
 }
