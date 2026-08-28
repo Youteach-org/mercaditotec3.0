@@ -104,12 +104,12 @@ export default function StoreScheduleGrid({
                   disabled={!editable}
                   onClick={() => editable && onToggle?.(day, hour)}
                   className={[
-                    "min-w-0 touch-manipulation select-none border transition-colors",
+                    "min-w-0 touch-manipulation select-none border transition-none",
                     compact
                       ? "h-9 rounded-md sm:h-7 sm:rounded-[5px] md:h-6"
                       : "h-11 rounded-md sm:h-8 md:h-7",
                     selected
-                      ? "border-blue-700 bg-blue-600 shadow-sm"
+                      ? "border-blue-700 bg-blue-600 shadow-sm ring-1 ring-blue-300"
                       : "border-gray-200 bg-white",
                     editable
                       ? selected
