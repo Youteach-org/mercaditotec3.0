@@ -4,7 +4,6 @@ import { getAdminDb } from "../firebaseAdmin";
 import { canOwnerEditStore, type StoreStatus } from "./domain";
 import {
   getStoreForOwner,
-  StoreRepositoryError,
   type StoreRuleRecord,
 } from "./repository";
 import { requireActiveCategory, normalizeCategoryName } from "./categoryRepository";
@@ -50,6 +49,21 @@ export function assertStoreAllowsProductEditing(store: { status: StoreStatus }):
     throw new ProductRepositoryError(
       409,
       "La tienda está en revisión y sus productos no pueden modificarse.",
+    );
+  }
+}
+
+export function assertInitialProductCreationAllowed(
+  status: StoreStatus,
+  existingProductCount: number,
+): void {
+  if (
+    (status === "draft" || status === "changes_required") &&
+    existingProductCount >= 1
+  ) {
+    throw new ProductRepositoryError(
+      409,
+      "Antes de aprobar tu tienda solo puedes registrar un producto inicial.",
     );
   }
 }
@@ -114,8 +128,18 @@ export async function createProduct(
   storeId: string,
   input: ProductEditableInput,
 ): Promise<ProductRecord> {
-  await getEditableStore(ownerUid, storeId);
+  const store = await getEditableStore(ownerUid, storeId);
   const db = getAdminDb();
+
+  if (store.status === "draft" || store.status === "changes_required") {
+    const existing = await db
+      .collection("products")
+      .where("storeId", "==", storeId)
+      .limit(1)
+      .get();
+    assertInitialProductCreationAllowed(store.status, existing.size);
+  }
+
   const reference = db.collection("products").doc();
   const base = buildNewProductRecord(ownerUid, storeId, reference.id, input);
 
