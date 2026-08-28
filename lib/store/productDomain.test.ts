@@ -29,7 +29,7 @@ describe("validateProductInput", () => {
     const result = validateProductInput({
       title: "Kit Arduino",
       description: "",
-      imageUrls: [],
+      imageUrls: ["https://example.com/arduino.jpg"],
       categoryId: "",
       suggestedCategoryName: "Robótica educativa",
       priceType: "fixed",
@@ -39,6 +39,34 @@ describe("validateProductInput", () => {
 
     expect(result.categoryId).toBe("");
     expect(result.suggestedCategoryName).toBe("Robótica educativa");
+  });
+
+  it("rechaza un producto publicado sin imagen", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "published",
+      }),
+    ).toThrow("Un producto visible debe tener al menos una imagen.");
+  });
+
+  it("permite borrador oculto sin imagen durante una carga interna", () => {
+    expect(() =>
+      validateProductInput({
+        title: "Producto",
+        description: "",
+        imageUrls: [],
+        categoryId: "otros",
+        priceType: "fixed",
+        priceAmount: 20,
+        visibility: "hidden",
+      }),
+    ).not.toThrow();
   });
 
   it("rechaza categoria sugerida demasiado corta", () => {
