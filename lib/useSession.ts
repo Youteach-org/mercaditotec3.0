@@ -18,6 +18,8 @@ export type AppUser = {
   createdAt?: number;
 };
 
+const AUTH_RESOLUTION_TIMEOUT_MS = 4000;
+
 export function useSession() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
@@ -27,20 +29,31 @@ export function useSession() {
     let mounted = true;
     let unsubDoc: (() => void) | null = null;
 
+    const finishAuthResolution = (user: User | null) => {
+      if (!mounted) return;
+      setFirebaseUser(user);
+      setLoading(false);
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      // Nunca mantener la interfaz bloqueada indefinidamente. Si Firebase Auth no
+      // emite el estado inicial a tiempo, usamos el usuario que tenga disponible
+      // en ese momento y permitimos que el observador lo actualice después.
+      finishAuthResolution(auth.currentUser);
+    }, AUTH_RESOLUTION_TIMEOUT_MS);
+
     const unsubAuth = onAuthStateChanged(
       auth,
       (user) => {
         if (!mounted) return;
+        window.clearTimeout(timeoutId);
 
         if (unsubDoc) {
           unsubDoc();
           unsubDoc = null;
         }
 
-        setFirebaseUser(user);
-        // Auth ya resolvió. El perfil de Firestore se carga por separado y no debe
-        // mantener bloqueada toda la interfaz si tarda o falla.
-        setLoading(false);
+        finishAuthResolution(user);
 
         if (!user) {
           setAppUser(null);
@@ -62,14 +75,15 @@ export function useSession() {
       },
       () => {
         if (!mounted) return;
-        setFirebaseUser(null);
+        window.clearTimeout(timeoutId);
         setAppUser(null);
-        setLoading(false);
+        finishAuthResolution(null);
       },
     );
 
     return () => {
       mounted = false;
+      window.clearTimeout(timeoutId);
       if (unsubDoc) unsubDoc();
       unsubAuth();
     };
