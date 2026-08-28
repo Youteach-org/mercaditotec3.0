@@ -69,48 +69,32 @@ export default function StorefrontPreview({
         <h2 className={compact ? "mt-3 text-xl font-black text-gray-900" : "mt-3 text-2xl font-black text-gray-900"}>
           {name.trim() || "Nombre de tu tienda"}
         </h2>
-        <p className="mt-0.5 text-xs font-semibold text-blue-700">
-          {sellerName || "Tu perfil"}
-        </p>
+        <p className="mt-0.5 text-xs font-semibold text-blue-700">{sellerName || "Tu perfil"}</p>
         <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-gray-600">
           {description.trim() || "La descripción de tu tienda aparecerá aquí mientras la construyes."}
         </p>
 
         <div className="mt-4 border-t border-gray-100 pt-4">
-          {compact ? (
-            <details className="group rounded-xl bg-gray-50 p-3">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-bold uppercase tracking-wide text-gray-600">
-                <span>Horario</span>
-                <span className="normal-case tracking-normal text-gray-400">
-                  {selectedHours > 0 ? `${selectedHours} bloque(s) · ver` : "Sin horario · ver"}
-                </span>
-              </summary>
-              <div className="mt-3">
-                <StoreScheduleGrid schedule={schedule} compact />
-              </div>
-            </details>
-          ) : (
-            <>
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Horario</h3>
-                <span className="text-[10px] text-gray-400">7 a. m. – 9 p. m.</span>
-              </div>
-              <StoreScheduleGrid schedule={schedule} compact />
-            </>
-          )}
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Horario</h3>
+            <span className="text-[10px] font-semibold text-gray-400">
+              {selectedHours > 0 ? `${selectedHours} bloque(s) seleccionados` : "Aún sin horario"}
+            </span>
+          </div>
+          <div className="rounded-xl bg-gray-50 p-2">
+            <StoreScheduleGrid schedule={schedule} compact />
+          </div>
         </div>
 
         <div className="mt-5 border-t border-gray-100 pt-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Productos</h3>
-            <span className="text-[10px] font-semibold text-gray-400">
-              {visibleProducts.length} visible(s)
-            </span>
+            <span className="text-[10px] font-semibold text-gray-400">{visibleProducts.length} visible(s)</span>
           </div>
 
           {visibleProducts.length === 0 ? (
             <div className="mt-3 rounded-xl bg-gray-50 p-4 text-center text-xs text-gray-400">
-              Tus productos aparecerán aquí.
+              Tu producto inicial aparecerá aquí cuando esté completo.
             </div>
           ) : (
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -119,9 +103,7 @@ export default function StorefrontPreview({
                   {product.imageUrls[0] ? (
                     <img src={product.imageUrls[0]} alt={product.title} className="h-20 w-full object-cover" />
                   ) : (
-                    <div className="flex h-20 items-center justify-center bg-gray-100 text-[10px] text-gray-400">
-                      Sin foto
-                    </div>
+                    <div className="flex h-20 items-center justify-center bg-gray-100 text-[10px] text-gray-400">Sin foto</div>
                   )}
                   <div className="p-2">
                     <div className="line-clamp-1 text-xs font-bold text-gray-900">{product.title}</div>
