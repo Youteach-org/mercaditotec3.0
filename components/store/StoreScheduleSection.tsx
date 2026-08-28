@@ -34,19 +34,26 @@ export default function StoreScheduleSection({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRef = useRef<StoreSchedule>(store.schedule);
+  const storeIdRef = useRef(store.id);
 
   useEffect(() => {
-    setSchedule(store.schedule);
+    if (storeIdRef.current !== store.id) {
+      storeIdRef.current = store.id;
+      scheduleRef.current = store.schedule;
+      setSchedule(store.schedule);
+      onScheduleChanged?.(store.schedule);
+    }
     setOperationalMode(store.operationalMode);
     setManualOpen(store.manualOpen ?? true);
-    onScheduleChanged?.(store.schedule);
-  }, [store.schedule, store.operationalMode, store.manualOpen, onScheduleChanged]);
+  }, [store.id, store.manualOpen, store.operationalMode, store.schedule, onScheduleChanged]);
 
   useEffect(() => {
+    onScheduleChanged?.(scheduleRef.current);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, []);
+  }, [onScheduleChanged]);
 
   async function persistSchedule(nextSchedule: StoreSchedule) {
     if (!editable) return;
@@ -75,12 +82,13 @@ export default function StoreScheduleSection({
   function toggleHour(day: StoreWeekDay, hour: StoreHour) {
     if (!editable) return;
 
-    const next = toggleScheduleHour(schedule, day, hour);
+    const next = toggleScheduleHour(scheduleRef.current, day, hour);
+    scheduleRef.current = next;
     setSchedule(next);
     onScheduleChanged?.(next);
 
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => void persistSchedule(next), 450);
+    saveTimer.current = setTimeout(() => void persistSchedule(next), 350);
   }
 
   async function setOperational(mode: StoreOperationalMode, open: boolean | null) {
@@ -94,7 +102,7 @@ export default function StoreScheduleSection({
       const response = await storeApiFetch(user, `/api/stores/${store.id}/schedule`, {
         method: "PATCH",
         body: JSON.stringify({
-          schedule,
+          schedule: scheduleRef.current,
           operationalMode: mode,
           manualOpen: mode === "manual" ? open : null,
         }),
@@ -115,7 +123,7 @@ export default function StoreScheduleSection({
         <div>
           <h2 className="text-xl font-bold text-gray-900">Horario</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Toca o haz clic en las horas en las que puedes atender. Los cuadros azules quedan disponibles.
+            Toca o haz clic una vez en cada hora en la que puedas atender. El cambio se refleja inmediatamente en la vista previa.
           </p>
         </div>
         {saving && <span className="text-xs font-semibold text-gray-400">Guardando…</span>}
