@@ -14,7 +14,7 @@
           <a href="/chat" className="bg-violet-600 text-white px-4 py-2 rounded-xl">
             Chat
           </a>
-          <a href="/mystores" className="bg-emerald-600 text-white px-4 py-2 rounded-xl">
+          <a href="/mystore" className="bg-emerald-600 text-white px-4 py-2 rounded-xl">
             myStores
           </a>
           <a href="/profile" className="bg-amber-600 text-white px-4 py-2 rounded-xl">
