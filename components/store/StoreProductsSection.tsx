@@ -154,6 +154,12 @@ export default function StoreProductsSection({
     window.setTimeout(() => document.getElementById("initial-product-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
+  function chooseFiles(files: File[]) {
+    const valid = files.filter((file) => ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type));
+    const remaining = Math.max(0, 5 - form.imageUrls.length);
+    setNewFiles(valid.slice(0, remaining));
+  }
+
   async function uploadFiles(productId: string, currentUrls: string[]) {
     const remaining = 5 - currentUrls.length;
     if (newFiles.length > remaining) throw new Error("Un producto puede tener máximo 5 imágenes.");
@@ -331,9 +337,7 @@ export default function StoreProductsSection({
               </div>
               {editable && (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => edit(product)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">
-                    Editar producto
-                  </button>
+                  <button type="button" onClick={() => edit(product)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Editar producto</button>
                   {!creationMode && (
                     <button type="button" onClick={() => void toggleVisibility(product)} className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700">
                       {product.visibility === "published" ? "Ocultar" : "Mostrar"}
@@ -437,14 +441,20 @@ export default function StoreProductsSection({
             </div>
           )}
 
-          <label className="mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 p-5 text-center hover:bg-blue-100">
+          <label
+            className="mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50 p-5 text-center hover:bg-blue-100"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              chooseFiles(Array.from(event.dataTransfer.files));
+            }}
+          >
             <span className="text-3xl" aria-hidden="true">🖼️</span>
-            <span className="mt-2 font-bold text-blue-900">Sube una foto del producto</span>
+            <span className="mt-2 font-bold text-blue-900">Sube o arrastra una foto del producto</span>
             <span className="mt-1 text-sm text-blue-700">Toca aquí para elegir una imagen. Es obligatoria para el producto inicial.</span>
             <span className="mt-1 text-xs text-blue-600">JPG, PNG, WEBP o GIF · máximo 1 MB por imagen · hasta 5 fotos</span>
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden" onChange={(event) => {
-              const files = Array.from(event.target.files ?? []);
-              setNewFiles(files.slice(0, Math.max(0, 5 - form.imageUrls.length)));
+              chooseFiles(Array.from(event.target.files ?? []));
               event.currentTarget.value = "";
             }} />
           </label>
