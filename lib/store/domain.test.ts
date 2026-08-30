@@ -33,18 +33,25 @@ describe("makeStoreSlug", () => {
 });
 
 describe("validateStoreDraftInput", () => {
-  it("acepta datos válidos", () => {
-    expect(
-      validateStoreDraftInput({
-        name: "Dulces Fer",
-        description:
-          "Postres y botanas para estudiantes.",
-      })
-    ).toEqual({
+  it("acepta datos válidos e incluye el punto de entrega", () => {
+    const result = validateStoreDraftInput({
       name: "Dulces Fer",
       description:
         "Postres y botanas para estudiantes.",
+      deliveryLocation:
+        "Entrego afuera de cafetería y en el edificio A.",
     });
+
+    expect(result).toEqual({
+      name: "Dulces Fer",
+      description:
+        "Postres y botanas para estudiantes.",
+      deliveryLocation:
+        "Entrego afuera de cafetería y en el edificio A.",
+    });
+    expect(result.deliveryLocation).toBe(
+      "Entrego afuera de cafetería y en el edificio A.",
+    );
   });
 
   it("rechaza nombres demasiado cortos", () => {
@@ -52,6 +59,7 @@ describe("validateStoreDraftInput", () => {
       validateStoreDraftInput({
         name: "A",
         description: "Prueba",
+        deliveryLocation: "Cafetería",
       })
     ).toThrow(
       "El nombre de la tienda debe tener entre 3 y 60 caracteres."
@@ -63,9 +71,22 @@ describe("validateStoreDraftInput", () => {
       validateStoreDraftInput({
         name: "Tienda válida",
         description: "x".repeat(601),
+        deliveryLocation: "Cafetería",
       })
     ).toThrow(
       "La descripción de la tienda no puede exceder 600 caracteres."
+    );
+  });
+
+  it("rechaza lugares de entrega demasiado largos", () => {
+    expect(() =>
+      validateStoreDraftInput({
+        name: "Tienda válida",
+        description: "Prueba",
+        deliveryLocation: "x".repeat(241),
+      })
+    ).toThrow(
+      "El lugar de entrega no puede exceder 240 caracteres."
     );
   });
 });
