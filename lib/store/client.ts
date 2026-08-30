@@ -10,6 +10,7 @@ export interface StoreApiRecord {
   nameNormalized: string;
   slug: string | null;
   description: string;
+  deliveryLocation?: string;
   status: StoreStatus;
   reviewMessage: string | null;
   suspensionReason: string | null;

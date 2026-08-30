@@ -28,6 +28,7 @@ export interface StoreRuleRecord {
   ownerUid: string;
   name: string;
   description: string;
+  deliveryLocation?: string;
   status: StoreStatus;
   nameNormalized?: string;
   slug?: string | null;
@@ -42,6 +43,7 @@ export interface StoreBaseRecord {
   nameNormalized: string;
   slug: string | null;
   description: string;
+  deliveryLocation: string;
   status: StoreStatus;
   reviewMessage: string | null;
   suspensionReason: string | null;
@@ -89,6 +91,7 @@ export function buildCreateStoreMutation(
       nameNormalized,
       slug: null,
       description: validated.description,
+      deliveryLocation: validated.deliveryLocation ?? "",
       status: "draft" as const,
       reviewMessage: null,
       suspensionReason: null,
@@ -113,6 +116,7 @@ export function buildOwnerStoreUpdate(
     name: validated.name,
     nameNormalized: normalizeStoreName(validated.name),
     description: validated.description,
+    deliveryLocation: validated.deliveryLocation ?? "",
   };
 }
 
@@ -172,6 +176,7 @@ function toStoreRecord(id: string, data: DocumentData): StoreRecord {
     nameNormalized: String(data.nameNormalized ?? ""),
     slug: typeof data.slug === "string" && data.slug.trim() ? data.slug : null,
     description: String(data.description ?? ""),
+    deliveryLocation: String(data.deliveryLocation ?? ""),
     status: data.status as StoreStatus,
     reviewMessage: typeof data.reviewMessage === "string" ? data.reviewMessage : null,
     suspensionReason: typeof data.suspensionReason === "string" ? data.suspensionReason : null,
@@ -224,6 +229,7 @@ function makeNewStoreRecord(
         nameNormalized: "",
         slug: null,
         description: "",
+        deliveryLocation: "",
         status: "draft" as const,
         reviewMessage: null,
         suspensionReason: null,
@@ -309,6 +315,7 @@ export async function updateStoreByOwner(
       name: update.name,
       nameNormalized: update.nameNormalized,
       description: update.description,
+      deliveryLocation: update.deliveryLocation,
       updatedAt: now,
     });
 

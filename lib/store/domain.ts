@@ -1,4 +1,4 @@
-﻿export type StoreStatus =
+export type StoreStatus =
   | "draft"
   | "pending_review"
   | "changes_required"
@@ -8,6 +8,7 @@
 export interface StoreEditableInput {
   name: string;
   description: string;
+  deliveryLocation?: string;
 }
 
 function stripDiacritics(value: string): string {
@@ -31,76 +32,50 @@ export function makeStoreSlug(name: string): string {
     .replace(/-+/g, "-");
 }
 
-export function validateStoreDraftInput(
-  input: unknown
-): StoreEditableInput {
+export function validateStoreDraftInput(input: unknown): StoreEditableInput {
   if (!input || typeof input !== "object") {
     throw new Error("Datos de tienda inválidos.");
   }
 
   const raw = input as Record<string, unknown>;
-
-  const name =
-    typeof raw.name === "string"
-      ? raw.name.trim()
-      : "";
-
-  const description =
-    typeof raw.description === "string"
-      ? raw.description.trim()
-      : "";
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const description = typeof raw.description === "string" ? raw.description.trim() : "";
+  const deliveryLocation =
+    typeof raw.deliveryLocation === "string" ? raw.deliveryLocation.trim() : "";
 
   if (name.length < 3 || name.length > 60) {
-    throw new Error(
-      "El nombre de la tienda debe tener entre 3 y 60 caracteres."
-    );
+    throw new Error("El nombre de la tienda debe tener entre 3 y 60 caracteres.");
   }
 
   if (description.length > 600) {
-    throw new Error(
-      "La descripción de la tienda no puede exceder 600 caracteres."
-    );
+    throw new Error("La descripción de la tienda no puede exceder 600 caracteres.");
+  }
+
+  if (deliveryLocation.length > 240) {
+    throw new Error("El lugar de entrega no puede exceder 240 caracteres.");
   }
 
   if (!makeStoreSlug(name)) {
-    throw new Error(
-      "El nombre de la tienda no genera una URL válida."
-    );
+    throw new Error("El nombre de la tienda no genera una URL válida.");
   }
 
-  return {
-    name,
-    description,
-  };
+  return { name, description, deliveryLocation };
 }
 
-export function canOwnerEditStore(
-  status: StoreStatus
-): boolean {
+export function canOwnerEditStore(status: StoreStatus): boolean {
   return status !== "pending_review";
 }
 
-const ADMIN_TRANSITIONS: Record<
-  StoreStatus,
-  StoreStatus[]
-> = {
+const ADMIN_TRANSITIONS: Record<StoreStatus, StoreStatus[]> = {
   draft: [],
-  pending_review: [
-    "active",
-    "changes_required",
-  ],
+  pending_review: ["active", "changes_required"],
   changes_required: [],
   active: ["suspended"],
   suspended: ["active"],
 };
 
-export function assertAdminTransition(
-  from: StoreStatus,
-  to: StoreStatus
-): void {
+export function assertAdminTransition(from: StoreStatus, to: StoreStatus): void {
   if (!ADMIN_TRANSITIONS[from].includes(to)) {
-    throw new Error(
-      `Transición administrativa no permitida: ${from} → ${to}`
-    );
+    throw new Error(`Transición administrativa no permitida: ${from} → ${to}`);
   }
 }

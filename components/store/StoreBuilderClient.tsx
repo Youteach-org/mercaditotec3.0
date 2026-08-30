@@ -30,9 +30,7 @@ function ErrorModal({ message, onClose }: { message: string; onClose: () => void
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-xl font-black text-red-700">!</div>
         <h2 className="mt-4 text-xl font-bold text-gray-900">Tu tienda todavía no está lista</h2>
         <p className="mt-2 text-gray-600">{message}</p>
-        <button type="button" onClick={onClose} autoFocus className="mt-5 w-full rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white">
-          Entendido
-        </button>
+        <button type="button" onClick={onClose} autoFocus className="mt-5 w-full rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white">Entendido</button>
       </div>
     </div>
   );
@@ -49,12 +47,8 @@ function ApprovalInfoModal({ open, onClose }: { open: boolean; onClose: () => vo
           La revisión permite comprobar que la tienda, su producto inicial, sus imágenes y categorías cumplen las reglas del Mercadito antes de hacerse públicos. La URL pública se crea únicamente después de la aprobación.
         </p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Link href="/terms" className="rounded-xl bg-blue-600 px-5 py-3 text-center font-semibold text-white hover:bg-blue-700">
-            Ver términos y condiciones
-          </Link>
-          <button type="button" onClick={onClose} className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700">
-            Cerrar
-          </button>
+          <Link href="/terms" className="rounded-xl bg-blue-600 px-5 py-3 text-center font-semibold text-white hover:bg-blue-700">Ver términos y condiciones</Link>
+          <button type="button" onClick={onClose} className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700">Cerrar</button>
         </div>
       </div>
     </div>
@@ -70,9 +64,11 @@ export default function StoreBuilderClient() {
   const [store, setStore] = useState<StoreApiRecord | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [deliveryLocation, setDeliveryLocation] = useState("");
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
   const [previewCover, setPreviewCover] = useState<string | null>(null);
   const [previewSchedule, setPreviewSchedule] = useState<StoreSchedule | null>(null);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [products, setProducts] = useState<StoreProductApiRecord[]>([]);
   const [sellerName, setSellerName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -91,6 +87,7 @@ export default function StoreBuilderClient() {
     setStore(nextStore);
     setName(nextStore.name);
     setDescription(nextStore.description);
+    setDeliveryLocation(nextStore.deliveryLocation ?? "");
     setPreviewLogo(nextStore.logoUrl);
     setPreviewCover(nextStore.coverUrl);
     setPreviewSchedule(nextStore.schedule);
@@ -151,14 +148,8 @@ export default function StoreBuilderClient() {
     if (nextStore.coverUrl) setPreviewCover(nextStore.coverUrl);
   }, []);
 
-  const acceptProducts = useCallback((nextProducts: StoreProductApiRecord[]) => {
-    setProducts(nextProducts);
-  }, []);
-
-  const acceptSchedule = useCallback((nextSchedule: StoreSchedule) => {
-    setPreviewSchedule(nextSchedule);
-  }, []);
-
+  const acceptProducts = useCallback((nextProducts: StoreProductApiRecord[]) => setProducts(nextProducts), []);
+  const acceptSchedule = useCallback((nextSchedule: StoreSchedule) => setPreviewSchedule(nextSchedule), []);
   const acceptPreviewMedia = useCallback((kind: "logo" | "cover", url: string | null) => {
     if (kind === "logo") setPreviewLogo(url);
     else setPreviewCover(url);
@@ -176,7 +167,7 @@ export default function StoreBuilderClient() {
     try {
       const response = await storeApiFetch(firebaseUser, `/api/stores/${store.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: cleanName, description }),
+        body: JSON.stringify({ name: cleanName, description, deliveryLocation }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "No se pudo guardar la información.");
@@ -193,7 +184,7 @@ export default function StoreBuilderClient() {
 
     try {
       validateStoreCompleteness(
-        { name: name.trim(), description, schedule: previewSchedule },
+        { name: name.trim(), description, deliveryLocation, schedule: previewSchedule },
         products,
       );
     } catch (validationError) {
@@ -207,7 +198,7 @@ export default function StoreBuilderClient() {
     try {
       const infoResponse = await storeApiFetch(firebaseUser, `/api/stores/${store.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: name.trim(), description }),
+        body: JSON.stringify({ name: name.trim(), description, deliveryLocation }),
       });
       const infoData = await infoResponse.json();
       if (!infoResponse.ok) throw new Error(infoData.error ?? "Revisa la información de la tienda.");
@@ -259,7 +250,7 @@ export default function StoreBuilderClient() {
       <ErrorModal message={validationMessage} onClose={() => setValidationMessage("")} />
       <ApprovalInfoModal open={approvalInfoOpen} onClose={() => setApprovalInfoOpen(false)} />
 
-      <div className="mx-auto max-w-7xl space-y-4">
+      <div className="mx-auto max-w-[1500px] space-y-4">
         <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -287,8 +278,8 @@ export default function StoreBuilderClient() {
 
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.7fr)] lg:items-start">
-          <div className="order-2 space-y-5 lg:order-1">
+        <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.7fr)_minmax(0,1.3fr)] xl:items-start">
+          <div className="order-2 space-y-5 xl:order-1">
             <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -306,6 +297,12 @@ export default function StoreBuilderClient() {
               <label className="mt-4 block">
                 <span className="mb-1 block text-sm font-semibold text-gray-700">Descripción</span>
                 <textarea value={description} onChange={(event) => setDescription(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={600} rows={4} className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" placeholder="Explica qué vendes y qué encontrarán en tu tienda." />
+              </label>
+
+              <label className="mt-4 block">
+                <span className="mb-1 block text-sm font-semibold text-gray-700">Entrego en</span>
+                <textarea value={deliveryLocation} onChange={(event) => setDeliveryLocation(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={240} rows={3} className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" placeholder="Ej. Cafetería, edificio A y pasillo de laboratorios." />
+                <span className="mt-1 block text-xs text-gray-400">Indica claramente en qué lugares del Tec acostumbras entregar.</span>
               </label>
               <p className="mt-2 text-xs text-gray-400">Los cambios se guardan automáticamente.</p>
             </section>
@@ -330,7 +327,7 @@ export default function StoreBuilderClient() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Terminar tienda</h2>
-                    <p className="mt-2 text-gray-700">Al guardar se comprobará nombre, descripción, horario y un producto inicial completo con foto, categoría y precio válido.</p>
+                    <p className="mt-2 text-gray-700">Al guardar se comprobará nombre, descripción, lugar de entrega, horario y un producto inicial completo con foto, categoría y precio válido.</p>
                     <p className="mt-2 text-sm font-medium text-gray-600">Si está completa, entrará a revisión. La URL pública se generará únicamente después de la aprobación.</p>
                   </div>
                   <button type="button" onClick={() => setApprovalInfoOpen(true)} className="inline-flex items-center gap-2 rounded-full border border-blue-300 bg-white px-3 py-2 text-sm font-bold text-blue-800 hover:bg-blue-100" aria-label="Por qué debe aprobarse mi tienda">
@@ -345,12 +342,28 @@ export default function StoreBuilderClient() {
             )}
           </div>
 
-          <aside className="order-1 lg:order-2 lg:sticky lg:top-4">
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <h2 className="font-bold text-gray-900">Vista previa de mi tienda</h2>
-              <span className="text-xs text-gray-500">Así la verán</span>
+          <aside className="order-1 xl:order-2 xl:sticky xl:top-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
+              <div>
+                <h2 className="text-lg font-black text-gray-950">Vista previa de tu página!</h2>
+                <span className="text-xs text-gray-500">Así la verán tus clientes.</span>
+              </div>
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+                <button type="button" onClick={() => setPreviewMode("desktop")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "desktop" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Escritorio</button>
+                <button type="button" onClick={() => setPreviewMode("mobile")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "mobile" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Móvil</button>
+              </div>
             </div>
-            <StorefrontPreview name={name} sellerName={sellerName} description={description} logoUrl={previewLogo} coverUrl={previewCover} schedule={scheduleForPreview} products={products} compact />
+            <StorefrontPreview
+              name={name}
+              sellerName={sellerName}
+              description={description}
+              deliveryLocation={deliveryLocation}
+              logoUrl={previewLogo}
+              coverUrl={previewCover}
+              schedule={scheduleForPreview}
+              products={products}
+              previewMode={previewMode}
+            />
           </aside>
         </div>
       </div>

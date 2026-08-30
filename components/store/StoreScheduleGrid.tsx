@@ -46,6 +46,7 @@ interface Props {
   schedule: StoreSchedule;
   editable?: boolean;
   compact?: boolean;
+  mini?: boolean;
   onToggle?: (day: StoreWeekDay, hour: StoreHour) => void;
 }
 
@@ -53,25 +54,42 @@ export default function StoreScheduleGrid({
   schedule,
   editable = false,
   compact = false,
+  mini = false,
   onToggle,
 }: Props) {
+  const labelColumn = mini ? "22px" : compact ? "30px" : "30px";
+
   return (
     <div className="w-full max-w-full overflow-hidden">
-      <div className="grid w-full min-w-0 grid-cols-[30px_repeat(7,minmax(0,1fr))] gap-1 sm:grid-cols-[42px_repeat(7,minmax(0,1fr))] sm:gap-0.5 md:grid-cols-[48px_repeat(7,minmax(0,1fr))]">
+      <div
+        className={[
+          "grid w-full min-w-0",
+          mini ? "gap-[2px]" : "gap-1 sm:gap-0.5",
+        ].join(" ")}
+        style={{ gridTemplateColumns: `${labelColumn} repeat(7, minmax(0, 1fr))` }}
+      >
         <div />
 
         {STORE_WEEK_DAYS.map((day) => (
           <div
             key={day}
             className={[
-              "flex min-w-0 items-center justify-center rounded-md bg-slate-900 font-bold text-white",
-              compact
-                ? "h-7 text-[10px] sm:h-6 md:h-5 md:text-[9px]"
-                : "h-9 text-xs sm:h-7 sm:text-[10px] md:h-6",
+              "flex min-w-0 items-center justify-center bg-slate-900 font-bold text-white",
+              mini
+                ? "h-4 rounded-[3px] text-[7px]"
+                : compact
+                  ? "h-7 rounded-md text-[10px] sm:h-6 md:h-5 md:text-[9px]"
+                  : "h-9 rounded-md text-xs sm:h-7 sm:text-[10px] md:h-6",
             ].join(" ")}
           >
-            <span className="sm:hidden">{MOBILE_DAY_LABELS[day]}</span>
-            <span className="hidden sm:inline">{DAY_LABELS[day]}</span>
+            {mini ? (
+              MOBILE_DAY_LABELS[day]
+            ) : (
+              <>
+                <span className="sm:hidden">{MOBILE_DAY_LABELS[day]}</span>
+                <span className="hidden sm:inline">{DAY_LABELS[day]}</span>
+              </>
+            )}
           </div>
         ))}
 
@@ -79,14 +97,22 @@ export default function StoreScheduleGrid({
           <div key={hour} className="contents">
             <div
               className={[
-                "flex min-w-0 items-center justify-end pr-1 font-semibold text-gray-500",
-                compact
-                  ? "h-9 text-[10px] sm:h-7 sm:text-[9px] md:h-6"
-                  : "h-11 text-[10px] sm:h-8 sm:text-[10px] md:h-7",
+                "flex min-w-0 items-center justify-end font-semibold text-gray-500",
+                mini
+                  ? "h-[9px] pr-[2px] text-[6px] leading-none"
+                  : compact
+                    ? "h-9 pr-1 text-[10px] sm:h-7 sm:text-[9px] md:h-6"
+                    : "h-11 pr-1 text-[10px] sm:h-8 sm:text-[10px] md:h-7",
               ].join(" ")}
             >
-              <span className="sm:hidden">{formatCompactHour(hour)}</span>
-              <span className="hidden sm:inline">{formatHour(hour)}</span>
+              {mini ? (
+                Number(hour.slice(0, 2)) % 3 === 1 ? formatCompactHour(hour) : ""
+              ) : (
+                <>
+                  <span className="sm:hidden">{formatCompactHour(hour)}</span>
+                  <span className="hidden sm:inline">{formatHour(hour)}</span>
+                </>
+              )}
             </div>
 
             {STORE_WEEK_DAYS.map((day) => {
@@ -100,17 +126,22 @@ export default function StoreScheduleGrid({
                   type="button"
                   aria-pressed={selected}
                   aria-label={`${label}: ${selected ? "abierto" : "cerrado"}`}
-                  title={`${label} · ${selected ? "Abierto" : "Cerrado"}`}
+                  title={mini ? undefined : `${label} · ${selected ? "Abierto" : "Cerrado"}`}
                   disabled={!editable}
+                  tabIndex={mini ? -1 : undefined}
                   onClick={() => editable && onToggle?.(day, hour)}
                   className={[
                     "min-w-0 touch-manipulation select-none border transition-none",
-                    compact
-                      ? "h-9 rounded-md sm:h-7 sm:rounded-[5px] md:h-6"
-                      : "h-11 rounded-md sm:h-8 md:h-7",
+                    mini
+                      ? "h-[9px] rounded-[2px]"
+                      : compact
+                        ? "h-9 rounded-md sm:h-7 sm:rounded-[5px] md:h-6"
+                        : "h-11 rounded-md sm:h-8 md:h-7",
                     selected
-                      ? "border-blue-700 bg-blue-600 shadow-sm ring-1 ring-blue-300"
-                      : "border-gray-200 bg-white",
+                      ? "border-blue-700 bg-blue-600 shadow-sm"
+                      : mini
+                        ? "border-slate-200 bg-slate-100"
+                        : "border-gray-200 bg-white",
                     editable
                       ? selected
                         ? "cursor-pointer hover:bg-blue-700 active:bg-blue-800"

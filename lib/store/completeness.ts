@@ -4,6 +4,7 @@ import { STORE_WEEK_DAYS, type StoreSchedule } from "./schedule";
 export interface CompletenessStore {
   name: string;
   description: string;
+  deliveryLocation: string;
   schedule: StoreSchedule;
 }
 
@@ -26,6 +27,9 @@ export function validateStoreCompleteness(
   }
   if (!store.description.trim()) {
     throw new Error("Agrega una descripción de la tienda.");
+  }
+  if (!store.deliveryLocation.trim()) {
+    throw new Error("Indica dónde entregas dentro del Tec.");
   }
 
   const hasSchedule = STORE_WEEK_DAYS.some((day) => store.schedule[day].slots.length > 0);
