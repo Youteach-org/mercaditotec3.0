@@ -12,6 +12,7 @@ const baseSchedule = toggleScheduleHour(
 const baseStore = {
   name: "Dulces Fer",
   description: "Dulces y postres para estudiantes.",
+  deliveryLocation: "Entrego afuera de cafetería y en el edificio A.",
   schedule: baseSchedule,
 };
 
@@ -29,6 +30,12 @@ describe("validateStoreCompleteness", () => {
     expect(() =>
       validateStoreCompleteness({ ...baseStore, description: "" }, [validProduct]),
     ).toThrow("Agrega una descripción de la tienda.");
+  });
+
+  it("exige indicar dónde se entrega", () => {
+    expect(() =>
+      validateStoreCompleteness({ ...baseStore, deliveryLocation: "" }, [validProduct]),
+    ).toThrow("Indica dónde entregas dentro del Tec.");
   });
 
   it("exige al menos una hora de atención", () => {
