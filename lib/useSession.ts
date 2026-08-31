@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import type { StudentTrustStatus } from "@/lib/security/domain";
 
 export type AppUser = {
-  role?: "admin" | "user";
+  role?: "admin" | "administrator" | "superadmin" | "subadmin" | "user";
   email?: string;
   emailLocalPart?: string;
   emailVerified?: boolean;
@@ -16,6 +17,10 @@ export type AppUser = {
   displayName?: string;
   photoURL?: string;
   createdAt?: number;
+  studentStatus?: StudentTrustStatus;
+  studentEndorsementCount?: number;
+  studentVerifiedAt?: number | null;
+  studentRevokedAt?: number | null;
 };
 
 const AUTH_RESOLUTION_TIMEOUT_MS = 4000;
@@ -36,9 +41,6 @@ export function useSession() {
     };
 
     const timeoutId = window.setTimeout(() => {
-      // Nunca mantener la interfaz bloqueada indefinidamente. Si Firebase Auth no
-      // emite el estado inicial a tiempo, usamos el usuario que tenga disponible
-      // en ese momento y permitimos que el observador lo actualice después.
       finishAuthResolution(auth.currentUser);
     }, AUTH_RESOLUTION_TIMEOUT_MS);
 
