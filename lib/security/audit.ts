@@ -1,6 +1,6 @@
 import { Timestamp } from "firebase-admin/firestore";
 
-import { getAdminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "../firebaseAdmin";
 import type { AdminRole } from "./domain";
 
 export interface AuditEntryInput {
