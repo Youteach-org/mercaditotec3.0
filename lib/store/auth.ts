@@ -1,5 +1,10 @@
-﻿import type { DecodedIdToken } from "firebase-admin/auth";
+import type { DecodedIdToken } from "firebase-admin/auth";
 
+import {
+  effectiveAdminRole,
+  isAdminRole,
+  isSuperadminRole,
+} from "@/lib/security/domain";
 import {
   getAdminAuth,
   getAdminDb,
@@ -19,68 +24,37 @@ export interface AuthenticatedUser {
   claims: DecodedIdToken;
 }
 
-export function isAdminProfile(
-  profile: unknown,
-): boolean {
-  if (!profile || typeof profile !== "object") {
-    return false;
-  }
+export function isAdminProfile(profile: unknown): boolean {
+  return isAdminRole(profile);
+}
 
-  const data = profile as Record<string, unknown>;
+async function loadProfile(uid: string) {
+  const profileSnapshot = await getAdminDb()
+    .collection("users")
+    .doc(uid)
+    .get();
 
-  const role = String(
-    data.role ??
-      data.userRole ??
-      data.type ??
-      data.accountType ??
-      "",
-  )
-    .trim()
-    .toLowerCase();
-
-  return (
-    role === "admin" ||
-    role === "administrator" ||
-    data.isAdmin === true ||
-    data.admin === true
-  );
+  return profileSnapshot.data();
 }
 
 export async function requireFirebaseUser(
   request: Request,
 ): Promise<AuthenticatedUser> {
-  const authorization =
-    request.headers.get("authorization") ?? "";
+  const authorization = request.headers.get("authorization") ?? "";
 
   if (!authorization.startsWith("Bearer ")) {
-    throw new ApiAuthError(
-      401,
-      "Debes iniciar sesión.",
-    );
+    throw new ApiAuthError(401, "Debes iniciar sesión.");
   }
 
-  const token = authorization
-    .slice("Bearer ".length)
-    .trim();
+  const token = authorization.slice("Bearer ".length).trim();
 
   if (!token) {
-    throw new ApiAuthError(
-      401,
-      "Debes iniciar sesión.",
-    );
+    throw new ApiAuthError(401, "Debes iniciar sesión.");
   }
 
   try {
-    const claims =
-      await getAdminAuth().verifyIdToken(
-        token,
-        true,
-      );
-
-    return {
-      uid: claims.uid,
-      claims,
-    };
+    const claims = await getAdminAuth().verifyIdToken(token, true);
+    return { uid: claims.uid, claims };
   } catch {
     throw new ApiAuthError(
       401,
@@ -92,29 +66,38 @@ export async function requireFirebaseUser(
 export async function requireAdmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
-  const user =
-    await requireFirebaseUser(request);
+  const user = await requireFirebaseUser(request);
 
-  if (isAdminProfile(user.claims)) {
-    return user;
-  }
+  if (isAdminRole(user.claims)) return user;
 
-  const profileSnapshot =
-    await getAdminDb()
-      .collection("users")
-      .doc(user.uid)
-      .get();
-
-  if (
-    !isAdminProfile(
-      profileSnapshot.data(),
-    )
-  ) {
-    throw new ApiAuthError(
-      403,
-      "No tienes permisos de administrador.",
-    );
+  const profile = await loadProfile(user.uid);
+  if (!isAdminRole(profile)) {
+    throw new ApiAuthError(403, "No tienes permisos de administrador.");
   }
 
   return user;
+}
+
+export async function requireSuperadmin(
+  request: Request,
+): Promise<AuthenticatedUser> {
+  const user = await requireFirebaseUser(request);
+
+  if (isSuperadminRole(user.claims)) return user;
+
+  const profile = await loadProfile(user.uid);
+  if (!isSuperadminRole(profile)) {
+    throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
+  }
+
+  return user;
+}
+
+export async function getAuthenticatedAdminRole(
+  user: AuthenticatedUser,
+) {
+  const fromClaims = effectiveAdminRole(user.claims);
+  if (fromClaims) return fromClaims;
+
+  return effectiveAdminRole(await loadProfile(user.uid));
 }
