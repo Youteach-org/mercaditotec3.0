@@ -1,11 +1,20 @@
-﻿"use client";
+"use client";
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { doc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+
 import AuthGuard from "@/components/AuthGuard";
 import { db, storage } from "@/lib/firebase";
+import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
+
+const TRUST_LABEL: Record<StudentTrustStatus, string> = {
+  pending: "Pendiente de confirmación",
+  verified: "Alumno confirmado",
+  revoked: "Confirmación en revisión",
+};
 
 function ProfileContent() {
   const { firebaseUser, appUser, logout } = useSession();
@@ -13,6 +22,11 @@ function ProfileContent() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const studentStatus: StudentTrustStatus =
+    appUser?.studentStatus === "verified" || appUser?.studentStatus === "revoked"
+      ? appUser.studentStatus
+      : "pending";
+  const isAdmin = isAdminRole(appUser);
 
   async function saveProfile() {
     if (!firebaseUser) return;
@@ -25,7 +39,7 @@ function ProfileContent() {
       {
         displayName: displayName.trim() || (firebaseUser.email?.split("@")[0] ?? "usuario"),
       },
-      { merge: true }
+      { merge: true },
     );
 
     setSaving(false);
@@ -44,10 +58,8 @@ function ProfileContent() {
 
     await setDoc(
       doc(db, "users", firebaseUser.uid),
-      {
-        photoURL,
-      },
-      { merge: true }
+      { photoURL },
+      { merge: true },
     );
 
     setSaving(false);
@@ -78,9 +90,9 @@ function ProfileContent() {
               type="file"
               accept="image/*"
               className="text-sm text-gray-700"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) uploadPhoto(file);
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void uploadPhoto(file);
               }}
             />
           </div>
@@ -93,7 +105,7 @@ function ProfileContent() {
           <input
             type="text"
             value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            onChange={(event) => setDisplayName(event.target.value)}
             className="w-full border border-gray-300 rounded-xl p-3 text-gray-900"
             placeholder="Tu nombre visible"
           />
@@ -105,11 +117,30 @@ function ProfileContent() {
           <p>Activo: {appUser?.isActive ? "Sí" : "No"}</p>
         </div>
 
+        <Link
+          href="/verify-student"
+          className="block rounded-2xl border border-sky-200 bg-sky-50 p-4 hover:bg-sky-100"
+        >
+          <div className="text-sm font-black text-sky-950">Verificación de alumno</div>
+          <div className="mt-1 text-sm text-sky-800">
+            {TRUST_LABEL[studentStatus]} · {Math.min(appUser?.studentEndorsementCount ?? 0, 2)}/2 avales
+          </div>
+        </Link>
+
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="block rounded-2xl border border-slate-300 bg-slate-50 p-4 font-bold text-slate-900 hover:bg-slate-100"
+          >
+            Centro de administración
+          </Link>
+        )}
+
         {message && <p className="text-green-700 text-sm">{message}</p>}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
-            onClick={saveProfile}
+            onClick={() => void saveProfile()}
             disabled={saving}
             className="bg-blue-600 text-white px-4 py-3 rounded-xl font-semibold disabled:bg-blue-400"
           >
@@ -120,7 +151,7 @@ function ProfileContent() {
             Volver al chat
           </a>
 
-          <button onClick={logout} className="bg-red-600 text-white px-4 py-3 rounded-xl font-semibold">
+          <button onClick={() => void logout()} className="bg-red-600 text-white px-4 py-3 rounded-xl font-semibold">
             Cerrar sesión
           </button>
         </div>
