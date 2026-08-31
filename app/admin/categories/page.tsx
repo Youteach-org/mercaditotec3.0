@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { isAdminRole } from "@/lib/security/domain";
 import {
   createAdminCategory,
   loadAdminCategories,
@@ -15,7 +16,7 @@ import { useSession } from "@/lib/useSession";
 export default function AdminCategoriesPage() {
   const router = useRouter();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
-  const isAdmin = appUser?.role === "admin";
+  const isAdmin = isAdminRole(appUser);
 
   const [categories, setCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,7 +128,10 @@ export default function AdminCategoriesPage() {
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Categorías de tiendas</h1>
+              <Link href="/admin" className="text-sm font-semibold text-blue-700 hover:underline">
+                ← Centro de administración
+              </Link>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900">Categorías de tiendas</h1>
               <p className="mt-1 text-gray-600">
                 Estas son las categorías oficiales que los vendedores podrán asignar a sus productos.
               </p>
