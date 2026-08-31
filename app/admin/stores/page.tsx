@@ -2,153 +2,72 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
-
-import {
-  adminTabs,
-} from "@/lib/store/adminClient";
-
+import { isAdminRole } from "@/lib/security/domain";
+import { adminTabs } from "@/lib/store/adminClient";
 import {
   storeApiFetch,
   storeStatusClasses,
   storeStatusLabel,
   type StoreApiRecord,
 } from "@/lib/store/client";
-
-import type {
-  StoreStatus,
-} from "@/lib/store/domain";
-
-import {
-  useSession,
-} from "@/lib/useSession";
+import type { StoreStatus } from "@/lib/store/domain";
+import { useSession } from "@/lib/useSession";
 
 export default function AdminStoresPage() {
-  const {
-    firebaseUser,
-    appUser,
-    loading: sessionLoading,
-  } = useSession();
-
+  const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const router = useRouter();
-
-  const [
-    selectedStatus,
-    setSelectedStatus,
-  ] = useState<StoreStatus>(
-    "pending_review",
-  );
-
-  const [stores, setStores] =
-    useState<StoreApiRecord[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
-  const isAdmin =
-    appUser?.role === "admin";
+  const [selectedStatus, setSelectedStatus] = useState<StoreStatus>("pending_review");
+  const [stores, setStores] = useState<StoreApiRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const isAdmin = isAdminRole(appUser);
 
   useEffect(() => {
-    if (sessionLoading) {
-      return;
-    }
-
+    if (sessionLoading) return;
     if (!firebaseUser) {
       router.replace("/login");
       return;
     }
+    if (!isAdmin) router.replace("/marketplace");
+  }, [firebaseUser, isAdmin, router, sessionLoading]);
 
-    if (!isAdmin) {
-      router.replace("/marketplace");
+  const loadStores = useCallback(async () => {
+    if (!firebaseUser || !isAdmin) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await storeApiFetch(
+        firebaseUser,
+        `/api/admin/stores?status=${selectedStatus}`,
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron cargar las tiendas.");
+      }
+      setStores(Array.isArray(data.stores) ? data.stores : []);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "No se pudieron cargar las tiendas.",
+      );
+    } finally {
+      setLoading(false);
     }
-  }, [
-    firebaseUser,
-    isAdmin,
-    router,
-    sessionLoading,
-  ]);
-
-  const loadStores =
-    useCallback(async () => {
-      if (
-        !firebaseUser ||
-        !isAdmin
-      ) {
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const response =
-          await storeApiFetch(
-            firebaseUser,
-            `/api/admin/stores?status=${selectedStatus}`,
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ??
-              "No se pudieron cargar las tiendas.",
-          );
-        }
-
-        setStores(
-          Array.isArray(data.stores)
-            ? data.stores
-            : [],
-        );
-      } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "No se pudieron cargar las tiendas.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, [
-      firebaseUser,
-      isAdmin,
-      selectedStatus,
-    ]);
+  }, [firebaseUser, isAdmin, selectedStatus]);
 
   useEffect(() => {
-    if (
-      firebaseUser &&
-      isAdmin
-    ) {
-      void loadStores();
-    }
-  }, [
-    firebaseUser,
-    isAdmin,
-    loadStores,
-  ]);
+    if (firebaseUser && isAdmin) void loadStores();
+  }, [firebaseUser, isAdmin, loadStores]);
 
-  if (
-    sessionLoading ||
-    !firebaseUser ||
-    !isAdmin
-  ) {
+  if (sessionLoading || !firebaseUser || !isAdmin) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">
-          <p className="text-gray-600">
-            Verificando permisos...
-          </p>
+          <p className="text-gray-600">Verificando permisos...</p>
         </div>
       </main>
     );
@@ -160,10 +79,10 @@ export default function AdminStoresPage() {
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Administración de tiendas
-              </h1>
-
+              <Link href="/admin" className="text-sm font-semibold text-blue-700 hover:underline">
+                ← Centro de administración
+              </Link>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900">Administración de tiendas</h1>
               <p className="mt-1 text-gray-600">
                 Revisa solicitudes y controla qué tiendas pueden aparecer públicamente.
               </p>
@@ -181,19 +100,12 @@ export default function AdminStoresPage() {
         <section className="overflow-x-auto rounded-2xl bg-white p-3 shadow-md">
           <div className="flex min-w-max gap-2">
             {adminTabs.map((tab) => {
-              const active =
-                selectedStatus ===
-                tab.status;
-
+              const active = selectedStatus === tab.status;
               return (
                 <button
                   key={tab.status}
                   type="button"
-                  onClick={() =>
-                    setSelectedStatus(
-                      tab.status,
-                    )
-                  }
+                  onClick={() => setSelectedStatus(tab.status)}
                   className={
                     active
                       ? "rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white"
@@ -215,31 +127,21 @@ export default function AdminStoresPage() {
 
         {loading ? (
           <section className="rounded-2xl bg-white p-6 shadow-md">
-            <p className="text-gray-600">
-              Cargando tiendas...
-            </p>
+            <p className="text-gray-600">Cargando tiendas...</p>
           </section>
         ) : stores.length === 0 ? (
           <section className="rounded-2xl bg-white p-8 text-center shadow-md">
-            <p className="font-semibold text-gray-800">
-              No hay tiendas en esta sección.
-            </p>
+            <p className="font-semibold text-gray-800">No hay tiendas en esta sección.</p>
           </section>
         ) : (
           <section className="grid gap-4 lg:grid-cols-2">
             {stores.map((store) => (
-              <article
-                key={store.id}
-                className="rounded-2xl bg-white p-5 shadow-md"
-              >
+              <article key={store.id} className="rounded-2xl bg-white p-5 shadow-md">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {store.name}
-                    </h2>
-
+                    <h2 className="text-xl font-bold text-gray-900">{store.name}</h2>
                     <p className="mt-1 text-sm text-gray-500">
-                      /tienda/{store.slug}
+                      {store.slug ? `/tienda/${store.slug}` : "URL pública pendiente"}
                     </p>
                   </div>
 
@@ -248,27 +150,18 @@ export default function AdminStoresPage() {
                       store.status,
                     )}`}
                   >
-                    {storeStatusLabel(
-                      store.status,
-                    )}
+                    {storeStatusLabel(store.status)}
                   </span>
                 </div>
 
                 {store.description ? (
-                  <p className="mt-4 line-clamp-3 text-sm text-gray-700">
-                    {store.description}
-                  </p>
+                  <p className="mt-4 line-clamp-3 text-sm text-gray-700">{store.description}</p>
                 ) : (
-                  <p className="mt-4 text-sm italic text-gray-500">
-                    Sin descripción.
-                  </p>
+                  <p className="mt-4 text-sm italic text-gray-500">Sin descripción.</p>
                 )}
 
                 <div className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-500">
-                  Propietario interno:{" "}
-                  <span className="font-mono">
-                    {store.ownerUid}
-                  </span>
+                  Propietario interno: <span className="font-mono">{store.ownerUid}</span>
                 </div>
 
                 <div className="mt-5">
@@ -284,10 +177,7 @@ export default function AdminStoresPage() {
           </section>
         )}
 
-        <Link
-          href="/marketplace"
-          className="inline-block text-sm font-semibold text-blue-700 hover:underline"
-        >
+        <Link href="/marketplace" className="inline-block text-sm font-semibold text-blue-700 hover:underline">
           Volver al Mercadito
         </Link>
       </div>
