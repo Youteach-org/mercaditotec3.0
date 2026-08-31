@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   canOwnerEditStoreView,
@@ -36,11 +36,8 @@ describe("seller actions", () => {
     expect(canOwnerEditStoreView("suspended")).toBe(true);
   });
 
-  it("cambia el texto del botón al reenviar", () => {
-    expect(submitButtonLabel("draft")).toBe("Enviar a revisión");
-
-    expect(
-      submitButtonLabel("changes_required"),
-    ).toBe("Enviar nuevamente a revisión");
+  it("usa los textos aprobados para guardar y reenviar correcciones", () => {
+    expect(submitButtonLabel("draft")).toBe("Guardar");
+    expect(submitButtonLabel("changes_required")).toBe("Guardar correcciones");
   });
 });
