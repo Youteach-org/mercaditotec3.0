@@ -4,7 +4,7 @@ import {
   effectiveAdminRole,
   isAdminRole,
   isSuperadminRole,
-} from "@/lib/security/domain";
+} from "../security/domain";
 import {
   getAdminAuth,
   getAdminDb,
