@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -83,6 +83,10 @@ export default function RegisterPage() {
         role: "user",
         isActive: true,
         blocked: false,
+        studentStatus: "pending",
+        studentEndorsementCount: 0,
+        studentVerifiedAt: null,
+        studentRevokedAt: null,
         createdAt: Date.now(),
       });
 
