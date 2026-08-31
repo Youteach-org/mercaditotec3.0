@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import AdminStoreReviewProducts from "@/components/store/AdminStoreReviewProducts";
+import { isAdminRole } from "@/lib/security/domain";
 import {
   actionsForStoreStatus,
   adminActionLabel,
@@ -24,7 +25,7 @@ export default function AdminStoreDetailPage() {
   const router = useRouter();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const storeId = String(params.storeId ?? "");
-  const isAdmin = appUser?.role === "admin";
+  const isAdmin = isAdminRole(appUser);
 
   const [store, setStore] = useState<StoreApiRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,15 +46,11 @@ export default function AdminStoreDetailPage() {
 
   const loadStore = useCallback(async () => {
     if (!firebaseUser || !isAdmin || !storeId) return;
-
     setLoading(true);
     setError("");
 
     try {
-      const response = await storeApiFetch(
-        firebaseUser,
-        `/api/admin/stores/${storeId}`,
-      );
+      const response = await storeApiFetch(firebaseUser, `/api/admin/stores/${storeId}`);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo cargar la tienda.");
@@ -74,10 +71,7 @@ export default function AdminStoreDetailPage() {
     if (firebaseUser && isAdmin) void loadStore();
   }, [firebaseUser, isAdmin, loadStore]);
 
-  async function executeAction(
-    action: AdminStoreAction,
-    actionMessage?: string,
-  ) {
+  async function executeAction(action: AdminStoreAction, actionMessage?: string) {
     if (!firebaseUser || !store) return;
 
     setWorking(true);
@@ -149,10 +143,7 @@ export default function AdminStoreDetailPage() {
         <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-md">
           <h1 className="text-2xl font-bold">Tienda no disponible</h1>
           <p className="mt-2 text-red-700">{error}</p>
-          <Link
-            href="/admin/stores"
-            className="mt-4 inline-block font-semibold text-blue-700"
-          >
+          <Link href="/admin/stores" className="mt-4 inline-block font-semibold text-blue-700">
             Volver
           </Link>
         </div>
@@ -166,12 +157,14 @@ export default function AdminStoreDetailPage() {
     <main className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-4xl space-y-5">
         <section className="rounded-2xl bg-white p-6 shadow-md">
-          <Link
-            href="/admin/stores"
-            className="text-sm font-semibold text-blue-700 hover:underline"
-          >
-            ← Administración de tiendas
-          </Link>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
+            <Link href="/admin/stores" className="text-blue-700 hover:underline">
+              ← Administración de tiendas
+            </Link>
+            <Link href="/admin" className="text-blue-700 hover:underline">
+              Centro de administración
+            </Link>
+          </div>
 
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -213,28 +206,22 @@ export default function AdminStoreDetailPage() {
               <dt className="text-sm font-semibold text-gray-500">Nombre</dt>
               <dd className="mt-1 text-gray-900">{store.name}</dd>
             </div>
-
             <div>
               <dt className="text-sm font-semibold text-gray-500">Descripción</dt>
               <dd className="mt-1 whitespace-pre-wrap text-gray-900">
                 {store.description || "Sin descripción."}
               </dd>
             </div>
-
             <div>
               <dt className="text-sm font-semibold text-gray-500">Propietario interno</dt>
-              <dd className="mt-1 break-all font-mono text-sm text-gray-700">
-                {store.ownerUid}
-              </dd>
+              <dd className="mt-1 break-all font-mono text-sm text-gray-700">{store.ownerUid}</dd>
             </div>
-
             {store.reviewMessage && (
               <div>
                 <dt className="text-sm font-semibold text-orange-700">Cambios solicitados</dt>
                 <dd className="mt-1 text-orange-900">{store.reviewMessage}</dd>
               </div>
             )}
-
             {store.suspensionReason && (
               <div>
                 <dt className="text-sm font-semibold text-red-700">Motivo de suspensión</dt>
@@ -250,7 +237,7 @@ export default function AdminStoreDetailPage() {
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="text-xl font-bold text-gray-900">Acciones administrativas</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Al aprobar una tienda pendiente se asignará su URL pública y se incorporarán sus categorías sugeridas a la lista general.
+              Al aprobar una tienda pendiente se asignará su URL pública y se incorporarán sus categorías sugeridas a la lista general. La decisión queda registrada en el historial administrativo.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-3">
@@ -288,13 +275,11 @@ export default function AdminStoreDetailPage() {
             <h2 className="text-2xl font-bold text-gray-900">
               {dialogAction === "suspend" ? "Suspender tienda" : "Solicitar cambios"}
             </h2>
-
             <p className="mt-2 text-sm text-gray-600">
               {dialogAction === "suspend"
                 ? "Indica el motivo de la suspensión. El vendedor podrá verlo."
                 : "Explica claramente qué debe corregir el vendedor."}
             </p>
-
             <textarea
               value={adminMessage}
               onChange={(event) => setAdminMessage(event.target.value)}
@@ -303,7 +288,6 @@ export default function AdminStoreDetailPage() {
               maxLength={600}
               className="mt-4 w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none"
             />
-
             <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
@@ -316,7 +300,6 @@ export default function AdminStoreDetailPage() {
               >
                 Cancelar
               </button>
-
               <button
                 type="submit"
                 disabled={working || !adminMessage.trim()}
