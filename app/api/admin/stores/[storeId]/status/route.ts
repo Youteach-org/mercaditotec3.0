@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { writeAuditEntry } from "@/lib/security/audit";
 import { parseAdminStoreStatusRequest } from "@/lib/store/admin";
-import { requireAdmin } from "@/lib/store/auth";
+import {
+  ApiAuthError,
+  getAuthenticatedAdminRole,
+  requireAdmin,
+} from "@/lib/store/auth";
 import { serializeStore, toApiError } from "@/lib/store/http";
 import {
   adminSetStoreStatus,
@@ -15,9 +20,22 @@ interface RouteContext {
   params: Promise<{ storeId: string }>;
 }
 
+function auditAction(previousStatus: string, nextStatus: string) {
+  if (previousStatus === "pending_review" && nextStatus === "active") return "store.approve";
+  if (previousStatus === "pending_review" && nextStatus === "changes_required") return "store.changes_required";
+  if (previousStatus === "active" && nextStatus === "suspended") return "store.suspend";
+  if (previousStatus === "suspended" && nextStatus === "active") return "store.reactivate";
+  return "store.status.update";
+}
+
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await requireAdmin(request);
+    const actor = await requireAdmin(request);
+    const actorRole = await getAuthenticatedAdminRole(actor);
+    if (!actorRole) {
+      throw new ApiAuthError(403, "No tienes permisos de administrador.");
+    }
+
     const { storeId } = await context.params;
 
     let body: unknown;
@@ -48,6 +66,20 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const store = await adminSetStoreStatus(storeId, input.status, input.message);
+    await writeAuditEntry({
+      actorUid: actor.uid,
+      actorRole,
+      action: auditAction(current.status, store.status),
+      targetType: "store",
+      targetId: storeId,
+      metadata: {
+        previousStatus: current.status,
+        nextStatus: store.status,
+        message: input.message ?? null,
+        ownerUid: store.ownerUid,
+      },
+    });
+
     return NextResponse.json({ store: serializeStore(store) });
   } catch (error) {
     const apiError = toApiError(error);
