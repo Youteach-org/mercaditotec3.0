@@ -1,7 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 
 import {
-  requireFirebaseUser,
+  requireUnblockedUser,
 } from "@/lib/store/auth";
 
 import {
@@ -27,7 +27,7 @@ export async function PATCH(
 ) {
   try {
     const user =
-      await requireFirebaseUser(
+      await requireUnblockedUser(
         request,
       );
 

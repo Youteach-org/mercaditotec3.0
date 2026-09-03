@@ -8,6 +8,7 @@ import {
   type StudentTrustStatus,
 } from "./domain";
 import { writeAuditEntry } from "./audit";
+import { isAdministrativeBlockActive } from "../moderation/domain";
 
 export class AdminUserError extends Error {
   constructor(
@@ -74,7 +75,7 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
       ? Math.max(0, endorsementCount)
       : 0,
     isActive: data.isActive !== false,
-    blocked: data.blocked === true,
+    blocked: isAdministrativeBlockActive(data),
     createdAt: createdAtIso(data.createdAt),
   };
 }

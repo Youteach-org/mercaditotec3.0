@@ -79,7 +79,7 @@ describe("validateStoreSchedule", () => {
 
   it("rechaza horas fuera de la cuadricula", () => {
     const schedule = createEmptyStoreSchedule();
-    schedule.monday.slots = ["06:00"];
+    schedule.monday.slots = ["06:00" as never];
 
     expect(() => validateStoreSchedule(schedule)).toThrow(
       "El horario de monday contiene una hora no permitida.",

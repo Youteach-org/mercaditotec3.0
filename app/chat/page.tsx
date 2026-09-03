@@ -18,6 +18,8 @@ import { db } from "@/lib/firebase";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
+import ReportDialog from "@/components/moderation/ReportDialog";
+import { moderationApiFetch } from "@/lib/moderation/client";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 const TEMPLATE_MESSAGES = [
@@ -29,8 +31,6 @@ const TEMPLATE_MESSAGES = [
   "Quiero comprar",
   "¿Tienes más fotos?",
 ];
-
-const MESSAGE_TTL_MS = 48 * 60 * 60 * 1000;
 
 type SenderRole = "buyer" | "seller";
 
@@ -54,6 +54,8 @@ type ChatMessage = {
   expiresAt?: number;
   replyTo?: ReplyTo | null;
   seenBy?: Record<string, number>;
+  hidden?: boolean;
+  hiddenAt?: unknown;
 };
 
 type UserImage = {
@@ -351,6 +353,7 @@ function ChatContent() {
   const [showActiveUsers, setShowActiveUsers] = useState(false);
   const [actionForMessage, setActionForMessage] = useState<string | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number } | null>(null);
+  const [reportMessageId, setReportMessageId] = useState<string | null>(null);
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedSavedUrls, setSelectedSavedUrls] = useState<string[]>([]);
@@ -1228,19 +1231,35 @@ function ChatContent() {
     });
   }
 
+  async function sendChatMessage(payload: {
+    text: string;
+    senderRole: SenderRole;
+    messageType: "template" | "custom" | "image";
+    imageUrls: string[];
+    replyTo: ReplyTo | null;
+  }) {
+    if (!firebaseUser) return;
+    const response = await moderationApiFetch(firebaseUser, "/api/chat/messages", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data.error ?? "No se pudo enviar el mensaje.";
+      setToast(message);
+      window.setTimeout(() => setToast(""), 3200);
+      return false;
+    }
+    return true;
+  }
+
   async function sendTemplateMessage(templateText: string) {
     if (!firebaseUser) return;
     if (!ensureNicknameReady()) return;
 
-    await addDoc(collection(db, "messages"), {
+    const sent = await sendChatMessage({
       text: templateText,
-      senderId: firebaseUser!.uid,
-      senderName: currentNickname,
-      senderPhotoURL: appUserAny?.photoURL ?? "",
       senderRole,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + MESSAGE_TTL_MS,
-      senderPlan: appUserAny?.plan ?? "free",
       messageType: "template",
       imageUrls: [],
       replyTo: replyingTo
@@ -1251,6 +1270,7 @@ function ChatContent() {
           }
         : null,
     });
+    if (!sent) return;
 
     clearReply();
     setTemplatesOpen(false);
@@ -1260,15 +1280,9 @@ function ChatContent() {
     if (!firebaseUser || !text.trim()) return;
     if (!ensureNicknameReady()) return;
 
-    await addDoc(collection(db, "messages"), {
+    const sent = await sendChatMessage({
       text: text.trim(),
-      senderId: firebaseUser!.uid,
-      senderName: currentNickname,
-      senderPhotoURL: appUserAny?.photoURL ?? "",
       senderRole,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + MESSAGE_TTL_MS,
-      senderPlan: appUserAny?.plan ?? "free",
       messageType: "custom",
       imageUrls: [],
       replyTo: replyingTo
@@ -1279,6 +1293,7 @@ function ChatContent() {
           }
         : null,
     });
+    if (!sent) return;
 
     setText("");
     clearReply();
@@ -1334,15 +1349,9 @@ function ChatContent() {
         });
       }
 
-      await addDoc(collection(db, "messages"), {
+      const sent = await sendChatMessage({
         text: text.trim(),
-        senderId: firebaseUser.uid,
-        senderName: currentNickname,
-        senderPhotoURL: appUserAny?.photoURL ?? "",
         senderRole,
-        createdAt: Date.now(),
-        expiresAt: Date.now() + MESSAGE_TTL_MS,
-        senderPlan: appUserAny?.plan ?? "free",
         messageType: "image",
         imageUrls: urls,
         replyTo: replyingTo
@@ -1353,6 +1362,7 @@ function ChatContent() {
             }
           : null,
       });
+      if (!sent) return;
 
       setSelectedImages([]);
       setSelectedSavedUrls([]);
@@ -1694,6 +1704,19 @@ function ChatContent() {
             const seenCount = seenEntries.length;
             const groupedReactions = reactionsForMessage(msg.id);
 
+            if (msg.hidden) {
+              return (
+                <div key={msg.id} id={`msg-${msg.id}`} className="flex justify-center">
+                  <div className={darkMode
+                    ? "rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-xs italic text-slate-300"
+                    : "rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs italic text-slate-500"}
+                  >
+                    Mensaje retirado por moderación.
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={msg.id}
@@ -1782,7 +1805,7 @@ function ChatContent() {
 
                             const rect = e.currentTarget.getBoundingClientRect();
                             const menuWidth = 260;
-                            const menuHeight = 215;
+                            const menuHeight = 270;
                             const gap = 10;
 
                             const candidates = [
@@ -1846,6 +1869,22 @@ function ChatContent() {
                             >
                               Responder
                             </button>
+
+                            {!isMine && (
+                              <button
+                                type="button"
+                                onPointerDown={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  setActionForMessage(null);
+                                  setActionMenuPosition(null);
+                                  setReportMessageId(msg.id);
+                                }}
+                                className="mt-2 w-full rounded-xl bg-red-600 px-3 py-2 text-left text-xs font-bold text-white"
+                              >
+                                Reportar
+                              </button>
+                            )}
 
                             <div className="mt-2 flex flex-wrap gap-2">
                               {QUICK_EMOJIS.map((emoji) => (
@@ -2298,6 +2337,19 @@ function ChatContent() {
         </div>
       </div>
 
+      {reportMessageId && firebaseUser && (
+        <ReportDialog
+          user={firebaseUser}
+          targetType="message"
+          targetId={reportMessageId}
+          onClose={() => setReportMessageId(null)}
+          onReported={() => {
+            setToast("Reporte enviado a administración.");
+            window.setTimeout(() => setToast(""), 2400);
+          }}
+        />
+      )}
+
       {zoomImageUrl && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 md:p-8"
@@ -2357,12 +2409,6 @@ export default function ChatPage() {
     </AuthGuard>
   );
 }
-
-
-
-
-
-
 
 
 

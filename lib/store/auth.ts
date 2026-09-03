@@ -5,6 +5,7 @@ import {
   isAdminRole,
   isSuperadminRole,
 } from "../security/domain";
+import { isAdministrativeBlockActive } from "../moderation/domain";
 import {
   getAdminAuth,
   getAdminDb,
@@ -37,6 +38,18 @@ async function loadProfile(uid: string) {
   return profileSnapshot.data();
 }
 
+export function assertUserMayMutate(
+  profile: Record<string, unknown> | undefined,
+  now = new Date(),
+): void {
+  if (profile && isAdministrativeBlockActive(profile, now)) {
+    throw new ApiAuthError(
+      403,
+      "Tu cuenta está bloqueada temporalmente para realizar esta acción.",
+    );
+  }
+}
+
 export async function requireFirebaseUser(
   request: Request,
 ): Promise<AuthenticatedUser> {
@@ -61,6 +74,14 @@ export async function requireFirebaseUser(
       "La sesión no es válida o ha expirado.",
     );
   }
+}
+
+export async function requireUnblockedUser(
+  request: Request,
+): Promise<AuthenticatedUser> {
+  const user = await requireFirebaseUser(request);
+  assertUserMayMutate(await loadProfile(user.uid));
+  return user;
 }
 
 export async function requireAdmin(

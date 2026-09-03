@@ -14,6 +14,9 @@ export type AppUser = {
   plan?: "free" | "premium";
   isActive?: boolean;
   blocked?: boolean;
+  blockedUntil?: number | string | { toDate?: () => Date } | null;
+  blockedReason?: string | null;
+  blockedBy?: string | null;
   displayName?: string;
   photoURL?: string;
   createdAt?: number;

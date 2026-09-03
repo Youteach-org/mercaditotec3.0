@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireFirebaseUser } from "@/lib/store/auth";
+import { requireUnblockedUser } from "@/lib/store/auth";
 import { serializeStore, toApiError } from "@/lib/store/http";
 import { withdrawStoreFromReview } from "@/lib/store/withdrawal";
 
@@ -17,7 +17,7 @@ export async function POST(
   context: RouteContext,
 ) {
   try {
-    const user = await requireFirebaseUser(request);
+    const user = await requireUnblockedUser(request);
     const { storeId } = await context.params;
     const store = await withdrawStoreFromReview(user.uid, storeId);
 

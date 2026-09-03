@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireFirebaseUser } from "@/lib/store/auth";
+import { requireFirebaseUser, requireUnblockedUser } from "@/lib/store/auth";
 import {
   parseStoreEditableInput,
   serializeStore,
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireFirebaseUser(request);
+    const user = await requireUnblockedUser(request);
     let body: unknown = {};
 
     try {

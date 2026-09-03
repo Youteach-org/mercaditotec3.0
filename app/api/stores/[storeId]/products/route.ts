@@ -2,6 +2,7 @@
 
 import {
   requireFirebaseUser,
+  requireUnblockedUser,
 } from "@/lib/store/auth";
 
 import {
@@ -74,7 +75,7 @@ export async function POST(
 ) {
   try {
     const user =
-      await requireFirebaseUser(
+      await requireUnblockedUser(
         request,
       );
 

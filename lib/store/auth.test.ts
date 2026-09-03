@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAdminProfile } from "./auth";
+import { assertUserMayMutate, isAdminProfile } from "./auth";
 
 
 describe("isAdminProfile", () => {
@@ -19,5 +19,23 @@ describe("isAdminProfile", () => {
     expect(isAdminProfile({ role: "user" })).toBe(false);
     expect(isAdminProfile({})).toBe(false);
     expect(isAdminProfile(null)).toBe(false);
+  });
+});
+
+describe("administrative blocks", () => {
+  it("rejects mutations while a temporary block is active", () => {
+    expect(() => assertUserMayMutate({
+      blocked: true,
+      blockedUntil: "2026-09-03T12:00:00.000Z",
+    }, new Date("2026-09-02T12:00:00.000Z"))).toThrow(
+      "Tu cuenta está bloqueada temporalmente",
+    );
+  });
+
+  it("allows mutations after the block expires", () => {
+    expect(() => assertUserMayMutate({
+      blocked: true,
+      blockedUntil: "2026-09-01T12:00:00.000Z",
+    }, new Date("2026-09-02T12:00:00.000Z"))).not.toThrow();
   });
 });

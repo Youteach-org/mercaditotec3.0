@@ -11,7 +11,12 @@ import {
 } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
-const cards = [
+const cards: Array<{
+  title: string;
+  description: string;
+  href: string | null;
+  icon: string;
+}> = [
   {
     title: "Usuarios",
     description: "Revisa alumnos, estado de confianza y cuentas activas.",
@@ -27,13 +32,13 @@ const cards = [
   {
     title: "Reportes",
     description: "Cola central para reportes de usuarios, tiendas y mensajes.",
-    href: null,
+    href: "/admin/reports",
     icon: "🚩",
   },
   {
     title: "Chat",
     description: "Moderación de mensajes reportados y contenido inapropiado.",
-    href: null,
+    href: "/admin/chat",
     icon: "💬",
   },
   {
@@ -48,7 +53,7 @@ const cards = [
     href: "/admin/audit",
     icon: "🧾",
   },
-] as const;
+];
 
 export default function AdminHomePage() {
   const router = useRouter();

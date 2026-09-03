@@ -13,7 +13,7 @@ The phase adds:
 - A unified report action and report model for users, stores, and chat messages.
 - A central administrative report queue.
 - A report detail view with the reported item, reason, reporter, relevant history, and limited context.
-- Chat moderation limited to reported messages and their immediate conversation context.
+- Chat moderation limited to reported messages and their immediate context in the single general chat room.
 - Moderation actions for dismissing a report, hiding a message, requesting store changes, suspending a store, temporarily blocking a user, and revoking student verification.
 - Immutable server-side audit records for report and moderation actions.
 - Functional links for Reports and Chat in the administration center.
@@ -138,16 +138,16 @@ Resolving a report and applying a moderation action occur in one server-side ope
 
 ## Chat moderation and privacy
 
-The `/admin/chat` page lists reported messages only. Administrators cannot browse every private conversation.
+MercaditoTec3 has one general chat room; there are no private conversations or per-user rooms. The `/admin/chat` page lists reported messages from that general room only. It is a moderation queue, not an unrestricted chat browser.
 
 For a reported message, the administrator may see:
 
 - The reported message.
 - Its author and timestamp.
-- The limited immediate context required to understand it: up to five messages before and five messages after from the same conversation.
+- The limited immediate context required to understand it: up to five messages before and five messages after in chronological order from the general room.
 - Whether any displayed message is hidden.
 
-The system must not expose unrelated conversations or allow arbitrary conversation searches from the admin interface.
+The system must not expose messages outside that eleven-message context window or allow arbitrary general-room searches from the admin interface.
 
 Hiding a message is a reversible soft-hide. The stored message and audit history remain available to authorized administrators. Normal users see that the message was removed by moderation, without seeing the administrative reason.
 
@@ -215,7 +215,7 @@ Unit tests cover:
 - Allowed report-state transitions.
 - Target-specific moderation actions.
 - Temporary-block expiration.
-- Limited chat-context selection.
+- Limited general-room chat-context selection.
 - Audit action mapping.
 
 Repository and API tests cover:
@@ -230,4 +230,4 @@ Repository and API tests cover:
 
 UI tests cover core labels, filters, available actions by target type, confirmation states, and handling of already-resolved reports.
 
-The phase is complete when all tests and the production build pass, Reports and Chat are functional from `/admin`, and the full Student -> Report -> Admin review -> moderation -> Audit flow can be exercised without exposing unrelated private chats.
+The phase is complete when all tests and the production build pass, Reports and Chat are functional from `/admin`, and the full Student -> Report -> Admin review -> moderation -> Audit flow can be exercised while exposing no messages outside the permitted general-room context window.

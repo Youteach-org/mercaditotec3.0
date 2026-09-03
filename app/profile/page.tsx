@@ -7,6 +7,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import AuthGuard from "@/components/AuthGuard";
 import { db, storage } from "@/lib/firebase";
+import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
 import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
@@ -27,6 +28,7 @@ function ProfileContent() {
       ? appUser.studentStatus
       : "pending";
   const isAdmin = isAdminRole(appUser);
+  const blocked = Boolean(appUser && isAdministrativeBlockActive(appUser));
 
   async function saveProfile() {
     if (!firebaseUser) return;
@@ -70,6 +72,16 @@ function ProfileContent() {
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-md p-6 space-y-5">
         <h1 className="text-3xl font-bold text-gray-900">Perfil</h1>
+
+        {blocked && (
+          <div className="rounded-2xl border border-red-300 bg-red-50 p-4 text-red-950">
+            <p className="font-black">Cuenta bloqueada temporalmente</p>
+            <p className="mt-1 text-sm">
+              Puedes consultar tu cuenta, pero no enviar mensajes, reportar ni modificar tiendas hasta que termine el bloqueo.
+            </p>
+            {appUser?.blockedReason && <p className="mt-2 text-sm"><strong>Motivo:</strong> {appUser.blockedReason}</p>}
+          </div>
+        )}
 
         <div className="flex items-center gap-4">
           {appUser?.photoURL ? (
