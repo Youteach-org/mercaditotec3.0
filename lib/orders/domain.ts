@@ -43,7 +43,12 @@ export function parseCreateOrderInput(input: unknown): CreateOrderInput {
     throw new Error("La tienda y el producto son obligatorios.");
   }
 
-  if (!Number.isInteger(quantity) || Number(quantity) < 1 || Number(quantity) > 20) {
+  if (
+    typeof quantity !== "number" ||
+    !Number.isInteger(quantity) ||
+    quantity < 1 ||
+    quantity > 20
+  ) {
     throw new Error("La cantidad debe ser un número entero entre 1 y 20.");
   }
 
@@ -54,7 +59,7 @@ export function parseCreateOrderInput(input: unknown): CreateOrderInput {
   return {
     storeId,
     productId,
-    quantity: Number(quantity),
+    quantity,
     note,
   };
 }
