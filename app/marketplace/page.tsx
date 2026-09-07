@@ -50,7 +50,13 @@ export default function MarketplacePage() {
 
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/mystores"
+                href="/orders"
+                className="rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-emerald-300"
+              >
+                Mis pedidos
+              </Link>
+              <Link
+                href="/mystore"
                 className="rounded-xl bg-white px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-slate-100"
               >
                 Mis tiendas
