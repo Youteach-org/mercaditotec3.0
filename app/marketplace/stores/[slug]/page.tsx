@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { createOrderRequest } from "@/lib/orders/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
 import { STORE_WEEK_DAYS } from "@/lib/store/schedule";
+import { useSession } from "@/lib/useSession";
 
 const DAY_LABELS: Record<(typeof STORE_WEEK_DAYS)[number], string> = {
   monday: "Lunes",
@@ -29,10 +31,16 @@ function priceLabel(storeProduct: PublicStoreDetail["products"][number]): string
 
 export default function PublicStorePage() {
   const params = useParams<{ slug: string }>();
+  const router = useRouter();
+  const { firebaseUser } = useSession();
   const slug = String(params.slug ?? "");
   const [store, setStore] = useState<PublicStoreDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +65,38 @@ export default function PublicStorePage() {
     };
   }, [slug]);
 
+  async function requestProduct(productId: string) {
+    if (!store) return;
+    if (!firebaseUser) {
+      router.push("/login");
+      return;
+    }
+
+    setSubmittingId(productId);
+    setFeedback((current) => ({ ...current, [productId]: "" }));
+
+    try {
+      await createOrderRequest(firebaseUser, {
+        storeId: store.id,
+        productId,
+        quantity: quantities[productId] ?? 1,
+        note: notes[productId] ?? "",
+      });
+      setFeedback((current) => ({
+        ...current,
+        [productId]: "Solicitud enviada. Puedes seguirla en Mis pedidos.",
+      }));
+      setNotes((current) => ({ ...current, [productId]: "" }));
+    } catch (submitError) {
+      setFeedback((current) => ({
+        ...current,
+        [productId]: submitError instanceof Error ? submitError.message : "No se pudo enviar la solicitud.",
+      }));
+    } finally {
+      setSubmittingId(null);
+    }
+  }
+
   if (loading) {
     return <main className="min-h-screen bg-slate-100 p-5">Cargando tienda...</main>;
   }
@@ -76,9 +116,14 @@ export default function PublicStorePage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5 sm:px-6 sm:py-7">
       <div className="mx-auto max-w-6xl space-y-6">
-        <Link href="/marketplace" className="inline-flex text-sm font-black text-emerald-700 hover:underline">
-          ← Volver al Mercadito
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/marketplace" className="inline-flex text-sm font-black text-emerald-700 hover:underline">
+            ← Volver al Mercadito
+          </Link>
+          <Link href="/orders" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm hover:bg-slate-50">
+            Mis pedidos
+          </Link>
+        </div>
 
         <header className="overflow-hidden rounded-3xl bg-white shadow-lg">
           <div className="relative h-44 bg-gradient-to-br from-slate-900 to-slate-600 sm:h-60">
@@ -147,6 +192,49 @@ export default function PublicStorePage() {
                       <h3 className="text-xl font-black text-slate-950">{product.title}</h3>
                       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-slate-600">{product.description}</p>
                       <p className="mt-4 text-lg font-black text-emerald-700">{priceLabel(product)}</p>
+
+                      <div className="mt-5 border-t border-slate-100 pt-4">
+                        <div className="flex items-center gap-3">
+                          <label className="text-sm font-bold text-slate-700" htmlFor={`qty-${product.id}`}>Cantidad</label>
+                          <select
+                            id={`qty-${product.id}`}
+                            value={quantities[product.id] ?? 1}
+                            onChange={(event) => setQuantities((current) => ({
+                              ...current,
+                              [product.id]: Number(event.target.value),
+                            }))}
+                            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-900"
+                          >
+                            {Array.from({ length: 20 }, (_, index) => index + 1).map((quantity) => (
+                              <option key={quantity} value={quantity}>{quantity}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <textarea
+                          value={notes[product.id] ?? ""}
+                          onChange={(event) => setNotes((current) => ({
+                            ...current,
+                            [product.id]: event.target.value.slice(0, 500),
+                          }))}
+                          placeholder="Nota opcional para el vendedor"
+                          rows={2}
+                          className="mt-3 w-full resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900"
+                        />
+
+                        <button
+                          type="button"
+                          disabled={submittingId === product.id}
+                          onClick={() => void requestProduct(product.id)}
+                          className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {submittingId === product.id ? "Enviando..." : "Solicitar"}
+                        </button>
+
+                        {feedback[product.id] && (
+                          <p className="mt-2 text-sm font-semibold text-slate-600">{feedback[product.id]}</p>
+                        )}
+                      </div>
                     </div>
                   </article>
                 ))}
