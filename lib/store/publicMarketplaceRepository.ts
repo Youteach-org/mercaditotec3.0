@@ -63,8 +63,9 @@ export async function listPublicStores(): Promise<PublicStoreSummary[]> {
     .get();
 
   return snapshot.docs
-    .map((document) => serializePublicStore(storeSource(document.id, document.data())))
+    .map((document) => storeSource(document.id, document.data()))
     .filter((store) => Boolean(store.slug))
+    .map((store) => serializePublicStore(store))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 
@@ -75,20 +76,23 @@ export async function getPublicStoreBySlug(slug: string): Promise<PublicStoreSum
   const snapshot = await getAdminDb()
     .collection("stores")
     .where("slug", "==", cleanSlug)
-    .where("status", "==", "active")
     .limit(1)
     .get();
 
   if (snapshot.empty) throw new PublicMarketplaceError(404, "Tienda no encontrada.");
   const document = snapshot.docs[0];
-  return serializePublicStore(storeSource(document.id, document.data()));
+  const data = document.data();
+  if (data.status !== "active") {
+    throw new PublicMarketplaceError(404, "Tienda no encontrada.");
+  }
+
+  return serializePublicStore(storeSource(document.id, data));
 }
 
 export async function listPublicProducts(storeId: string): Promise<PublicProduct[]> {
   const snapshot = await getAdminDb()
     .collection("products")
     .where("storeId", "==", storeId)
-    .where("visibility", "==", "published")
     .limit(100)
     .get();
 
