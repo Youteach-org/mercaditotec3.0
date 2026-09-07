@@ -114,7 +114,7 @@ export default function MyStoresPage() {
             Iniciar sesión
           </Link>
           <div className="mt-5">
-            <Link href="/" className="text-sm font-semibold text-blue-700 hover:underline">← Volver al Mercadito</Link>
+            <Link href="/marketplace" className="text-sm font-semibold text-blue-700 hover:underline">← Volver al Mercadito</Link>
           </div>
         </div>
       </main>
@@ -130,9 +130,14 @@ export default function MyStoresPage() {
               <h1 className="text-3xl font-bold text-gray-900">myStores</h1>
               <p className="mt-1 text-gray-600">Administra tus tiendas, continúa borradores y revisa el estado de cada solicitud.</p>
             </div>
-            <button type="button" onClick={() => void createStore()} disabled={creating} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
-              {creating ? "Abriendo editor..." : "Crear mi tienda"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/mystore/orders" className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700">
+                Pedidos recibidos
+              </Link>
+              <button type="button" onClick={() => void createStore()} disabled={creating} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
+                {creating ? "Abriendo editor..." : "Crear mi tienda"}
+              </button>
+            </div>
           </div>
         </section>
 
@@ -155,7 +160,7 @@ export default function MyStoresPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">{store.name || "Tienda en preparación"}</h2>
-                    <p className="mt-1 text-sm text-gray-500">{store.slug ? `/tienda/${store.slug}` : "URL pública pendiente de aprobación"}</p>
+                    <p className="mt-1 text-sm text-gray-500">{store.slug ? `/marketplace/stores/${store.slug}` : "URL pública pendiente de aprobación"}</p>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${storeStatusClasses(store.status)}`}>{storeStatusLabel(store.status)}</span>
                 </div>
@@ -176,6 +181,11 @@ export default function MyStoresPage() {
                   <Link href={`/mystore/${store.id}`} className="inline-flex rounded-xl bg-slate-900 px-4 py-2.5 font-semibold text-white hover:bg-slate-800">
                     {store.status === "draft" ? "Continuar" : "Administrar"}
                   </Link>
+                  {store.status === "active" && store.slug && (
+                    <Link href={`/marketplace/stores/${store.slug}`} className="inline-flex rounded-xl border border-emerald-200 px-4 py-2.5 font-semibold text-emerald-700 hover:bg-emerald-50">
+                      Ver tienda pública
+                    </Link>
+                  )}
                   {store.status === "draft" && (
                     <button
                       type="button"
@@ -192,7 +202,7 @@ export default function MyStoresPage() {
           </section>
         )}
 
-        <div><Link href="/" className="text-sm font-semibold text-blue-700 hover:underline">← Volver al Mercadito</Link></div>
+        <div><Link href="/marketplace" className="text-sm font-semibold text-blue-700 hover:underline">← Volver al Mercadito</Link></div>
       </div>
     </main>
   );
