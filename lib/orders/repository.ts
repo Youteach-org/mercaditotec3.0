@@ -1,6 +1,7 @@
 import { Timestamp, type DocumentData } from "firebase-admin/firestore";
 
 import { getAdminDb } from "../firebaseAdmin";
+import { createOrderNotification } from "../notifications/repository";
 import type { ProductPriceType } from "../store/productDomain";
 import {
   assertOrderTransition,
@@ -138,6 +139,7 @@ export async function createOrder(
   };
 
   await reference.set(order);
+  await createOrderNotification(order, "created");
   return order;
 }
 
@@ -199,5 +201,6 @@ export async function setOrderStatus(
   });
 
   if (!result) throw new OrderRepositoryError(500, "No se pudo actualizar el pedido.");
+  if (target !== "pending") await createOrderNotification(result, target);
   return result;
 }
