@@ -5,7 +5,9 @@ import {
   serializePublicProduct,
   serializePublicStore,
   type PublicProduct,
+  type PublicProductSource,
   type PublicStoreDetail,
+  type PublicStoreSource,
   type PublicStoreSummary,
 } from "./publicMarketplace";
 
@@ -15,7 +17,7 @@ export class PublicMarketplaceError extends Error {
   }
 }
 
-function storeSource(id: string, data: Record<string, unknown>) {
+function storeSource(id: string, data: Record<string, unknown>): PublicStoreSource {
   return {
     id,
     ownerUid: typeof data.ownerUid === "string" ? data.ownerUid : "",
@@ -27,12 +29,12 @@ function storeSource(id: string, data: Record<string, unknown>) {
     logoUrl: typeof data.logoUrl === "string" ? data.logoUrl : null,
     coverUrl: typeof data.coverUrl === "string" ? data.coverUrl : null,
     schedule: normalizeStoredSchedule(data.schedule),
-    operationalMode: data.operationalMode === "manual" ? "manual" as const : "automatic" as const,
+    operationalMode: data.operationalMode === "manual" ? "manual" : "automatic",
     manualOpen: typeof data.manualOpen === "boolean" ? data.manualOpen : null,
   };
 }
 
-function productSource(id: string, data: Record<string, unknown>) {
+function productSource(id: string, data: Record<string, unknown>): PublicProductSource {
   return {
     id,
     ownerUid: typeof data.ownerUid === "string" ? data.ownerUid : "",
@@ -50,7 +52,7 @@ function productSource(id: string, data: Record<string, unknown>) {
     priceType:
       data.priceType === "negotiable" || data.priceType === "ask"
         ? data.priceType
-        : "fixed" as const,
+        : "fixed",
     priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
   };
 }
