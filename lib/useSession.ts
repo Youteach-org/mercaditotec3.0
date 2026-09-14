@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
+
 import { auth, db } from "@/lib/firebase";
 import type { StudentTrustStatus } from "@/lib/security/domain";
 
@@ -26,9 +36,17 @@ export type AppUser = {
   studentRevokedAt?: number | null;
 };
 
+interface SessionValue {
+  firebaseUser: User | null;
+  appUser: AppUser | null;
+  loading: boolean;
+  logout: () => Promise<void>;
+}
+
+const SessionContext = createContext<SessionValue | null>(null);
 const AUTH_RESOLUTION_TIMEOUT_MS = 4000;
 
-export function useSession() {
+export function SessionProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,14 +112,27 @@ export function useSession() {
     };
   }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     await signOut(auth);
-  }
+  }, []);
 
-  return {
-    firebaseUser,
-    appUser,
-    loading,
-    logout,
-  };
+  const value = useMemo<SessionValue>(
+    () => ({
+      firebaseUser,
+      appUser,
+      loading,
+      logout,
+    }),
+    [firebaseUser, appUser, loading, logout],
+  );
+
+  return createElement(SessionContext.Provider, { value }, children);
+}
+
+export function useSession(): SessionValue {
+  const session = useContext(SessionContext);
+  if (!session) {
+    throw new Error("useSession must be used inside SessionProvider.");
+  }
+  return session;
 }
