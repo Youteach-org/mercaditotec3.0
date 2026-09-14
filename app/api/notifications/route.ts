@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { serializeNotification, toNotificationApiError } from "@/lib/notifications/http";
 import {
-  countUnreadNotifications,
   listNotificationsForUser,
+  syncUnreadNotificationCount,
 } from "@/lib/notifications/repository";
 import { requireFirebaseUser } from "@/lib/store/auth";
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     if (searchParams.get("summary") === "1") {
-      const unreadCount = await countUnreadNotifications(user.uid);
+      const unreadCount = await syncUnreadNotificationCount(user.uid);
       return NextResponse.json({ unreadCount });
     }
 
