@@ -65,6 +65,19 @@ export async function createOrderNotification(
   }
 }
 
+export async function countUnreadNotifications(
+  recipientUid: string,
+): Promise<number> {
+  const snapshot = await getAdminDb()
+    .collection("notifications")
+    .where("recipientUid", "==", recipientUid)
+    .where("readAt", "==", null)
+    .count()
+    .get();
+
+  return snapshot.data().count;
+}
+
 export async function listNotificationsForUser(
   recipientUid: string,
 ): Promise<NotificationRecord[]> {

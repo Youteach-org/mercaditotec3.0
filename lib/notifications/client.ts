@@ -31,6 +31,12 @@ async function notificationResponse(response: Response) {
   return data;
 }
 
+export async function loadUnreadNotificationCount(user: User): Promise<number> {
+  const response = await storeApiFetch(user, "/api/notifications?summary=1");
+  const data = await notificationResponse(response);
+  return typeof data.unreadCount === "number" ? data.unreadCount : 0;
+}
+
 export async function loadNotifications(user: User): Promise<NotificationsResponse> {
   const response = await storeApiFetch(user, "/api/notifications");
   const data = await notificationResponse(response);

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { serializeNotification, toNotificationApiError } from "@/lib/notifications/http";
-import { listNotificationsForUser } from "@/lib/notifications/repository";
+import {
+  countUnreadNotifications,
+  listNotificationsForUser,
+} from "@/lib/notifications/repository";
 import { requireFirebaseUser } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
@@ -9,6 +12,13 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   try {
     const user = await requireFirebaseUser(request);
+    const { searchParams } = new URL(request.url);
+
+    if (searchParams.get("summary") === "1") {
+      const unreadCount = await countUnreadNotifications(user.uid);
+      return NextResponse.json({ unreadCount });
+    }
+
     const notifications = await listNotificationsForUser(user.uid);
     const unreadCount = notifications.filter((notification) => !notification.readAt).length;
     return NextResponse.json({

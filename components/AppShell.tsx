@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import { loadNotifications } from "@/lib/notifications/client";
+import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { useSession } from "@/lib/useSession";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -16,8 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      const result = await loadNotifications(firebaseUser);
-      setUnreadCount(result.unreadCount);
+      setUnreadCount(await loadUnreadNotificationCount(firebaseUser));
     } catch {
       setUnreadCount(0);
     }
