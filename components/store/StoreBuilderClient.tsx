@@ -335,8 +335,25 @@ export default function StoreBuilderClient() {
                     ¿Por qué debe aprobarse?
                   </button>
                 </div>
-                <button type="button" onClick={() => void saveAndReview()} disabled={submitting || infoSaving} className="mt-5 w-full rounded-xl bg-blue-600 px-6 py-3.5 font-bold text-white hover:bg-blue-700 disabled:bg-blue-400 sm:w-auto">
-                  {submitting ? "Guardando..." : submitButtonLabel(store.status)}
+                {!studentVerified && (
+                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <strong>Verificación de alumno requerida.</strong>{" "}
+                    {studentStatus === "revoked"
+                      ? "Tu confirmación está en revisión y debe ser restaurada por administración."
+                      : "Necesitas 2 avales de alumnos confirmados antes de enviar la tienda a revisión."}
+                    <div className="mt-2">
+                      <Link href="/verify-student" className="font-bold text-blue-700 hover:underline">
+                        Ver mi estado de verificación
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                <button type="button" onClick={() => void saveAndReview()} disabled={submitting || infoSaving || !studentVerified} className="mt-5 w-full rounded-xl bg-blue-600 px-6 py-3.5 font-bold text-white hover:bg-blue-700 disabled:bg-blue-400 sm:w-auto">
+                  {submitting
+                    ? "Guardando..."
+                    : studentVerified
+                      ? submitButtonLabel(store.status)
+                      : "Verifica tu cuenta para enviar"}
                 </button>
               </section>
             )}

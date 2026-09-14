@@ -2,7 +2,7 @@ import {
   CategoryRepositoryError,
   requireActiveCategory,
 } from "./categoryRepository";
-import { validateStoreCompleteness } from "./completeness";
+import {\n  getStudentTrust,\n  TrustRepositoryError,\n} from "@/lib/security/trustRepository";\nimport { validateStoreCompleteness } from "./completeness";
 import { listProductsForOwner } from "./productRepository";
 import {
   getStoreForOwner,

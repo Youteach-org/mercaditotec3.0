@@ -164,7 +164,7 @@ export default function VerifyStudentPage() {
         )}
 
         <section className="rounded-2xl border border-gray-200 bg-white p-5 text-sm text-gray-600">
-          <strong className="text-gray-900">Importante:</strong> esta verificación todavía no bloquea funciones de chat o tiendas durante la etapa de implementación. La activaremos como requisito cuando el sistema de confianza ya esté poblado.
+          <strong className="text-gray-900">Importante:</strong> puedes usar Mercadito y preparar tu tienda mientras reúnes los avales. Para enviar una tienda a revisión necesitas estar confirmado con 2 avales. Si tu confirmación fue revocada, administración debe restaurarla antes del envío.
         </section>
       </div>
     </main>
