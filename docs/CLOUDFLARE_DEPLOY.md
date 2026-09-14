@@ -1,6 +1,6 @@
 # Cloudflare Workers deployment
 
-Mercadito Tec 3 keeps GitHub as the source of truth and uses Cloudflare Workers only as an alternate hosting target. The application code, Firebase schema, Firebase Admin abstraction, Vercel configuration, and root dependency files remain unchanged.
+Mercadito Tec 3 keeps GitHub as the source of truth and uses Cloudflare Workers as the current deployment target. The application code, Firebase schema, Firebase Admin abstraction, Vercel configuration, and root dependency files remain unchanged.
 
 ## Why OpenNext instead of vinext right now
 
@@ -10,9 +10,9 @@ Cloudflare recommends vinext for new Next.js Worker deployments, but the current
 
 In Cloudflare Dashboard:
 
-1. Open **Workers & Pages** and create/import a Worker from Git.
+1. Open **Workers & Pages** and choose **Create application → Import a repository**.
 2. Connect GitHub repository `youteachtk/mercaditotec3.0`.
-3. Use branch `feature/student-stores` for this preview phase.
+3. Use branch `feature/student-stores` as the production branch while Mercadito is being finalized.
 4. Set the build command to:
 
 ```bash
