@@ -1760,6 +1760,7 @@ function ChatContent() {
                     )}
                     <div className={darkMode ? "mt-2 flex items-center gap-2 text-[10px] text-slate-300" : "mt-2 flex items-center gap-2 text-[10px] text-gray-500"}>
                       <span>{formatChatTime(msg.createdAt)}</span>
+                    </div>
 
                     {msg.imageUrls && msg.imageUrls.length > 0 && (
                       <div className={
