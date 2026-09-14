@@ -2,6 +2,7 @@ import { getAdminDb } from "../firebaseAdmin";
 import {
   getStoreForOwner,
   reservationKeyForName,
+  StoreRepositoryError,
 } from "./repository";
 
 export interface StoreResetResult {
@@ -16,7 +17,10 @@ export async function resetStoreForOwner(
   const store = await getStoreForOwner(ownerUid, storeId);
 
   if (store.status !== "draft") {
-    throw new Error("Solo puedes eliminar una tienda mientras está en borrador.");
+    throw new StoreRepositoryError(
+      409,
+      "Solo puedes eliminar una tienda mientras está en borrador.",
+    );
   }
 
   const db = getAdminDb();

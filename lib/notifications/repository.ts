@@ -40,29 +40,55 @@ function toNotificationRecord(id: string, data: DocumentData): NotificationRecor
   };
 }
 
+function storedUnreadCount(data: DocumentData | undefined): number | null {
+  const value = Number(data?.unreadNotificationCount);
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : null;
+}
+
 export async function createOrderNotification(
   order: OrderNotificationSource,
   event: OrderNotificationEvent,
 ): Promise<NotificationRecord> {
+  const db = getAdminDb();
   const draft = buildOrderNotification(order, event);
-  const reference = getAdminDb().collection("notifications").doc(draft.dedupeKey);
-  const existing = await reference.get();
-  if (existing.exists) return toNotificationRecord(existing.id, existing.data()!);
-
+  const reference = db.collection("notifications").doc(draft.dedupeKey);
+  const userReference = db.collection("users").doc(draft.recipientUid);
   const record: Omit<NotificationRecord, "id"> = {
     ...draft,
     readAt: null,
     createdAt: Timestamp.now(),
   };
 
-  try {
-    await reference.create(record);
-    return { id: reference.id, ...record };
-  } catch (error) {
-    const raced = await reference.get();
-    if (raced.exists) return toNotificationRecord(raced.id, raced.data()!);
-    throw error;
+  let result: NotificationRecord | null = null;
+
+  await db.runTransaction(async (transaction) => {
+    const [existing, userSnapshot] = await Promise.all([
+      transaction.get(reference),
+      transaction.get(userReference),
+    ]);
+
+    if (existing.exists) {
+      result = toNotificationRecord(existing.id, existing.data()!);
+      return;
+    }
+
+    if (!userSnapshot.exists) {
+      throw new NotificationRepositoryError(404, "El destinatario de la notificación no existe.");
+    }
+
+    const currentUnread = storedUnreadCount(userSnapshot.data()) ?? 0;
+    transaction.create(reference, record);
+    transaction.update(userReference, {
+      unreadNotificationCount: currentUnread + 1,
+    });
+    result = { id: reference.id, ...record };
+  });
+
+  if (!result) {
+    throw new NotificationRepositoryError(500, "No se pudo crear la notificación.");
   }
+
+  return result;
 }
 
 export async function countUnreadNotifications(
@@ -76,6 +102,16 @@ export async function countUnreadNotifications(
     .get();
 
   return snapshot.data().count;
+}
+
+export async function syncUnreadNotificationCount(
+  recipientUid: string,
+): Promise<number> {
+  const count = await countUnreadNotifications(recipientUid);
+  await getAdminDb().collection("users").doc(recipientUid).update({
+    unreadNotificationCount: count,
+  });
+  return count;
 }
 
 export async function listNotificationsForUser(
@@ -98,10 +134,16 @@ export async function markNotificationRead(
 ): Promise<NotificationRecord> {
   const db = getAdminDb();
   const reference = db.collection("notifications").doc(notificationId);
+  const userReference = db.collection("users").doc(recipientUid);
   let result: NotificationRecord | null = null;
+  let needsCounterSync = false;
 
   await db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(reference);
+    const [snapshot, userSnapshot] = await Promise.all([
+      transaction.get(reference),
+      transaction.get(userReference),
+    ]);
+
     if (!snapshot.exists) {
       throw new NotificationRepositoryError(404, "Notificación no encontrada.");
     }
@@ -118,28 +160,63 @@ export async function markNotificationRead(
 
     const readAt = Timestamp.now();
     transaction.update(reference, { readAt });
+
+    const currentUnread = userSnapshot.exists
+      ? storedUnreadCount(userSnapshot.data())
+      : null;
+
+    if (userSnapshot.exists && currentUnread !== null) {
+      transaction.update(userReference, {
+        unreadNotificationCount: Math.max(0, currentUnread - 1),
+      });
+    } else {
+      needsCounterSync = true;
+    }
+
     result = { ...current, readAt };
   });
 
   if (!result) {
     throw new NotificationRepositoryError(500, "No se pudo marcar la notificación.");
   }
+
+  if (needsCounterSync) {
+    await syncUnreadNotificationCount(recipientUid);
+  }
+
   return result;
 }
 
 export async function markAllNotificationsRead(recipientUid: string): Promise<number> {
   const db = getAdminDb();
-  const snapshot = await db
-    .collection("notifications")
-    .where("recipientUid", "==", recipientUid)
-    .limit(100)
-    .get();
-  const unread = snapshot.docs.filter((document) => !(document.data().readAt instanceof Timestamp));
-  if (unread.length === 0) return 0;
+  let updatedCount = 0;
 
-  const batch = db.batch();
-  const readAt = Timestamp.now();
-  for (const document of unread) batch.update(document.ref, { readAt });
-  await batch.commit();
-  return unread.length;
+  while (true) {
+    const snapshot = await db
+      .collection("notifications")
+      .where("recipientUid", "==", recipientUid)
+      .where("readAt", "==", null)
+      .limit(400)
+      .get();
+
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    const readAt = Timestamp.now();
+
+    for (const document of snapshot.docs) {
+      batch.update(document.ref, { readAt });
+    }
+
+    await batch.commit();
+    updatedCount += snapshot.size;
+
+    if (snapshot.size < 400) break;
+  }
+
+  await db.collection("users").doc(recipientUid).update({
+    unreadNotificationCount: 0,
+  });
+
+  return updatedCount;
 }

@@ -1,37 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { useSession } from "@/lib/useSession";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, loading } = useSession();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { firebaseUser, appUser, loading } = useSession();
+  const [fallbackUnreadCount, setFallbackUnreadCount] = useState(0);
 
-  const refreshUnread = useCallback(async () => {
-    if (!firebaseUser) {
-      setUnreadCount(0);
-      return;
-    }
-    try {
-      setUnreadCount(await loadUnreadNotificationCount(firebaseUser));
-    } catch {
-      setUnreadCount(0);
-    }
-  }, [firebaseUser]);
+  const profileUnreadCount =
+    typeof appUser?.unreadNotificationCount === "number"
+      ? Math.max(0, Math.floor(appUser.unreadNotificationCount))
+      : null;
 
   useEffect(() => {
-    if (loading) return;
-    void refreshUnread();
-  }, [loading, refreshUnread]);
+    if (loading || !firebaseUser || profileUnreadCount !== null) return;
 
-  useEffect(() => {
-    const onChanged = () => void refreshUnread();
-    window.addEventListener("notifications:changed", onChanged);
-    return () => window.removeEventListener("notifications:changed", onChanged);
-  }, [refreshUnread]);
+    let cancelled = false;
+
+    void loadUnreadNotificationCount(firebaseUser)
+      .then((count) => {
+        if (!cancelled) setFallbackUnreadCount(count);
+      })
+      .catch(() => {
+        if (!cancelled) setFallbackUnreadCount(0);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser, loading, profileUnreadCount]);
+
+  const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
 
   return (
     <div className="min-h-screen flex flex-col">

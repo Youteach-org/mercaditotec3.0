@@ -36,6 +36,7 @@ export type AppUser = {
   studentEndorsementCount?: number;
   studentVerifiedAt?: number | null;
   studentRevokedAt?: number | null;
+  unreadNotificationCount?: number;
 };
 
 interface SessionValue {
