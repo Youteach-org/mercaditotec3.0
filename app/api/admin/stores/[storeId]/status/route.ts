@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditEntry } from "@/lib/security/audit";
+import { getStudentTrust, TrustRepositoryError } from "@/lib/security/trustRepository";
 import { parseAdminStoreStatusRequest } from "@/lib/store/admin";
 import {
   ApiAuthError,
@@ -11,6 +12,7 @@ import { serializeStore, toApiError } from "@/lib/store/http";
 import {
   adminSetStoreStatus,
   getStoreForAdmin,
+  StoreRepositoryError,
 } from "@/lib/store/repository";
 import { promoteSuggestedCategoriesForStore } from "@/lib/store/productRepository";
 
@@ -62,6 +64,24 @@ export async function POST(request: Request, context: RouteContext) {
 
     const current = await getStoreForAdmin(storeId);
     if (current.status === "pending_review" && input.status === "active") {
+      try {
+        const trust = await getStudentTrust(current.ownerUid);
+        if (trust.status !== "verified") {
+          throw new StoreRepositoryError(
+            409,
+            trust.status === "revoked"
+              ? "No se puede aprobar la tienda porque la confirmación de alumno del propietario está revocada."
+              : "No se puede aprobar la tienda porque el propietario todavía no está confirmado como alumno.",
+          );
+        }
+      } catch (error) {
+        if (error instanceof StoreRepositoryError) throw error;
+        if (error instanceof TrustRepositoryError) {
+          throw new StoreRepositoryError(error.status, error.message);
+        }
+        throw error;
+      }
+
       await promoteSuggestedCategoriesForStore(storeId);
     }
 
