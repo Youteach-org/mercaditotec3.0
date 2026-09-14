@@ -151,55 +151,49 @@ export async function GET(
 
   try {
 
-    await authenticate(
-      request
-    );
+    const decoded =
+      await authenticate(
+        request
+      );
+
+    const uid =
+      decoded.uid;
 
     const snapshot =
       await getAdminDb()
         .collection(
           "public_profiles"
         )
-
-        .select(
-          "nickname"
-        )
-
-        .limit(2000)
+        .doc(uid)
         .get();
 
-    const nicknames:
-      Record<string, string> = {};
+    const rawNickname =
+      snapshot.data()
+        ?.nickname;
 
-    snapshot.docs.forEach(
-      (document) => {
-
-        const nickname =
-          document.data()
-            ?.nickname;
-
-        if (
-          typeof nickname ===
-            "string" &&
-          nickname.trim()
-        ) {
-          nicknames[
-            document.id
-          ] =
-            nickname.trim();
-        }
-      }
-    );
+    const nickname =
+      typeof rawNickname ===
+        "string" &&
+      rawNickname.trim()
+        ? rawNickname.trim()
+        : "";
 
     return NextResponse.json({
       ok: true,
-      nicknames,
+      nickname,
+      nicknames:
+        nickname
+          ? {
+              [uid]:
+                nickname,
+            }
+          : {},
     });
 
   } catch (error) {
 
     console.error(
-      "GET_NICKNAMES_ERROR",
+      "GET_NICKNAME_ERROR",
       error
     );
 
@@ -207,7 +201,7 @@ export async function GET(
       {
         ok: false,
         error:
-          "No se pudieron cargar los nicknames.",
+          "No se pudo cargar el nickname.",
       },
       {
         status: 401,

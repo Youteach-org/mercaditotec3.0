@@ -306,8 +306,8 @@ function ChatContent() {
   const [userImages, setUserImages] = useState<UserImage[]>([]);
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
-  const [publicNicknames, setPublicNicknames] =
-    useState<Record<string, string>>({});
+  const [nicknameOverride, setNicknameOverride] =
+    useState("");
   const [nicknameEditorOpen, setNicknameEditorOpen] =
     useState(false);
   const [nicknameInput, setNicknameInput] =
@@ -316,8 +316,6 @@ function ChatContent() {
     useState(false);
   const [nicknameError, setNicknameError] =
     useState("");
-  const [nicknameLookupReady, setNicknameLookupReady] =
-    useState(false);
 
   const [text, setText] = useState("");
   const [replyingTo, setReplyingTo] = useState<ReplyTo | null>(null);
@@ -348,9 +346,7 @@ function ChatContent() {
   });
 
   const savedNickname = String(
-    publicNicknames[
-      firebaseUser?.uid || ""
-    ] ||
+    nicknameOverride ||
     appUserAny?.nickname ||
     ""
   ).trim();
@@ -484,17 +480,8 @@ function ChatContent() {
         return;
       }
 
-      setPublicNicknames(
-        (previous) => ({
-          ...previous,
-
-          [firebaseUser.uid]:
-            nickname,
-        })
-      );
-
-      setNicknameLookupReady(
-        true
+      setNicknameOverride(
+        nickname
       );
 
       setNicknameInput(
@@ -540,21 +527,6 @@ function ChatContent() {
 
   function ensureNicknameReady() {
 
-    if (!nicknameLookupReady) {
-
-      setToast(
-        "Cargando tu nickname..."
-      );
-
-      window.setTimeout(
-        () =>
-          setToast(""),
-        1500
-      );
-
-      return false;
-    }
-
     if (savedNickname) {
       return true;
     }
@@ -574,6 +546,10 @@ function ChatContent() {
 
     return false;
   }
+
+  useEffect(() => {
+    setNicknameOverride("");
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!zoomImageUrl) return;
@@ -644,117 +620,9 @@ function ChatContent() {
   }, []);
 
   useEffect(() => {
-
-    const currentUser =
-      firebaseUser;
-
-    if (!currentUser) {
-
-      setPublicNicknames(
-        {}
-      );
-
-      setNicknameLookupReady(
-        false
-      );
-
-      return;
-    }
-
-    const authenticatedUser =
-      currentUser;
-
-    let cancelled =
-      false;
-
-    setNicknameLookupReady(
-      false
-    );
-
-    async function loadPublicNicknames() {
-
-      try {
-
-        const token =
-          await authenticatedUser
-            .getIdToken();
-
-        const response =
-          await fetch(
-            "/api/nickname",
-            {
-              headers: {
-                Authorization:
-                  `Bearer ${token}`,
-              },
-
-              cache:
-                "no-store",
-            }
-          );
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => ({})
-            );
-
-        if (
-          cancelled
-        ) {
-          return;
-        }
-
-        if (
-          !response.ok
-        ) {
-
-          console.warn(
-            "PUBLIC_NICKNAMES_HTTP_ERROR",
-            result
-          );
-
-          return;
-        }
-
-        setPublicNicknames(
-          result?.nicknames ||
-            {}
-        );
-
-      } catch (error) {
-
-        console.warn(
-          "PUBLIC_NICKNAMES_READ_ERROR",
-          error
-        );
-
-      } finally {
-
-        if (
-          !cancelled
-        ) {
-          setNicknameLookupReady(
-            true
-          );
-        }
-      }
-    }
-
-    void loadPublicNicknames();
-
-    return () => {
-      cancelled = true;
-    };
-
-  }, [firebaseUser?.uid]);
-
-  useEffect(() => {
     if (
       loading ||
       !firebaseUser ||
-      !nicknameLookupReady ||
       savedNickname
     ) {
       return;
@@ -767,7 +635,6 @@ function ChatContent() {
   }, [
     loading,
     firebaseUser?.uid,
-    nicknameLookupReady,
     savedNickname,
   ]);
 
@@ -1018,9 +885,6 @@ function ChatContent() {
     setReplyingTo({
       id: message.id,
       senderName: safeName(
-        publicNicknames[
-          message.senderId || ""
-        ] ||
         message.senderName
       ),
       text: message.text || (message.imageUrls?.length ? "Imagen" : ""),
@@ -1597,9 +1461,6 @@ function ChatContent() {
                             ) : (
                               <div className="w-7 h-7 rounded-full bg-slate-300 flex items-center justify-center text-xs font-bold text-slate-700 shrink-0">
                                 {safeName(
-                                  publicNicknames[
-                                    msg.senderId || ""
-                                  ] ||
                                   msg.senderName
                                 )
                                   .slice(0, 1)
@@ -1614,9 +1475,6 @@ function ChatContent() {
                             {isMine
                               ? currentNickname
                               : safeName(
-                                  publicNicknames[
-                                    msg.senderId || ""
-                                  ] ||
                                   msg.senderName
                                 )}
                           </p>

@@ -28,6 +28,8 @@ export type AppUser = {
   blockedReason?: string | null;
   blockedBy?: string | null;
   displayName?: string;
+  nickname?: string;
+  nicknameNormalized?: string;
   photoURL?: string;
   createdAt?: number;
   studentStatus?: StudentTrustStatus;
