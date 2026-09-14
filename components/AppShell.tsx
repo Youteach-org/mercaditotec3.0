@@ -1,14 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { loadNotifications } from "@/lib/notifications/client";
 import { useSession } from "@/lib/useSession";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   const { firebaseUser, loading } = useSession();
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -28,7 +26,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
     void refreshUnread();
-  }, [loading, pathname, refreshUnread]);
+  }, [loading, refreshUnread]);
 
   useEffect(() => {
     const onChanged = () => void refreshUnread();
