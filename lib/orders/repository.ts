@@ -37,6 +37,21 @@ export class OrderRepositoryError extends Error {
   }
 }
 
+async function createOrderNotificationSafely(
+  order: OrderRecord,
+  event: Parameters<typeof createOrderNotification>[1],
+): Promise<void> {
+  try {
+    await createOrderNotification(order, event);
+  } catch (error) {
+    console.error("Order notification could not be created:", {
+      orderId: order.id,
+      event,
+      error,
+    });
+  }
+}
+
 function toOrderRecord(id: string, data: DocumentData): OrderRecord {
   return {
     id,
@@ -139,7 +154,7 @@ export async function createOrder(
   };
 
   await reference.set(order);
-  await createOrderNotification(order, "created");
+  await createOrderNotificationSafely(order, "created");
   return order;
 }
 
@@ -201,6 +216,6 @@ export async function setOrderStatus(
   });
 
   if (!result) throw new OrderRepositoryError(500, "No se pudo actualizar el pedido.");
-  if (target !== "pending") await createOrderNotification(result, target);
+  if (target !== "pending") await createOrderNotificationSafely(result, target);
   return result;
 }
