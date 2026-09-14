@@ -45,7 +45,7 @@ export default function PublicStorePage() {
   useEffect(() => {
     let cancelled = false;
 
-    void fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}`, { cache: "no-store" })
+    void fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar la tienda.");

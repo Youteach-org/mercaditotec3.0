@@ -7,6 +7,10 @@ import {
 
 export const runtime = "nodejs";
 
+const PUBLIC_CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+};
+
 export async function GET(
   _request: Request,
   context: RouteContext<"/api/marketplace/stores/[slug]">,
@@ -14,7 +18,7 @@ export async function GET(
   try {
     const { slug } = await context.params;
     const store = await getPublicStoreDetail(slug);
-    return NextResponse.json({ store });
+    return NextResponse.json({ store }, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error) {
     if (error instanceof PublicMarketplaceError) {
       return NextResponse.json({ error: error.message }, { status: error.status });

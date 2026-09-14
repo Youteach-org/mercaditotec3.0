@@ -13,7 +13,7 @@ export default function MarketplacePage() {
   useEffect(() => {
     let cancelled = false;
 
-    void fetch("/api/marketplace", { cache: "no-store" })
+    void fetch("/api/marketplace")
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
