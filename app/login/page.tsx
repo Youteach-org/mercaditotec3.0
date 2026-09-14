@@ -117,7 +117,7 @@ export default function LoginPage() {
 
       await ensureUserDocument(result.user.uid, result.user.email, true);
 
-      router.replace("/chat");
+      router.replace("/marketplace");
     } catch (err: any) {
       console.error("LOGIN_ERROR", err);
       setError(getFriendlyAuthError(err?.code));

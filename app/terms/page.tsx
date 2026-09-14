@@ -5,7 +5,7 @@ export default function TermsPage() {
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-3xl rounded-2xl bg-white p-6 shadow-md sm:p-8">
         <Link href="/mystore" className="text-sm font-semibold text-blue-700 hover:underline">
-          ← Volver a myStores
+          ← Volver a Mis tiendas
         </Link>
         <h1 className="mt-4 text-3xl font-bold text-gray-900">Términos y condiciones del Mercadito</h1>
         <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
