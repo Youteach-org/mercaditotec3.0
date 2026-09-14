@@ -7,6 +7,7 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -53,7 +54,6 @@ type ChatMessage = {
   createdAt: number;
   expiresAt?: number;
   replyTo?: ReplyTo | null;
-  seenBy?: Record<string, number>;
   hidden?: boolean;
   hiddenAt?: unknown;
 };
@@ -81,14 +81,6 @@ type ReactionRecord = {
   messageId: string;
   userId: string;
   emoji: string;
-};
-
-type ActiveUser = {
-  uid: string;
-  name?: string;
-  email?: string;
-  plan?: string;
-  updatedAt?: number;
 };
 
 function safeName(name?: string | null) {
@@ -293,19 +285,6 @@ function formatChatTime(timestamp?: number) {
   });
 }
 
-function formatSeenTime(timestamp: number) {
-  return new Date(timestamp).toLocaleString("es-MX", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function seenEntriesForMessage(message: ChatMessage) {
-  return Object.entries(message.seenBy ?? {}).sort((a, b) => a[1] - b[1]);
-}
-
 function ChatContent() {
   const { firebaseUser, appUser, loading, logout } = useSession();
   const appUserAny = appUser as any;
@@ -327,7 +306,6 @@ function ChatContent() {
   const [userImages, setUserImages] = useState<UserImage[]>([]);
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
-  const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const [publicNicknames, setPublicNicknames] =
     useState<Record<string, string>>({});
   const [nicknameEditorOpen, setNicknameEditorOpen] =
@@ -350,7 +328,6 @@ function ChatContent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [showActiveUsers, setShowActiveUsers] = useState(false);
   const [actionForMessage, setActionForMessage] = useState<string | null>(null);
   const [actionMenuPosition, setActionMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
@@ -639,7 +616,6 @@ function ChatContent() {
       setActionForMessage(null); setActionMenuPosition(null);
       setTemplatesOpen(false);
       setGalleryOpen(false);
-      setShowActiveUsers(false);
     }
 
     function handlePointerDown(e: PointerEvent) {
@@ -768,22 +744,8 @@ function ChatContent() {
 
     void loadPublicNicknames();
 
-    const timer =
-      window.setInterval(
-        () => {
-          void loadPublicNicknames();
-        },
-        30000
-      );
-
     return () => {
-
-      cancelled =
-        true;
-
-      window.clearInterval(
-        timer
-      );
+      cancelled = true;
     };
 
   }, [firebaseUser?.uid]);
@@ -810,75 +772,18 @@ function ChatContent() {
   ]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
-
-    const presenceRef = doc(db, "active_users", firebaseUser!.uid);
-
-    async function pushPresence() {
-      try {
-        await setDoc(
-        presenceRef,
-        {
-          uid: firebaseUser!.uid,
-          name: currentNickname,
-          email: firebaseUser!.email || "",
-          plan: appUserAny?.plan || "free",
-          updatedAt: Date.now(),
-        },
-        { merge: true }
-      );
-      } catch (error) {
-        console.warn("ACTIVE_USERS_PERMISSION_ERROR", error);
-      }
-    }
-
-    pushPresence();
-    const interval = window.setInterval(pushPresence, 5000);
-
-    const unsubscribe = onSnapshot(collection(db, "active_users"), (snapshot) => {
-      const cutoff = Date.now() - 60000;
-      const users = snapshot.docs
-        .map((d) => ({ id: d.id, ...(d.data() as any) }))
-        .filter((u) => typeof u.updatedAt === "number" && u.updatedAt >= cutoff)
-        .map((u) => ({
-          uid: u.uid || u.id,
-          name: u.name,
-          email: u.email,
-          plan: u.plan,
-          updatedAt: u.updatedAt,
-        }));
-
-      setActiveUsers(users.length > 0 ? users : [{
-        uid: firebaseUser!.uid,
-        name: currentNickname,
-        email: firebaseUser!.email || "",
-        plan: appUserAny?.plan || "free",
-        updatedAt: Date.now(),
-      }]);
-    }, (error) => {
-      console.warn("ACTIVE_USERS_READ_ERROR", error);
-      setActiveUsers([{
-        uid: firebaseUser!.uid,
-        name: currentNickname,
-        email: firebaseUser!.email || "",
-        plan: appUserAny?.plan || "free",
-        updatedAt: Date.now(),
-      }]);
-    });
-
-    return () => {
-      window.clearInterval(interval);
-      unsubscribe();
-    };
-  }, [firebaseUser, appUserAny?.displayName, appUserAny?.plan]);
-
-  useEffect(() => {
-    const q = query(collection(db, "messages"), orderBy("createdAt"));
+    const q = query(
+      collection(db, "messages"),
+      orderBy("createdAt", "desc"),
+      limit(100),
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...(item.data() as Omit<ChatMessage, "id">),
-      }));
+      const msgs = snapshot.docs
+        .map((item) => ({
+          id: item.id,
+          ...(item.data() as Omit<ChatMessage, "id">),
+        }))
+        .reverse();
 
       const newest = msgs[msgs.length - 1];
       const wasInitialized = initializedRef.current;
@@ -944,7 +849,8 @@ function ChatContent() {
 
     const q = query(
       collection(db, "users", firebaseUser!.uid, "images"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(100),
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -998,7 +904,11 @@ function ChatContent() {
   }, [firebaseUser, galleryOpen]);
 
   useEffect(() => {
-    const q = query(collection(db, "message_reactions"));
+    const q = query(
+      collection(db, "message_reactions"),
+      orderBy("createdAt", "desc"),
+      limit(500),
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setReactions(
         snapshot.docs.map((d) => ({
@@ -1019,38 +929,6 @@ function ChatContent() {
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [selectedImages]);
-
-  // SEEN_BY_AUTO_MARKER
-  useEffect(() => {
-    if (!firebaseUser || messages.length === 0) return;
-
-    const now = Date.now();
-
-    const pendingSeenUpdates = messages
-      .filter((msg) => {
-        if (!msg.senderId) return false;
-        if (msg.senderId === firebaseUser.uid) return false;
-        if (msg.seenBy?.[firebaseUser.uid]) return false;
-        return true;
-      })
-      .map((msg) =>
-        setDoc(
-          doc(db, "messages", msg.id),
-          {
-            seenBy: {
-              [firebaseUser.uid]: now,
-            },
-          },
-          { merge: true }
-        )
-      );
-
-    if (pendingSeenUpdates.length > 0) {
-      Promise.all(pendingSeenUpdates).catch((error) => {
-        console.error("MARK_SEEN_ERROR", error);
-      });
-    }
-  }, [messages, firebaseUser]);
 
   function handleChatScroll() {
     const el = scrollRef.current;
@@ -1431,52 +1309,9 @@ function ChatContent() {
               MercaditoTec 3.0
             </h1>
 
-            <div className="relative mt-2 flex items-center gap-2">
-              {isAdmin ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowActiveUsers((prev) => !prev);
-                  }}
-                  className={darkMode ? "rounded-xl border border-slate-600 bg-slate-800 px-3 py-1 text-xs text-slate-100" : "rounded-xl border border-gray-300 bg-gray-50 px-3 py-1 text-xs text-slate-800"}
-                >
-                  Activos: {activeUsers.length}
-                </button>
-              ) : (
-                <div className={darkMode ? "rounded-xl border border-slate-600 bg-slate-800 px-3 py-1 text-xs text-slate-100" : "rounded-xl border border-gray-300 bg-gray-50 px-3 py-1 text-xs text-slate-800"}>
-                  Activos: {activeUsers.length}
-                </div>
-              )}
-
-              {isAdmin && showActiveUsers && (
-                <div
-                  data-popup-root="true"
-                  onClick={(e) => e.stopPropagation()}
-                  className={darkMode ? "absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl" : "absolute left-0 top-full z-50 mt-2 w-64 rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl"}
-                >
-                  <p className={darkMode ? "mb-2 text-xs font-semibold text-slate-100" : "mb-2 text-xs font-semibold text-slate-900"}>
-                    Usuarios activos
-                  </p>
-
-                  {activeUsers.length === 0 ? (
-                    <p className={darkMode ? "text-xs text-slate-400" : "text-xs text-slate-500"}>
-                      Sin usuarios activos
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {activeUsers.map((u) => (
-                        <div key={u.uid} className="flex items-center justify-between gap-2">
-                          <span className={darkMode ? "text-xs text-slate-100 break-all" : "text-xs text-slate-900 break-all"}>
-                            {u.name || u.email || u.uid}
-                          </span>
-                          {u.plan === "premium" && <span title="Premium">👑</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <p className={darkMode ? "mt-2 text-xs font-semibold text-slate-400" : "mt-2 text-xs font-semibold text-slate-500"}>
+              Sala general
+            </p>
           </div>
 
           <div className="relative" data-popup-root="true" onClick={(e) => e.stopPropagation()}>
@@ -1700,8 +1535,6 @@ function ChatContent() {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
             const isAdmin = appUser?.role === "admin";
-            const seenEntries = seenEntriesForMessage(msg);
-            const seenCount = seenEntries.length;
             const groupedReactions = reactionsForMessage(msg.id);
 
             if (msg.hidden) {
@@ -1927,33 +1760,6 @@ function ChatContent() {
                     )}
                     <div className={darkMode ? "mt-2 flex items-center gap-2 text-[10px] text-slate-300" : "mt-2 flex items-center gap-2 text-[10px] text-gray-500"}>
                       <span>{formatChatTime(msg.createdAt)}</span>
-
-                      <span title={`Visto por ${seenCount} ${seenCount === 1 ? "persona" : "personas"}`} className="inline-flex items-center gap-1">
-                        <span className="text-[10px] leading-none">👁</span>
-                        <span>{seenCount}</span>
-                      </span>
-
-                      {isAdmin && seenEntries.length > 0 && (
-                        <details className={darkMode ? "text-slate-200" : "text-gray-700"}>
-                          <summary className="cursor-pointer text-[10px] font-semibold">
-                            Detalle
-                          </summary>
-
-                          <div className="mt-1 space-y-1">
-                            {seenEntries.map(([userId, seenAt]) => {
-                              const activeUser = activeUsers.find((user) => user.uid === userId);
-                              const label = activeUser?.name || activeUser?.email || userId;
-
-                              return (
-                                <p key={userId} className="break-all">
-                                  {label} — {formatSeenTime(seenAt)}
-                                </p>
-                              );
-                            })}
-                          </div>
-                        </details>
-                      )}
-                    </div>
 
                     {msg.imageUrls && msg.imageUrls.length > 0 && (
                       <div className={
