@@ -61,22 +61,40 @@ export async function createOrderNotification(
 
   let result: NotificationRecord | null = null;
 
+  const initialUserSnapshot = await userReference.get();
+  if (!initialUserSnapshot.exists) {
+    throw new NotificationRepositoryError(404, "El destinatario de la notificación no existe.");
+  }
+
+  const storedBaseline = storedUnreadCount(initialUserSnapshot.data());
+  const legacyUnreadBaseline =
+    storedBaseline === null
+      ? await countUnreadNotifications(draft.recipientUid)
+      : storedBaseline;
+
   await db.runTransaction(async (transaction) => {
     const [existing, userSnapshot] = await Promise.all([
       transaction.get(reference),
       transaction.get(userReference),
     ]);
 
-    if (existing.exists) {
-      result = toNotificationRecord(existing.id, existing.data()!);
-      return;
-    }
-
     if (!userSnapshot.exists) {
       throw new NotificationRepositoryError(404, "El destinatario de la notificación no existe.");
     }
 
-    const currentUnread = storedUnreadCount(userSnapshot.data()) ?? 0;
+    const currentUnread =
+      storedUnreadCount(userSnapshot.data()) ?? legacyUnreadBaseline;
+
+    if (existing.exists) {
+      if (storedUnreadCount(userSnapshot.data()) === null) {
+        transaction.update(userReference, {
+          unreadNotificationCount: currentUnread,
+        });
+      }
+      result = toNotificationRecord(existing.id, existing.data()!);
+      return;
+    }
+
     transaction.create(reference, record);
     transaction.update(userReference, {
       unreadNotificationCount: currentUnread + 1,
