@@ -232,9 +232,7 @@ export async function markAllNotificationsRead(recipientUid: string): Promise<nu
     if (snapshot.size < 400) break;
   }
 
-  await db.collection("users").doc(recipientUid).update({
-    unreadNotificationCount: 0,
-  });
+  await syncUnreadNotificationCount(recipientUid);
 
   return updatedCount;
 }
