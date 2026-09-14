@@ -14,6 +14,11 @@ export async function resetStoreForOwner(
   storeId: string,
 ): Promise<StoreResetResult> {
   const store = await getStoreForOwner(ownerUid, storeId);
+
+  if (store.status !== "draft") {
+    throw new Error("Solo puedes eliminar una tienda mientras está en borrador.");
+  }
+
   const db = getAdminDb();
 
   const productsSnapshot = await db

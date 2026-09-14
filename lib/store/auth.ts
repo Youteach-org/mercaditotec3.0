@@ -88,11 +88,16 @@ export async function requireAdmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-
-  if (isAdminRole(user.claims)) return user;
-
   const profile = await loadProfile(user.uid);
-  if (!isAdminRole(profile)) {
+
+  if (profile) {
+    if (!isAdminRole(profile)) {
+      throw new ApiAuthError(403, "No tienes permisos de administrador.");
+    }
+    return user;
+  }
+
+  if (!isAdminRole(user.claims)) {
     throw new ApiAuthError(403, "No tienes permisos de administrador.");
   }
 
@@ -103,11 +108,16 @@ export async function requireSuperadmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-
-  if (isSuperadminRole(user.claims)) return user;
-
   const profile = await loadProfile(user.uid);
-  if (!isSuperadminRole(profile)) {
+
+  if (profile) {
+    if (!isSuperadminRole(profile)) {
+      throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
+    }
+    return user;
+  }
+
+  if (!isSuperadminRole(user.claims)) {
     throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
   }
 
@@ -117,8 +127,8 @@ export async function requireSuperadmin(
 export async function getAuthenticatedAdminRole(
   user: AuthenticatedUser,
 ) {
-  const fromClaims = effectiveAdminRole(user.claims);
-  if (fromClaims) return fromClaims;
+  const profile = await loadProfile(user.uid);
+  if (profile) return effectiveAdminRole(profile);
 
-  return effectiveAdminRole(await loadProfile(user.uid));
+  return effectiveAdminRole(user.claims);
 }

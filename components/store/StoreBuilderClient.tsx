@@ -182,6 +182,15 @@ export default function StoreBuilderClient() {
   async function saveAndReview() {
     if (!firebaseUser || !store || !previewSchedule) return;
 
+    if (appUser?.studentStatus !== "verified") {
+      setValidationMessage(
+        appUser?.studentStatus === "revoked"
+          ? "Tu confirmación de alumno está en revisión. Administración debe restaurarla antes de que puedas enviar una tienda."
+          : "Necesitas estar confirmado como alumno con 2 avales antes de enviar una tienda a revisión.",
+      );
+      return;
+    }
+
     try {
       validateStoreCompleteness(
         { name: name.trim(), description, deliveryLocation, schedule: previewSchedule },
@@ -243,6 +252,8 @@ export default function StoreBuilderClient() {
 
   const editable = canOwnerEditStoreView(store.status);
   const canSubmit = canOwnerSubmitStore(store.status);
+  const studentStatus = appUser?.studentStatus ?? "pending";
+  const studentVerified = studentStatus === "verified";
   const scheduleForPreview = previewSchedule ?? store.schedule;
 
   return (
