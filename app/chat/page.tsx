@@ -1158,19 +1158,19 @@ function ChatContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
+      <main className="flex h-[calc(100dvh-6.75rem)] items-center justify-center bg-gray-100 md:h-[calc(100dvh-3.5rem)]">
         <p className="text-gray-700">Cargando...</p>
       </main>
     );
   }
 
   return (
-    <main className={darkMode ? "min-h-screen bg-slate-950 p-2 md:p-4" : "min-h-screen bg-gray-100 p-2 md:p-4"}>
-      <div className={darkMode ? "max-w-5xl mx-auto bg-slate-900 rounded-2xl shadow-md p-2 md:p-4 flex flex-col h-[calc(100dvh-1rem)]" : "max-w-5xl mx-auto bg-white rounded-2xl shadow-md p-2 md:p-4 flex flex-col h-[calc(100dvh-1rem)]"}>
+    <main className={darkMode ? "h-[calc(100dvh-6.75rem)] bg-slate-950 p-2 md:h-[calc(100dvh-3.5rem)] md:p-4" : "h-[calc(100dvh-6.75rem)] bg-gray-100 p-2 md:h-[calc(100dvh-3.5rem)] md:p-4"}>
+      <div className={darkMode ? "mx-auto flex h-full max-w-5xl flex-col rounded-2xl bg-slate-900 p-2 shadow-md md:p-4" : "mx-auto flex h-full max-w-5xl flex-col rounded-2xl bg-white p-2 shadow-md md:p-4"}>
         <div className={darkMode ? "mb-2 border-b border-slate-700 pb-2 flex items-start justify-between gap-3" : "mb-2 border-b pb-2 flex items-start justify-between gap-3"}>
           <div>
             <h1 className={darkMode ? "text-xl md:text-2xl font-bold text-slate-100" : "text-xl md:text-2xl font-bold text-gray-900"}>
-              MercaditoTec 3.0
+              MercaditoTec
             </h1>
 
             <p className={darkMode ? "mt-2 text-xs font-semibold text-slate-400" : "mt-2 text-xs font-semibold text-slate-500"}>
