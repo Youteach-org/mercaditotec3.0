@@ -21,7 +21,7 @@ run("npm", [
   "--no-save",
   "--package-lock=false",
   "@opennextjs/cloudflare@1.20.6",
-  "wrangler@4.129.1",
+  "wrangler@4.132.0",
 ]);
 
 console.log("[cloudflare] Running existing test suite...");

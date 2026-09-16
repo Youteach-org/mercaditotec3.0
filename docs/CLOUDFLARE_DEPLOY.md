@@ -4,7 +4,7 @@ Mercadito Tec 3 keeps GitHub as the source of truth and uses Cloudflare Workers 
 
 ## Why OpenNext instead of vinext right now
 
-Cloudflare recommends vinext for new Next.js Worker deployments, but the current vinext beta requires React >= 19.2.6. This repository intentionally remains on React 19.2.4. To avoid changing functional application dependencies only for hosting, this preview path uses the documented OpenNext adapter instead.
+Cloudflare recommends vinext for new Next.js Worker deployments, but the current vinext beta requires React >= 19.2.6. This repository intentionally remains on React 19.2.4. To avoid changing functional application dependencies only for hosting, this deployment path uses the documented OpenNext adapter instead.
 
 ## One-time Cloudflare connection
 
@@ -31,7 +31,9 @@ npx wrangler deploy
 npx wrangler versions upload
 ```
 
-7. Add `FIREBASE_SERVICE_ACCOUNT_JSON` as an encrypted Cloudflare secret. Copy the same JSON value already used by the application on its existing server host. Never paste this secret into GitHub files or ordinary public variables.
+7. Configure `FIREBASE_SERVICE_ACCOUNT_JSON` as a **runtime Worker secret** under the Worker's **Settings → Variables & Secrets**. Copy the same JSON value already used by the application on its existing server host. Never paste this secret into GitHub files or ordinary plaintext variables.
+8. The repository declares `FIREBASE_SERVICE_ACCOUNT_JSON` under `secrets.required`, so `wrangler deploy` and `wrangler versions upload` will refuse to publish if the runtime secret is missing.
+9. **Build variables and secrets are separate from runtime variables and secrets.** Do not rely on a Workers Builds secret as a substitute for the runtime Worker secret. Only add the same value as a Build secret if a future build step explicitly reports that it needs the credential during build time.
 
 Cloudflare Workers Builds should use a current Node.js build image. Node 22 is preferred for the build environment.
 
@@ -40,7 +42,7 @@ Cloudflare Workers Builds should use a current Node.js build image. Node 22 is p
 `scripts/cloudflare-build.mjs` deliberately does not modify root application dependencies. During the Cloudflare build job it installs only:
 
 - `@opennextjs/cloudflare@1.20.6`
-- `wrangler@4.129.1`
+- `wrangler@4.132.0`
 
 using `--no-save --package-lock=false`, then runs the repository's existing Vitest suite and the OpenNext build.
 
@@ -65,4 +67,4 @@ If Firebase Admin or another server dependency fails in Workers, do not rewrite 
 
 ## Commit discipline
 
-Cloudflare and Vercel both react to Git pushes. Continue grouping related application work into meaningful larger commits rather than committing each file separately.
+Cloudflare and Vercel can both react to Git pushes. Continue grouping related application work into meaningful larger commits rather than committing each file separately.
