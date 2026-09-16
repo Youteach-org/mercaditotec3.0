@@ -36,4 +36,6 @@ jobs:
         run: node scripts/cloudflare-build.mjs
 
       - name: Verify Worker output
-        run: test -f .open-next/worker.js
+        run: |
+          test -f .open-next/worker.js
+          test -x .cloudflare-tools/node_modules/.bin/opennextjs-cloudflare

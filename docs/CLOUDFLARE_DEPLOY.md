@@ -24,13 +24,13 @@ node scripts/cloudflare-build.mjs
 5. Set the production deploy command to:
 
 ```bash
-npx wrangler deploy
+.cloudflare-tools/node_modules/.bin/opennextjs-cloudflare deploy
 ```
 
 6. For non-production/preview branches, use:
 
 ```bash
-npx wrangler versions upload
+.cloudflare-tools/node_modules/.bin/opennextjs-cloudflare upload
 ```
 
 7. Configure `FIREBASE_SERVICE_ACCOUNT_JSON` as a **runtime Worker secret** under the Worker's **Settings → Variables & Secrets**. Copy the same JSON value already used by the application on its existing server host. Never paste this secret into GitHub files or ordinary plaintext variables.
@@ -41,12 +41,12 @@ Cloudflare Workers Builds should use a current Node.js build image. Node 22 is p
 
 ## What the build does
 
-`scripts/cloudflare-build.mjs` deliberately does not modify root application dependencies. During the Cloudflare build job it installs only:
+`scripts/cloudflare-build.mjs` deliberately does not modify root application dependencies. It first runs the existing test suite, then creates an isolated `.cloudflare-tools/` directory and installs only:
 
 - `@opennextjs/cloudflare@1.19.4`
 - `wrangler@4.132.0`
 
-using `--no-save`, then runs the repository's existing Vitest suite and the OpenNext build.
+using `--no-save`. The script exposes the isolated adapter to `open-next.config.ts` through a temporary `node_modules/@opennextjs/cloudflare` symlink, then runs the OpenNext build. `.cloudflare-tools/` is ignored by Git and is intentionally left available for the subsequent Cloudflare deploy command.
 
 The Worker entry point is generated at `.open-next/worker.js`, and static assets are generated at `.open-next/assets`.
 

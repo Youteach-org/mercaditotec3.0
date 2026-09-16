@@ -40,9 +40,10 @@
 **Files:**
 - Create: `scripts/cloudflare-build.mjs`
 
-- [x] Install `@opennextjs/cloudflare@1.19.4` and `wrangler@4.132.0` with `--no-save`.
+- [x] Install `@opennextjs/cloudflare@1.19.4` and `wrangler@4.132.0` inside isolated `.cloudflare-tools/` with `--no-save`.
 - [x] Run the full existing Vitest suite before adaptation.
 - [x] Run `opennextjs-cloudflare build` to execute the existing Next.js build and create `.open-next/worker.js`.
+- [x] Expose the isolated adapter through a temporary `node_modules/@opennextjs/cloudflare` symlink so the existing OpenNext config can resolve it.
 - [x] Fail immediately if any command fails.
 
 ### Task 3: Protect generated and secret files
