@@ -4,11 +4,11 @@
 
 **Goal:** Add a Cloudflare Workers hosting path for Mercadito without changing application behavior, Firebase schemas, or the existing Vercel build path.
 
-**Architecture:** Keep the existing Next.js 16 application untouched and adapt its normal `next build` output for Cloudflare using OpenNext. OpenNext is used as the conservative fallback because the current vinext beta requires React >= 19.2.6 while this project intentionally remains on React 19.2.4. Cloudflare-specific tooling is installed only inside the Cloudflare build job with `--no-save`, so root application dependencies and lockfiles remain unchanged.
+**Architecture:** Keep the existing Next.js 16 application behavior untouched and adapt its normal `next build` output for Cloudflare using OpenNext. OpenNext is used as the conservative fallback because the current vinext beta requires React >= 19.2.6 while this project intentionally remains on React 19.2.4. Cloudflare-specific tooling is isolated from the root dependency tree, so root application dependencies and lockfiles remain unchanged.
 
 **Tech Stack:** Next.js 16.2.3, React 19.2.4, Firebase/Firebase Admin, OpenNext for Cloudflare 1.19.4, Wrangler 4.132.0, Cloudflare Workers.
 
-**Compatibility note:** GitHub Actions verified on 2026-09-15 that OpenNext 1.20.6 rejects Next.js 16.2.3 because its peer range requires Next.js <16 or >=16.3.3. The hosting path therefore pins OpenNext 1.19.4 instead of upgrading the application solely for deployment.
+**Compatibility note:** GitHub Actions verified on 2026-09-15 that OpenNext 1.20.6 rejects Next.js 16.2.3 because its peer range requires Next.js <16 or >=16.3.3. The hosting path therefore pins OpenNext 1.19.4 instead of upgrading the application solely for deployment. OpenNext also documents `jose` as having a Workerd-specific conditional export, so Next.js must keep `jose` external on the server build.
 
 **Spec:** `docs/superpowers/specs/2026-09-08-cloudflare-workers-hosting.md`
 
@@ -30,10 +30,12 @@
 **Files:**
 - Create: `wrangler.jsonc`
 - Create: `open-next.config.ts`
+- Modify: `next.config.js`
 
 - [x] Configure Worker name, OpenNext worker entry, static assets, observability, and `compatibility_date` 2026-09-15.
 - [x] Keep `nodejs_compat` enabled as required by the OpenNext Cloudflare adapter documentation.
 - [x] Use the default OpenNext Cloudflare configuration with no application-specific cache or data changes.
+- [x] Add `jose` to Next.js `serverExternalPackages` so OpenNext can select its Workerd-specific export.
 
 ### Task 2: Add isolated Cloudflare build script
 
@@ -51,7 +53,7 @@
 **Files:**
 - Modify: `.gitignore`
 
-- [x] Ignore `.open-next/`, `.wrangler/`, and `.dev.vars*` while allowing a future `.dev.vars.example`.
+- [x] Ignore `.open-next/`, `.wrangler/`, `.cloudflare-tools/`, and `.dev.vars*` while allowing a future `.dev.vars.example`.
 
 ### Task 4: Document the one-time Cloudflare dashboard connection
 
@@ -67,11 +69,11 @@
 ### Task 5: Verification
 
 - [x] Add a GitHub Actions build check for `feature/student-stores`.
-- [ ] Confirm the GitHub Actions build check passes with the compatible OpenNext pin.
+- [ ] Confirm the GitHub Actions build check passes with the compatible OpenNext pin and Workerd package configuration.
 - [ ] Connect the repository in Cloudflare Workers Builds.
 - [ ] Run the first Cloudflare build using `node scripts/cloudflare-build.mjs`.
 - [ ] Confirm OpenNext build succeeds and `.open-next/worker.js` is produced.
-- [ ] Deploy with `npx wrangler deploy` and obtain a `*.workers.dev` URL.
+- [ ] Deploy through the isolated OpenNext Cloudflare CLI and obtain a `*.workers.dev` URL.
 - [ ] Verify public marketplace rendering.
 - [ ] Verify authenticated Firebase session.
 - [ ] Verify a Firebase Admin-backed read.

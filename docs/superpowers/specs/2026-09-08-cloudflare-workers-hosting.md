@@ -17,6 +17,7 @@ Included:
 - Prefer the current recommended Cloudflare path for existing Next.js 16 applications, vinext, when it can be adopted without changing application dependencies.
 - Use the documented OpenNext adapter as a conservative fallback when vinext compatibility would require application dependency upgrades solely for hosting.
 - Keep Firebase Admin credentials as server-side secrets/environment variables only.
+- Keep Workerd-specific packages such as `jose` external to Next's server bundle so OpenNext can select their Workerd conditional exports.
 - Validate critical server routes at runtime before treating Cloudflare as usable.
 
 Out of scope:
@@ -31,7 +32,7 @@ Out of scope:
 
 Mercadito remains a full-stack Next.js application. Cloudflare Workers is an alternate runtime target only.
 
-The existing application source under `app/`, `lib/`, and `components/` remains authoritative. Cloudflare-specific changes are limited to deployment configuration and build tooling.
+The existing application source under `app/`, `lib/`, and `components/` remains authoritative. Cloudflare-specific changes are limited to deployment configuration, Next.js server packaging configuration, and build tooling.
 
 The deployment target is a `*.workers.dev` preview URL first. Cloudflare is considered viable only after both build compatibility and runtime Firebase Admin behavior are verified.
 
@@ -42,6 +43,8 @@ Cloudflare currently recommends vinext for Next.js applications. The current vin
 Therefore this first Cloudflare preview uses the documented OpenNext adapter. The root application's React, Next.js, package manifest, and package lock remain unchanged. A later migration to vinext can be evaluated independently after its compatibility requirements align with the application.
 
 The first CI build check on 2026-09-15 also proved that OpenNext 1.20.6 is incompatible at install time with this repository's Next.js 16.2.3 peer version. The Cloudflare-only tooling is therefore pinned to `@opennextjs/cloudflare@1.19.4` rather than changing the application dependency graph solely for hosting.
+
+A later CI run traced the Firebase Admin dependency chain to `firebase-admin -> jwks-rsa -> jose`. OpenNext documents `jose` as a package with Workerd-specific code selected through conditional exports. Next.js must therefore leave `jose` in `serverExternalPackages`; otherwise the traced server bundle can omit the Workerd entry point that OpenNext needs.
 
 The migration follows two gates:
 
@@ -74,11 +77,15 @@ No Firebase service-account secret may be committed to GitHub. `FIREBASE_SERVICE
 
 The existing `lib/firebaseAdmin.ts` abstraction remains unchanged unless a concrete runtime incompatibility is demonstrated. Hosting work does not proactively rewrite Firebase access.
 
+Firebase Admin depends on `jwks-rsa`, which depends on `jose`. Because `jose` publishes a Workerd-specific conditional export, Next.js configuration keeps it external on the server build so OpenNext can bundle the correct runtime implementation.
+
 ## Deployment Configuration
 
 The repository adds a Wrangler configuration, OpenNext configuration, an isolated Cloudflare build script, a GitHub Actions build check, and deployment documentation.
 
 Cloudflare-specific adapter packages are installed only inside an ignored `.cloudflare-tools/` directory using `--no-save`. The build script creates a temporary `node_modules/@opennextjs/cloudflare` symlink so `open-next.config.ts` can resolve the isolated adapter without asking npm to modify or re-resolve Mercadito's root dependency tree. This deliberately preserves the existing root `package.json` and committed `package-lock.json` so Vercel and normal development remain unaffected.
+
+Next.js `serverExternalPackages` includes `jose` because OpenNext identifies it as a package with Workerd-specific code. This is server packaging configuration only; Mercadito's business logic and Firebase schema remain unchanged.
 
 The Cloudflare project targets the existing GitHub repository and branch `feature/student-stores` during this preview phase.
 
