@@ -69,7 +69,7 @@
 ### Task 5: Verification
 
 - [x] Add a GitHub Actions build check for `feature/student-stores`.
-- [ ] Confirm the GitHub Actions build check passes with the compatible OpenNext pin and Workerd package configuration.
+- [x] Confirm the GitHub Actions build check passes with the compatible OpenNext pin and Workerd package configuration (run `35058421991`, commit `40de60831e33d5d5faa619a08e44f7e6342911fd`: 22 test files / 172 tests passed; `.open-next/worker.js` produced).
 - [ ] Connect the repository in Cloudflare Workers Builds.
 - [ ] Run the first Cloudflare build using `node scripts/cloudflare-build.mjs`.
 - [ ] Confirm OpenNext build succeeds and `.open-next/worker.js` is produced.
