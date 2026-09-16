@@ -6,6 +6,8 @@ Mercadito keeps GitHub as the source of truth and uses Cloudflare Workers as the
 
 Cloudflare recommends vinext for new Next.js Worker deployments, but the current vinext beta requires React >= 19.2.6. This repository intentionally remains on React 19.2.4. To avoid changing functional application dependencies only for hosting, this deployment path uses the documented OpenNext adapter instead.
 
+Mercadito currently pins `@opennextjs/cloudflare@1.19.4`. A GitHub Actions build check on 2026-09-15 proved that `1.20.6` no longer accepts the application's Next.js `16.2.3` peer dependency: it requires Next.js <16 or >=16.3.3. We therefore keep Next.js unchanged and use the compatible adapter version during this hosting experiment.
+
 ## One-time Cloudflare connection
 
 In Cloudflare Dashboard:
@@ -41,7 +43,7 @@ Cloudflare Workers Builds should use a current Node.js build image. Node 22 is p
 
 `scripts/cloudflare-build.mjs` deliberately does not modify root application dependencies. During the Cloudflare build job it installs only:
 
-- `@opennextjs/cloudflare@1.20.6`
+- `@opennextjs/cloudflare@1.19.4`
 - `wrangler@4.132.0`
 
 using `--no-save --package-lock=false`, then runs the repository's existing Vitest suite and the OpenNext build.

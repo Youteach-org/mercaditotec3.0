@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add Cloudflare Workers as an alternate hosting target for Mercadito Tec 3 while preserving the existing application behavior, Firebase data model, Firebase Admin usage, order flow, moderation, marketplace, and notifications.
+Add Cloudflare Workers as an alternate hosting target for Mercadito while preserving the existing application behavior, Firebase data model, Firebase Admin usage, order flow, moderation, marketplace, and notifications.
 
 ## Scope
 
@@ -13,7 +13,7 @@ Included:
 - Keep GitHub as the source of truth.
 - Preserve `feature/student-stores` as the active working branch.
 - Preserve Vercel compatibility while Cloudflare is tested.
-- Use a recent Cloudflare Workers compatibility date (`2026-09-08` or later) so current Node.js compatibility behavior is enabled.
+- Use a recent Cloudflare Workers compatibility date (`2026-09-15` or later) so current Node.js compatibility behavior is enabled.
 - Prefer the current recommended Cloudflare path for existing Next.js 16 applications, vinext, when it can be adopted without changing application dependencies.
 - Use the documented OpenNext adapter as a conservative fallback when vinext compatibility would require application dependency upgrades solely for hosting.
 - Keep Firebase Admin credentials as server-side secrets/environment variables only.
@@ -29,7 +29,7 @@ Out of scope:
 
 ## Architecture
 
-Mercadito Tec 3 remains a full-stack Next.js application. Cloudflare Workers is an alternate runtime target only.
+Mercadito remains a full-stack Next.js application. Cloudflare Workers is an alternate runtime target only.
 
 The existing application source under `app/`, `lib/`, and `components/` remains authoritative. Cloudflare-specific changes are limited to deployment configuration and build tooling.
 
@@ -40,6 +40,8 @@ The deployment target is a `*.workers.dev` preview URL first. Cloudflare is cons
 Cloudflare currently recommends vinext for Next.js applications. The current vinext beta, however, requires React >= 19.2.6 while this application remains on React 19.2.4. Updating React only to satisfy the hosting adapter would violate the conservative hosting-only constraint.
 
 Therefore this first Cloudflare preview uses the documented OpenNext adapter. The root application's React, Next.js, package manifest, and package lock remain unchanged. A later migration to vinext can be evaluated independently after its compatibility requirements align with the application.
+
+The first CI build check on 2026-09-15 also proved that OpenNext 1.20.6 is incompatible at install time with this repository's Next.js 16.2.3 peer version. The Cloudflare-only tooling is therefore pinned to `@opennextjs/cloudflare@1.19.4` rather than changing the application dependency graph solely for hosting.
 
 The migration follows two gates:
 
@@ -60,7 +62,7 @@ If either gate fails due to runtime incompatibility, Cloudflare is rejected as a
 
 ## Node.js Compatibility
 
-Use `compatibility_date = "2026-09-08"` or a later date supported at implementation time. Keep `nodejs_compat` enabled for the OpenNext adapter. Cloudflare also enables its current Node.js compatibility behavior by default for compatibility dates on or after `2026-08-04`.
+Use `compatibility_date = "2026-09-15"` or a later date supported at implementation time. Keep `nodejs_compat` enabled for the OpenNext adapter. Cloudflare also enables its current Node.js compatibility behavior by default for compatibility dates on or after `2026-08-04`.
 
 Do not add application-level Node polyfills manually unless runtime logs prove they are needed.
 
@@ -74,7 +76,7 @@ The existing `lib/firebaseAdmin.ts` abstraction remains unchanged unless a concr
 
 ## Deployment Configuration
 
-The repository adds a Wrangler configuration, OpenNext configuration, an isolated Cloudflare build script, and deployment documentation.
+The repository adds a Wrangler configuration, OpenNext configuration, an isolated Cloudflare build script, a GitHub Actions build check, and deployment documentation.
 
 Cloudflare-specific adapter packages are installed only inside the Cloudflare build job using `--no-save --package-lock=false`. This deliberately preserves the existing root `package.json` and `package-lock.json` so Vercel and normal development remain unaffected.
 

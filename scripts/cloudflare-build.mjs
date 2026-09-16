@@ -20,7 +20,7 @@ run("npm", [
   "install",
   "--no-save",
   "--package-lock=false",
-  "@opennextjs/cloudflare@1.20.6",
+  "@opennextjs/cloudflare@1.19.4",
   "wrangler@4.132.0",
 ]);
 
