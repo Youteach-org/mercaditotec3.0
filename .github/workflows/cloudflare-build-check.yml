@@ -1,0 +1,39 @@
+name: Cloudflare build check
+
+on:
+  push:
+    branches:
+      - feature/student-stores
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-build-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build OpenNext
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Run tests and Cloudflare build
+        run: node scripts/cloudflare-build.mjs
+
+      - name: Verify Worker output
+        run: test -f .open-next/worker.js
