@@ -4,7 +4,7 @@
 
 **Goal:** Add a Cloudflare Workers hosting path for Mercadito without changing application behavior, Firebase schemas, or the existing Vercel build path.
 
-**Architecture:** Keep the existing Next.js 16 application untouched and adapt its normal `next build` output for Cloudflare using OpenNext. OpenNext is used as the conservative fallback because the current vinext beta requires React >= 19.2.6 while this project intentionally remains on React 19.2.4. Cloudflare-specific tooling is installed only inside the Cloudflare build job with `--no-save --package-lock=false`, so root application dependencies and lockfiles remain unchanged.
+**Architecture:** Keep the existing Next.js 16 application untouched and adapt its normal `next build` output for Cloudflare using OpenNext. OpenNext is used as the conservative fallback because the current vinext beta requires React >= 19.2.6 while this project intentionally remains on React 19.2.4. Cloudflare-specific tooling is installed only inside the Cloudflare build job with `--no-save`, so root application dependencies and lockfiles remain unchanged.
 
 **Tech Stack:** Next.js 16.2.3, React 19.2.4, Firebase/Firebase Admin, OpenNext for Cloudflare 1.19.4, Wrangler 4.132.0, Cloudflare Workers.
 
@@ -40,7 +40,7 @@
 **Files:**
 - Create: `scripts/cloudflare-build.mjs`
 
-- [x] Install `@opennextjs/cloudflare@1.19.4` and `wrangler@4.132.0` with `--no-save --package-lock=false`.
+- [x] Install `@opennextjs/cloudflare@1.19.4` and `wrangler@4.132.0` with `--no-save`.
 - [x] Run the full existing Vitest suite before adaptation.
 - [x] Run `opennextjs-cloudflare build` to execute the existing Next.js build and create `.open-next/worker.js`.
 - [x] Fail immediately if any command fails.

@@ -78,7 +78,7 @@ The existing `lib/firebaseAdmin.ts` abstraction remains unchanged unless a concr
 
 The repository adds a Wrangler configuration, OpenNext configuration, an isolated Cloudflare build script, a GitHub Actions build check, and deployment documentation.
 
-Cloudflare-specific adapter packages are installed only inside the Cloudflare build job using `--no-save --package-lock=false`. This deliberately preserves the existing root `package.json` and `package-lock.json` so Vercel and normal development remain unaffected.
+Cloudflare-specific adapter packages are installed only inside the Cloudflare build job using `--no-save`. This deliberately preserves the existing root `package.json` and `package-lock.json` so Vercel and normal development remain unaffected.
 
 The Cloudflare project targets the existing GitHub repository and branch `feature/student-stores` during this preview phase.
 

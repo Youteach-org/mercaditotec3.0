@@ -46,7 +46,7 @@ Cloudflare Workers Builds should use a current Node.js build image. Node 22 is p
 - `@opennextjs/cloudflare@1.19.4`
 - `wrangler@4.132.0`
 
-using `--no-save --package-lock=false`, then runs the repository's existing Vitest suite and the OpenNext build.
+using `--no-save`, then runs the repository's existing Vitest suite and the OpenNext build.
 
 The Worker entry point is generated at `.open-next/worker.js`, and static assets are generated at `.open-next/assets`.
 

@@ -24,6 +24,7 @@ Compatibility decision:
 - GitHub Actions run 1 on 2026-09-15 failed before tests/build because OpenNext `1.20.6` requires Next.js <16 or >=16.3.3.
 - Mercadito remains on Next.js `16.2.3`.
 - To keep application dependencies unchanged, the Cloudflare build path is pinned to OpenNext `1.19.4`, which is used with Next.js `16.2.3`.
+- The second CI attempt exposed an npm 10.9.8 `edgesOut` crash while installing Cloudflare-only tooling with `--package-lock=false`; the build script now uses `--no-save` without that npm bug-triggering flag.
 
 The remaining external step is to connect the GitHub repository to Cloudflare Workers Builds, configure `feature/student-stores` as the production branch, and add `FIREBASE_SERVICE_ACCOUNT_JSON` under the Worker's runtime **Settings → Variables & Secrets**. Build secrets and runtime secrets are separate in Cloudflare; the runtime secret is mandatory for Firebase Admin.
 
