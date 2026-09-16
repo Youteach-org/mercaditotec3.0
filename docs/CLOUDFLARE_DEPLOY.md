@@ -1,6 +1,6 @@
 # Cloudflare Workers deployment
 
-Mercadito Tec 3 keeps GitHub as the source of truth and uses Cloudflare Workers as the current deployment target. The application code, Firebase schema, Firebase Admin abstraction, Vercel configuration, and root dependency files remain unchanged.
+Mercadito keeps GitHub as the source of truth and uses Cloudflare Workers as the current deployment target. The application code, Firebase schema, Firebase Admin abstraction, Vercel configuration, and root dependency files remain unchanged.
 
 ## Why OpenNext instead of vinext right now
 
