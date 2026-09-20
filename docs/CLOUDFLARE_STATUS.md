@@ -14,6 +14,7 @@ Prepared in repository:
 Application business logic was not changed. Root `package.json` and `package-lock.json` were not changed.
 
 Cloudflare runtime configuration now:
+- uses Worker/project name `mercaditotec3-0`, matching Cloudflare's normalized project name for repository `mercaditotec3.0`
 - uses compatibility date `2026-09-15`
 - keeps the documented OpenNext `nodejs_compat` setting
 - declares `FIREBASE_SERVICE_ACCOUNT_JSON` as a required runtime Worker secret
@@ -32,6 +33,6 @@ Compatibility decisions and CI evidence:
 - OpenNext documents `jose` as a package with Workerd-specific code and requires it in Next.js `serverExternalPackages`; `next.config.js` now applies that documented configuration.
 - GitHub Actions run `35058421991` on commit `40de60831e33d5d5faa619a08e44f7e6342911fd` then passed end-to-end: 22 test files / 172 tests, Next.js production compilation and TypeScript, OpenNext bundle generation, and `.open-next/worker.js` verification.
 
-The build compatibility gate is now passed. The remaining external step is to connect the GitHub repository to Cloudflare Workers Builds, configure `feature/student-stores` as the production branch, and add `FIREBASE_SERVICE_ACCOUNT_JSON` under the Worker's runtime **Settings → Variables & Secrets**. Build secrets and runtime secrets are separate in Cloudflare; the runtime secret is mandatory for Firebase Admin.
+The build compatibility gate is now passed. Cloudflare has created the Worker/project as `mercaditotec3-0`. The remaining external configuration is to ensure `feature/student-stores` is the production branch and add `FIREBASE_SERVICE_ACCOUNT_JSON` under the Worker's runtime **Settings → Variables & Secrets**. Build secrets and runtime secrets are separate in Cloudflare; the runtime secret is mandatory for Firebase Admin.
 
 That external step requires access to the user's Cloudflare account and cannot be performed from the GitHub repository alone.
