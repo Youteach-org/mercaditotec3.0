@@ -36,3 +36,5 @@ Compatibility decisions and CI evidence:
 The build compatibility gate is now passed. Cloudflare has created the Worker/project as `mercaditotec3-0`. The remaining external configuration is to ensure `feature/student-stores` is the production branch and add `FIREBASE_SERVICE_ACCOUNT_JSON` under the Worker's runtime **Settings → Variables & Secrets**. Build secrets and runtime secrets are separate in Cloudflare; the runtime secret is mandatory for Firebase Admin.
 
 That external step requires access to the user's Cloudflare account and cannot be performed from the GitHub repository alone.
+
+- 2026-09-20: Triggered a real Cloudflare production build after dashboard configuration by updating this status file so Build watch paths detect a file change.
