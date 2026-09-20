@@ -1,7 +1,9 @@
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  chmodSync,
   mkdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -109,5 +111,24 @@ console.log("[cloudflare] Building Next.js app through OpenNext...");
 run(cli, ["build"], {
   shell: process.platform === "win32",
 });
+
+if (process.platform !== "win32") {
+  const realCli = `${cli}.real`;
+
+  renameSync(cli, realCli);
+  writeFileSync(
+    cli,
+    `#!/bin/sh
+BIN_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+export PATH="$BIN_DIR:$PATH"
+exec "$BIN_DIR/opennextjs-cloudflare.real" "$@"
+`
+  );
+  chmodSync(cli, 0o755);
+
+  console.log(
+    "[cloudflare] Prepared deploy wrapper with Wrangler available on PATH..."
+  );
+}
 
 console.log("[cloudflare] Build complete. Worker output: .open-next/worker.js");
