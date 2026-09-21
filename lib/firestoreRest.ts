@@ -413,6 +413,19 @@ class Query<T extends DocumentData = DocumentData> {
     );
   }
 
+  count(): {
+    get: () => Promise<{ data: () => { count: number } }>;
+  } {
+    return {
+      get: async () => {
+        const snapshot = await this.get();
+        return {
+          data: () => ({ count: snapshot.size }),
+        };
+      },
+    };
+  }
+
   async get(): Promise<QuerySnapshot<T>> {
     const segments = this.collectionPath.split("/").filter(Boolean);
     const collectionId = segments.at(-1)!;
