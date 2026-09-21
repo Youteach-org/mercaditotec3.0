@@ -1,4 +1,4 @@
-import { getAdminDb } from "../firebaseAdmin";
+import { getAdminDb } from "../firestoreRest";
 import {
   getStoreForOwner,
   reservationKeyForName,
