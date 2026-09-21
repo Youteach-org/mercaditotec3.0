@@ -45,3 +45,5 @@ That external step requires access to the user's Cloudflare account and cannot b
 - 2026-09-21: Runtime repair after public `workers.dev` returned HTTP 500. Cloudflare build now pins Next.js `16.1.7` and `@opennextjs/cloudflare@1.14.7` only inside `scripts/cloudflare-build.mjs`, while the repository's normal development dependencies remain unchanged. This avoids documented Next 16.2.x manifest crashes and OpenNext 1.19.x boot regressions on Workers. This status-file update intentionally retriggers the configured Cloudflare production Build Watch Path.
 
 - 2026-09-21: Added temporary runtime diagnostics through `cloudflare-runtime-entry.mjs`. `/__health` bypasses OpenNext and reports wrapper health plus whether `FIREBASE_SERVICE_ACCOUNT_JSON` is bound; other routes catch and serialize OpenNext boot/runtime exceptions. This status update intentionally retriggers Cloudflare's configured Build Watch Path.
+
+- 2026-09-21: Cloudflare Git integration reconnected to `Youteach-org/mercaditotec3.0`; trigger first build from the corrected repository connection.
