@@ -1,6 +1,6 @@
-import { Timestamp, type DocumentData } from "firebase-admin/firestore";
+import { Timestamp, type DocumentData } from "../firestoreRest";
 
-import { getAdminDb } from "../firebaseAdmin";
+import { getAdminDb } from "../firestoreRest";
 import { createOrderNotification } from "../notifications/repository";
 import type { ProductPriceType } from "../store/productDomain";
 import {
