@@ -1,0 +1,38 @@
+name: Mercadito runtime smoke
+
+on:
+  push:
+    branches:
+      - feature/student-stores
+    paths:
+      - ".github/workflows/cloudflare-runtime-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe public Worker runtime
+        shell: bash
+        run: |
+          set -u
+          BASE="https://mercaditotec3-0.youteach-tk.workers.dev"
+
+          probe() {
+            local path="$1"
+            local file="$2"
+            local status
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o "$file" -w '%{http_code}' "$BASE$path" || true)"
+            echo "===== $path ====="
+            echo "HTTP $status"
+            head -c 12000 "$file" 2>/dev/null || true
+            echo
+            echo
+          }
+
+          probe "/__health" /tmp/health.txt
+          probe "/__probe" /tmp/probe.txt
+          probe "/" /tmp/root.txt
