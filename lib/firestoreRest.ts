@@ -567,6 +567,40 @@ export class WriteBatch {
   }
 }
 
+
+export class BulkWriter {
+  private readonly writes: FirestoreWrite[] = [];
+
+  delete(reference: DocumentReference): this {
+    this.writes.push(writeForDelete(reference));
+    return this;
+  }
+
+  update(reference: DocumentReference, data: DocumentData): this {
+    this.writes.push(writeForUpdate(reference, data));
+    return this;
+  }
+
+  set(reference: DocumentReference, data: DocumentData, options?: { merge?: boolean }): this {
+    this.writes.push(writeForSet(reference, data, options));
+    return this;
+  }
+
+  async close(): Promise<void> {
+    if (!this.writes.length) return;
+
+    const databaseRoot = await transport.databaseRoot();
+
+    for (let index = 0; index < this.writes.length; index += 400) {
+      const chunk = this.writes.slice(index, index + 400);
+      await transport.request(`${databaseRoot}/documents:commit`, {
+        method: "POST",
+        body: JSON.stringify({ writes: await finalizeWrites(chunk) }),
+      });
+    }
+  }
+}
+
 export class Transaction {
   private readonly writes: FirestoreWrite[] = [];
 
@@ -629,6 +663,10 @@ export class FirestoreRest {
 
   batch(): WriteBatch {
     return new WriteBatch();
+  }
+
+  bulkWriter(): BulkWriter {
+    return new BulkWriter();
   }
 
   async runTransaction<T>(callback: (transaction: Transaction) => Promise<T>): Promise<T> {
