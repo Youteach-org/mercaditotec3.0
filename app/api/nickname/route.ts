@@ -5,12 +5,10 @@ import {
 import type {
   DocumentReference,
   DocumentSnapshot,
-} from "firebase-admin/firestore";
+} from "@/lib/firestoreRest";
 
-import {
-  getAdminAuth,
-  getAdminDb,
-} from "@/lib/firebaseAdmin";
+import { getAdminAuth } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firestoreRest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
