@@ -1,3 +1,4 @@
+// startup-eval-fix-deploy
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "mercaditotec3-0",
