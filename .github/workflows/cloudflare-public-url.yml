@@ -1,0 +1,55 @@
+name: Verify Mercadito public Cloudflare URL
+
+on:
+  push:
+    branches:
+      - feature/student-stores
+    paths:
+      - ".github/workflows/cloudflare-public-url.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-public-url:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve workers.dev hostname and verify Mercadito
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+          WORKER_NAME: "mercaditotec3-0"
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN repository secret"
+            exit 1
+          fi
+
+          RESPONSE="$(curl -fsS \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")"
+
+          SUBDOMAIN="$(printf '%s' "$RESPONSE" | jq -r '.result.subdomain // empty')"
+          if [ -z "$SUBDOMAIN" ]; then
+            echo "::error::Cloudflare did not return a workers.dev subdomain"
+            printf '%s\n' "$RESPONSE"
+            exit 1
+          fi
+
+          URL="https://$WORKER_NAME.$SUBDOMAIN.workers.dev"
+          echo "Mercadito URL: $URL"
+          echo "### Mercadito public URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "$URL" >> "$GITHUB_STEP_SUMMARY"
+
+          STATUS="$(curl -L -sS -o /tmp/mercadito-body -w '%{http_code}' "$URL/")"
+          echo "HTTP status: $STATUS"
+          echo "HTTP status: $STATUS" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
+            echo "::error::Mercadito public URL returned HTTP $STATUS"
+            head -c 2000 /tmp/mercadito-body || true
+            exit 1
+          fi
