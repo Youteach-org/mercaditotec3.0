@@ -5,9 +5,9 @@ import {
   type DocumentData,
   type DocumentReference,
   type Transaction,
-} from "firebase-admin/firestore";
+} from "../firestoreRest";
 
-import { getAdminDb } from "../firebaseAdmin";
+import { getAdminDb } from "../firestoreRest";
 import type { AdminRole } from "../security/domain";
 import {
   assertActionAllowed,
