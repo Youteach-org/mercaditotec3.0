@@ -1,11 +1,11 @@
 ﻿import {
   Timestamp,
   type DocumentData,
-} from "firebase-admin/firestore";
+} from "../firestoreRest";
 
 import {
   getAdminDb,
-} from "../firebaseAdmin";
+} from "../firestoreRest";
 
 export interface StoreCategory {
   id: string;
