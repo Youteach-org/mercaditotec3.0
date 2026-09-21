@@ -41,3 +41,5 @@ The build compatibility gate is now passed. Cloudflare has created the Worker/pr
 That external step requires access to the user's Cloudflare account and cannot be performed from the GitHub repository alone.
 
 - 2026-09-20: Triggered a real Cloudflare production build after dashboard configuration by updating this status file so Build watch paths detect a file change.
+
+- 2026-09-21: Runtime repair after public `workers.dev` returned HTTP 500. Cloudflare build now pins Next.js `16.1.7` and `@opennextjs/cloudflare@1.14.7` only inside `scripts/cloudflare-build.mjs`, while the repository's normal development dependencies remain unchanged. This avoids documented Next 16.2.x manifest crashes and OpenNext 1.19.x boot regressions on Workers. This status-file update intentionally retriggers the configured Cloudflare production Build Watch Path.
