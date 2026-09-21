@@ -1,6 +1,6 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "../firestoreRest";
 
-import { getAdminDb } from "../firebaseAdmin";
+import { getAdminDb } from "../firestoreRest";
 import {
   canEndorseStudent,
   ENDORSEMENTS_REQUIRED,
