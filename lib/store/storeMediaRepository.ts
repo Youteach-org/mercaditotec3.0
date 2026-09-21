@@ -1,10 +1,10 @@
 ﻿import {
   Timestamp,
-} from "firebase-admin/firestore";
+} from "../firestoreRest";
 
 import {
   getAdminDb,
-} from "../firebaseAdmin";
+} from "../firestoreRest";
 
 import {
   canOwnerEditStore,
