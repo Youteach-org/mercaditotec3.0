@@ -1,3 +1,4 @@
+// deploy-with-startup-eval
 import openNextWorker, * as openNextModule from "./.open-next/worker.js";
 
 const json = (value, init = {}) =>
