@@ -9,14 +9,9 @@ import {
   getAuth,
 } from "firebase-admin/auth";
 
-import {
-  getFirestore,
-} from "firebase-admin/firestore";
-
 let cachedApp: App | null = null;
 
 function getAdminApp() {
-
   if (cachedApp) {
     return cachedApp;
   }
@@ -44,11 +39,28 @@ function getAdminApp() {
   }
 
   const serviceAccount =
-    JSON.parse(raw);
+    JSON.parse(raw) as {
+      project_id?: string;
+      client_email?: string;
+      private_key?: string;
+    };
+
+  if (
+    !serviceAccount.project_id ||
+    !serviceAccount.client_email ||
+    !serviceAccount.private_key
+  ) {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT_JSON is missing required service-account fields"
+    );
+  }
 
   cachedApp =
     initializeApp(
       {
+        projectId:
+          serviceAccount.project_id,
+
         credential: cert({
           projectId:
             serviceAccount.project_id,
@@ -72,8 +84,37 @@ export function getAdminAuth() {
   );
 }
 
-export function getAdminDb() {
-  return getFirestore(
-    getAdminApp()
-  );
+export function getFirebaseProjectId(): string {
+  const projectId =
+    getAdminApp().options.projectId;
+
+  if (!projectId) {
+    throw new Error(
+      "Firebase projectId is not configured"
+    );
+  }
+
+  return projectId;
+}
+
+export async function getAdminAccessToken(): Promise<string> {
+  const credential =
+    getAdminApp().options.credential;
+
+  if (!credential) {
+    throw new Error(
+      "Firebase Admin credential is not configured"
+    );
+  }
+
+  const token =
+    await credential.getAccessToken();
+
+  if (!token?.access_token) {
+    throw new Error(
+      "Firebase Admin could not obtain an access token"
+    );
+  }
+
+  return token.access_token;
 }
