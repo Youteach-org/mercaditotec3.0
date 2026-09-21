@@ -37,6 +37,7 @@ function run(command, args, options = {}) {
   }
 }
 
+// runtime diagnostic deployment trigger
 console.log("[cloudflare] Running existing test suite...");
 run(npmCommand, ["test"]);
 
