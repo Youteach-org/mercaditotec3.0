@@ -1,6 +1,6 @@
 import { getAdminAccessToken, getFirebaseProjectId } from "./firebaseAdmin";
 
-export type DocumentData = Record<string, unknown>;
+export type DocumentData = Record<string, any>;
 
 export class Timestamp {
   private constructor(private readonly value: Date) {}
