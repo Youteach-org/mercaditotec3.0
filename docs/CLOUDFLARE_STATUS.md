@@ -2,6 +2,9 @@
 
 This hosting block was intentionally grouped to reduce deployment churn.
 
+> **Hosting source of truth (2026-09-20):** Mercadito no longer uses Vercel as its deployment target. Any Vercel status checks, preview URLs, or old production aliases are legacy artifacts and must be ignored for deployment decisions. The active hosting target is Cloudflare, from branch `feature/student-stores`.
+
+
 Prepared in repository:
 - `wrangler.jsonc`
 - `open-next.config.ts`
