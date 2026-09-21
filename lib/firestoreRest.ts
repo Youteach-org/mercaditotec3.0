@@ -280,8 +280,22 @@ export class DocumentSnapshot<T extends DocumentData = DocumentData> {
   }
 }
 
+export class QueryDocumentSnapshot<T extends DocumentData = DocumentData>
+  extends DocumentSnapshot<T> {
+  constructor(
+    ref: DocumentReference<T>,
+    private readonly queryDocument: FirestoreDocument,
+  ) {
+    super(ref, queryDocument);
+  }
+
+  override data(): T {
+    return decodeFields(this.queryDocument.fields ?? {}) as T;
+  }
+}
+
 export class QuerySnapshot<T extends DocumentData = DocumentData> {
-  constructor(public readonly docs: DocumentSnapshot<T>[]) {}
+  constructor(public readonly docs: QueryDocumentSnapshot<T>[]) {}
 
   get empty(): boolean {
     return this.docs.length === 0;
@@ -444,7 +458,10 @@ class Query<T extends DocumentData = DocumentData> {
       .filter((row): row is { document: FirestoreDocument } => Boolean(row.document))
       .map((row) => {
         const path = documentPathFromName(row.document.name);
-        return new DocumentSnapshot<T>(new DocumentReference<T>(path), row.document);
+        return new QueryDocumentSnapshot<T>(
+          new DocumentReference<T>(path),
+          row.document,
+        );
       });
 
     return new QuerySnapshot<T>(docs);
