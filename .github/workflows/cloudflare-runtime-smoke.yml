@@ -18,19 +18,27 @@ jobs:
       - name: Probe public Worker runtime
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           BASE="https://mercaditotec3-0.youteach-tk.workers.dev"
 
           probe() {
             local path="$1"
             local file="$2"
             local status
-            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o "$file" -w '%{http_code}' "$BASE$path" || true)"
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o "$file" -w '%{http_code}' "$BASE$path")"
             echo "===== $path ====="
             echo "HTTP $status"
             head -c 12000 "$file" 2>/dev/null || true
             echo
             echo
+
+            case "$status" in
+              2*|3*) ;;
+              *)
+                echo "::error::$path returned HTTP $status"
+                return 1
+                ;;
+            esac
           }
 
           probe "/__health" /tmp/health.txt
