@@ -47,3 +47,5 @@ That external step requires access to the user's Cloudflare account and cannot b
 - 2026-09-21: Added temporary runtime diagnostics through `cloudflare-runtime-entry.mjs`. `/__health` bypasses OpenNext and reports wrapper health plus whether `FIREBASE_SERVICE_ACCOUNT_JSON` is bound; other routes catch and serialize OpenNext boot/runtime exceptions. This status update intentionally retriggers Cloudflare's configured Build Watch Path.
 
 - 2026-09-21: Cloudflare Git integration reconnected to `Youteach-org/mercaditotec3.0`; trigger first build from the corrected repository connection.
+
+- 2026-09-21: Trigger deployment of startup-eval fix (`allow_eval_during_startup` + static OpenNext import) after runtime probe identified protobufjs `new Function()` failure.
