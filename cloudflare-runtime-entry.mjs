@@ -1,3 +1,5 @@
+import openNextWorker, * as openNextModule from "./.open-next/worker.js";
+
 const json = (value, init = {}) =>
   new Response(JSON.stringify(value, null, 2), {
     ...init,
@@ -26,7 +28,6 @@ function serializeError(error) {
 
 function serializeConsoleArg(value) {
   if (value instanceof Error) return serializeError(value);
-
   if (typeof value === "string") return value;
 
   try {
@@ -36,17 +37,14 @@ function serializeConsoleArg(value) {
   }
 }
 
-async function loadOpenNext() {
-  const openNextModule = await import("./.open-next/worker.js");
-  const handler = openNextModule.default;
-
-  if (!handler || typeof handler.fetch !== "function") {
+function getHandler() {
+  if (!openNextWorker || typeof openNextWorker.fetch !== "function") {
     throw new Error(
       `OpenNext worker default export does not expose fetch(). Exported keys: ${Object.keys(openNextModule).join(", ")}`,
     );
   }
 
-  return { handler, exportedKeys: Object.keys(openNextModule) };
+  return openNextWorker;
 }
 
 async function probeOpenNext(request, env, ctx) {
@@ -70,7 +68,7 @@ async function probeOpenNext(request, env, ctx) {
   console.log = capture("log");
 
   try {
-    const { handler, exportedKeys } = await loadOpenNext();
+    const handler = getHandler();
     const targets = ["/", "/marketplace", "/api/marketplace"];
     const results = [];
 
@@ -105,14 +103,14 @@ async function probeOpenNext(request, env, ctx) {
     return {
       ok: true,
       stage: "opennext-probe",
-      exportedKeys,
+      exportedKeys: Object.keys(openNextModule),
       results,
       capturedConsole: captured.slice(-50),
     };
   } catch (error) {
     return {
       ok: false,
-      stage: "opennext-import",
+      stage: "opennext-runtime",
       error: serializeError(error),
       capturedConsole: captured.slice(-50),
     };
@@ -133,6 +131,8 @@ export default {
         stage: "wrapper",
         worker: "mercaditotec3-0",
         firebaseSecretPresent: Boolean(env?.FIREBASE_SERVICE_ACCOUNT_JSON),
+        openNextLoadedAtStartup: true,
+        exportedKeys: Object.keys(openNextModule),
       });
     }
 
@@ -141,8 +141,7 @@ export default {
     }
 
     try {
-      const { handler } = await loadOpenNext();
-      return await handler.fetch(request, env, ctx);
+      return await getHandler().fetch(request, env, ctx);
     } catch (error) {
       const details = serializeError(error);
       console.error("[mercadito-cloudflare-runtime]", details);
