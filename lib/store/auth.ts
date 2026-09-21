@@ -6,10 +6,8 @@ import {
   isSuperadminRole,
 } from "../security/domain";
 import { isAdministrativeBlockActive } from "../moderation/domain";
-import {
-  getAdminAuth,
-  getAdminDb,
-} from "../firebaseAdmin";
+import { getAdminAuth } from "../firebaseAdmin";
+import { getAdminDb } from "../firestoreRest";
 
 export class ApiAuthError extends Error {
   constructor(
