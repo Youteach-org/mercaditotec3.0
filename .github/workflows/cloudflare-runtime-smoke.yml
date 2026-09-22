@@ -106,3 +106,40 @@ jobs:
           done < /tmp/browser-assets.txt
 
           echo "Mercadito Worker, marketplace API, and browser JS/CSS assets are reachable."
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$CHROME" ]; then
+            echo "::error::No Chromium/Chrome binary is available on the GitHub runner"
+            exit 1
+          fi
+
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --virtual-time-budget=10000 \
+            --dump-dom \
+            "$BASE/marketplace?smoke=$(date +%s)" \
+            > /tmp/browser-dom.html \
+            2> /tmp/browser-console.txt || {
+              echo "::error::Headless browser failed to load Mercadito"
+              tail -n 200 /tmp/browser-console.txt || true
+              exit 1
+            }
+
+          if grep -q 'aria-busy="true"' /tmp/browser-dom.html; then
+            echo "::error::Mercadito remained stuck in the client-side loading shell"
+            tail -n 200 /tmp/browser-console.txt || true
+            head -c 5000 /tmp/browser-dom.html || true
+            exit 1
+          fi
+
+          grep -q "Tiendas de la comunidad" /tmp/browser-dom.html || {
+            echo "::error::Marketplace UI did not hydrate in a real browser"
+            tail -n 200 /tmp/browser-console.txt || true
+            head -c 5000 /tmp/browser-dom.html || true
+            exit 1
+          }
+
+          echo "Headless Chrome rendered the hydrated Mercadito marketplace successfully."
