@@ -1,53 +1,30 @@
 # Cloudflare Workers Hosting Implementation Status
 
-This hosting block was intentionally grouped to reduce deployment churn.
+> **Hosting source of truth:** GitHub is `Youteach-org/mercaditotec3.0`; active branch is `feature/student-stores`; Mercadito is hosted on Cloudflare Workers, not Vercel.
 
-> **Hosting source of truth (2026-09-20):** Mercadito no longer uses Vercel as its deployment target. Any Vercel status checks, preview URLs, or old production aliases are legacy artifacts and must be ignored for deployment decisions. The active hosting target is Cloudflare, from branch `feature/student-stores`.
+## Current production topology
 
+- Full application Worker: `mercaditotec3-0`
+- Verified runtime: `https://mercaditotec3-0.youteach-tk.workers.dev`
+- Stable public alias: `https://mercaditotec.youteach-tk.workers.dev`
+- Required runtime secret on the full application Worker: `FIREBASE_SERVICE_ACCOUNT_JSON`
 
-Prepared in repository:
-- `wrangler.jsonc`
-- `open-next.config.ts`
-- `scripts/cloudflare-build.mjs`
-- `.github/workflows/cloudflare-build-check.yml`
-- `docs/CLOUDFLARE_DEPLOY.md`
-- updated `.gitignore`
-- updated hosting design and implementation plan
+## Recovery history
 
-Application business logic was not changed. Root `package.json` and `package-lock.json` were not changed.
+- **2026-09-21:** Cloudflare Git integration was reconnected to `Youteach-org/mercaditotec3.0`.
+- **2026-09-21:** The HTTP 500 runtime failure was repaired. Firebase Admin/Firestore code that was incompatible with Workers was replaced at the Worker boundary with Worker-safe REST/Web Crypto access, and the Firebase client session shell was isolated to the browser.
+- **2026-09-22:** The application Worker was verified again: wrapper health, `/`, `/marketplace`, and `/api/marketplace` all returned HTTP 200; the Firebase runtime secret was present.
+- **2026-09-22:** A stronger production smoke test was added. It verified all marketplace JS/CSS assets and then rendered the deployed marketplace in headless Chrome. The page hydrated successfully and displayed “Tiendas de la comunidad”.
+- **2026-09-22:** The remaining public-access failure was identified. The Worker had been named `mercaditotec` through 2026-09-16, but commit `d85c595a` on 2026-09-20 changed it to `mercaditotec3-0`. The old stable URL then returned HTTP 404 / Cloudflare error 1042 even though the new Worker was healthy.
+- **2026-09-22:** Recovery strategy: keep the healthy `mercaditotec3-0` application Worker and restore `mercaditotec` as a separate permanent HTTP 308 alias. This avoids moving application secrets or coupling the public URL to a repository-derived Worker name again.
 
-Cloudflare runtime configuration now:
-- uses Worker/project name `mercaditotec3-0`, matching Cloudflare's normalized project name for repository `mercaditotec3.0`
-- uses compatibility date `2026-09-15`
-- keeps the documented OpenNext `nodejs_compat` setting
-- declares `FIREBASE_SERVICE_ACCOUNT_JSON` as a required runtime Worker secret
-- uses `@opennextjs/cloudflare@1.19.4` and `wrangler@4.132.0` in the isolated Cloudflare build step
-- validates the branch with GitHub Actions on pushes to `feature/student-stores`
-- keeps Cloudflare-only packages in an isolated `.cloudflare-tools/` directory ignored by Git
-- declares `jose` in Next.js `serverExternalPackages`, as required for packages with a Workerd-specific conditional export
+## Permanent regression protection
 
-Compatibility decisions and CI evidence:
-- GitHub Actions run 1 on 2026-09-15 failed before tests/build because OpenNext `1.20.6` requires Next.js <16 or >=16.3.3.
-- Mercadito remains on Next.js `16.2.3`.
-- To keep application dependencies unchanged, the Cloudflare build path is pinned to OpenNext `1.19.4`, which is used with Next.js `16.2.3`.
-- The second and third CI attempts exposed npm 10.9.8 `edgesOut` crashes whenever Cloudflare-only tooling was installed into Mercadito's existing root dependency tree.
-- The build script now installs OpenNext and Wrangler into isolated `.cloudflare-tools/`, avoiding any second npm resolution of the application's dependency tree.
-- The fourth CI attempt passed all 172 Vitest tests and the full Next.js production build, then failed in OpenNext bundling because `firebase-admin -> jwks-rsa -> jose` reached the Workerd export for `jose` after Next had bundled/traced it without its Workerd entry point.
-- OpenNext documents `jose` as a package with Workerd-specific code and requires it in Next.js `serverExternalPackages`; `next.config.js` now applies that documented configuration.
-- GitHub Actions run `35058421991` on commit `40de60831e33d5d5faa619a08e44f7e6342911fd` then passed end-to-end: 22 test files / 172 tests, Next.js production compilation and TypeScript, OpenNext bundle generation, and `.open-next/worker.js` verification.
+`.github/workflows/cloudflare-runtime-smoke.yml` now rejects deployments where:
+- the Worker/API is down;
+- Firebase runtime configuration is absent;
+- browser JS/CSS assets are unavailable;
+- the app stays stuck in the client-side loading shell;
+- the marketplace fails to hydrate in a real browser.
 
-The build compatibility gate is now passed. Cloudflare has created the Worker/project as `mercaditotec3-0`. The remaining external configuration is to ensure `feature/student-stores` is the production branch and add `FIREBASE_SERVICE_ACCOUNT_JSON` under the Worker's runtime **Settings → Variables & Secrets**. Build secrets and runtime secrets are separate in Cloudflare; the runtime secret is mandatory for Firebase Admin.
-
-That external step requires access to the user's Cloudflare account and cannot be performed from the GitHub repository alone.
-
-- 2026-09-20: Triggered a real Cloudflare production build after dashboard configuration by updating this status file so Build watch paths detect a file change.
-
-- 2026-09-21: Runtime repair after public `workers.dev` returned HTTP 500. Cloudflare build now pins Next.js `16.1.7` and `@opennextjs/cloudflare@1.14.7` only inside `scripts/cloudflare-build.mjs`, while the repository's normal development dependencies remain unchanged. This avoids documented Next 16.2.x manifest crashes and OpenNext 1.19.x boot regressions on Workers. This status-file update intentionally retriggers the configured Cloudflare production Build Watch Path.
-
-- 2026-09-21: Added temporary runtime diagnostics through `cloudflare-runtime-entry.mjs`. `/__health` bypasses OpenNext and reports wrapper health plus whether `FIREBASE_SERVICE_ACCOUNT_JSON` is bound; other routes catch and serialize OpenNext boot/runtime exceptions. This status update intentionally retriggers Cloudflare's configured Build Watch Path.
-
-- 2026-09-21: Cloudflare Git integration reconnected to `Youteach-org/mercaditotec3.0`; trigger first build from the corrected repository connection.
-
-- 2026-09-21: Trigger deployment of startup-eval fix (`allow_eval_during_startup` + static OpenNext import) after runtime probe identified protobufjs `new Function()` failure.
-
-- 2026-09-21: Runtime 500 resolved and verified in production. Root cause had two layers: server-side Firebase Admin/Firestore dependencies pulled protobufjs dynamic code generation that Cloudflare Workers rejects, and the browser Firebase session tree was still being prerendered by Next on the Worker. Firestore server access now uses the Worker-compatible REST adapter; Firebase Admin was removed from the Worker runtime; Firebase Auth verification/access-token work uses REST/Web Crypto; and the Firebase client session/AppShell is loaded browser-only through ClientAppShell/RuntimeAppShell. Verified Cloudflare production version `f272c35c-840f-4b7a-8f8e-6fe7ef0a838c`: `/` HTTP 200, `/marketplace` HTTP 200, `/api/marketplace` HTTP 200, with no captured runtime EvalError.
+`.github/workflows/cloudflare-legacy-alias.yml` owns the stable public alias and verifies its redirect target after deployment.

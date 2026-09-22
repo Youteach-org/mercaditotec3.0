@@ -1,0 +1,66 @@
+name: Restore Mercadito stable URL
+
+on:
+  push:
+    branches:
+      - feature/student-stores
+    paths:
+      - "cloudflare-legacy-redirect.mjs"
+      - ".github/workflows/cloudflare-legacy-alias.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-alias:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Deploy mercaditotec stable alias
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN repository secret"
+            exit 1
+          fi
+
+          npx --yes wrangler@4.132.0 deploy cloudflare-legacy-redirect.mjs \
+            --name mercaditotec \
+            --compatibility-date 2026-09-15
+
+      - name: Verify stable URL redirects to live Worker
+        run: |
+          set -euo pipefail
+          LEGACY="https://mercaditotec.youteach-tk.workers.dev/marketplace"
+          TARGET_HOST="mercaditotec3-0.youteach-tk.workers.dev"
+
+          headers="$(curl -sS -D - -o /dev/null --max-redirs 0 "$LEGACY")"
+          printf '%s\n' "$headers"
+
+          status="$(printf '%s\n' "$headers" | head -n 1 | awk '{print $2}')"
+          location="$(printf '%s\n' "$headers" | awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/\r$/, "", $2); print $2; exit}')"
+
+          if [ "$status" != "308" ]; then
+            echo "::error::Stable Mercadito URL returned HTTP $status instead of 308"
+            exit 1
+          fi
+
+          case "$location" in
+            https://$TARGET_HOST/marketplace*) ;;
+            *)
+              echo "::error::Unexpected redirect target: $location"
+              exit 1
+              ;;
+          esac
+
+          final_status="$(curl -L -sS -o /tmp/mercadito-stable -w '%{http_code}' "$LEGACY")"
+          if [ "$final_status" -lt 200 ] || [ "$final_status" -ge 400 ]; then
+            echo "::error::Stable Mercadito URL did not reach a healthy page; HTTP $final_status"
+            exit 1
+          fi
