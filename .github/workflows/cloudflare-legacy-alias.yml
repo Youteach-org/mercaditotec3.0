@@ -1,12 +1,6 @@
 name: Restore Mercadito stable URL
 
 on:
-  push:
-    branches:
-      - feature/student-stores
-    paths:
-      - "cloudflare-legacy-redirect.mjs"
-      - ".github/workflows/cloudflare-legacy-alias.yml"
   workflow_dispatch:
 
 permissions:
@@ -26,7 +20,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::Missing CLOUDFLARE_API_TOKEN repository secret"
+            echo "::error::CLOUDFLARE_API_TOKEN is not available in Youteach-org/mercaditotec3.0"
+            echo "::error::Restore that GitHub Actions secret, then rerun this workflow."
             exit 1
           fi
 
