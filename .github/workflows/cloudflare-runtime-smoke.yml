@@ -1,4 +1,3 @@
-# rerun after production deploy 8c3d4d5f
 name: Mercadito runtime smoke
 
 on:
@@ -16,7 +15,7 @@ jobs:
   runtime-smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe public Worker runtime
+      - name: Probe public Worker runtime and browser assets
         shell: bash
         run: |
           set -euo pipefail
@@ -29,14 +28,12 @@ jobs:
             status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o "$file" -w '%{http_code}' "$BASE$path")"
             echo "===== $path ====="
             echo "HTTP $status"
-            head -c 12000 "$file" 2>/dev/null || true
-            echo
-            echo
 
             case "$status" in
               2*|3*) ;;
               *)
                 echo "::error::$path returned HTTP $status"
+                head -c 4000 "$file" 2>/dev/null || true
                 return 1
                 ;;
             esac
@@ -44,4 +41,68 @@ jobs:
 
           probe "/__health" /tmp/health.txt
           probe "/__probe" /tmp/probe.txt
-          probe "/" /tmp/root.txt
+          probe "/" /tmp/root.html
+          probe "/marketplace" /tmp/marketplace.html
+          probe "/api/marketplace" /tmp/marketplace.json
+
+          grep -q '"firebaseSecretPresent": true' /tmp/health.txt || {
+            echo "::error::Cloudflare runtime does not expose FIREBASE_SERVICE_ACCOUNT_JSON"
+            exit 1
+          }
+
+          grep -q '"pathname": "/marketplace"' /tmp/probe.txt || {
+            echo "::error::OpenNext probe did not exercise /marketplace"
+            exit 1
+          }
+
+          grep -q '"status": 200' /tmp/probe.txt || {
+            echo "::error::OpenNext probe did not report HTTP 200"
+            exit 1
+          }
+
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin
+          import pathlib
+
+          class Assets(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.urls = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == "script" and attrs.get("src"):
+                      self.urls.append(attrs["src"])
+                  if tag == "link" and attrs.get("rel") == "stylesheet" and attrs.get("href"):
+                      self.urls.append(attrs["href"])
+
+          parser = Assets()
+          parser.feed(pathlib.Path("/tmp/marketplace.html").read_text(errors="replace"))
+          urls = []
+          for u in parser.urls:
+              full = urljoin("https://mercaditotec3-0.youteach-tk.workers.dev/marketplace", u)
+              if full not in urls:
+                  urls.append(full)
+
+          if not urls:
+              raise SystemExit("No browser JS/CSS assets found in /marketplace HTML")
+
+          pathlib.Path("/tmp/browser-assets.txt").write_text("\n".join(urls) + "\n")
+          print(f"Found {len(urls)} browser assets")
+          PY
+
+          while IFS= read -r asset; do
+            [ -n "$asset" ] || continue
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/asset-body -w '%{http_code}' "$asset")"
+            echo "Asset HTTP $status: $asset"
+            case "$status" in
+              2*|3*) ;;
+              *)
+                echo "::error::Browser asset returned HTTP $status: $asset"
+                head -c 1000 /tmp/asset-body 2>/dev/null || true
+                exit 1
+                ;;
+            esac
+          done < /tmp/browser-assets.txt
+
+          echo "Mercadito Worker, marketplace API, and browser JS/CSS assets are reachable."
