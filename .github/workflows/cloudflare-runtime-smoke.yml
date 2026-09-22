@@ -143,3 +143,8 @@ jobs:
           }
 
           echo "Headless Chrome rendered the hydrated Mercadito marketplace successfully."
+
+          LEGACY="https://mercaditotec.youteach-tk.workers.dev"
+          legacy_status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/legacy-body -w '%{http_code}' "$LEGACY/" || true)"
+          echo "Legacy Mercadito URL HTTP $legacy_status: $LEGACY/"
+          head -c 1000 /tmp/legacy-body 2>/dev/null || true
