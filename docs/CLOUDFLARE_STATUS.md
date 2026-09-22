@@ -28,3 +28,11 @@
 - the marketplace fails to hydrate in a real browser.
 
 `.github/workflows/cloudflare-legacy-alias.yml` owns the stable public alias and verifies its redirect target after deployment.
+
+
+## Current external blocker
+
+- **2026-09-22:** Attempted automatic restoration of the `mercaditotec` alias from GitHub Actions. The deployment correctly stopped before touching Cloudflare because `CLOUDFLARE_API_TOKEN` is not available in the moved repository `Youteach-org/mercaditotec3.0`.
+- The main Cloudflare Git integration is independent and remains healthy; it can continue deploying `mercaditotec3-0`.
+- The alias workflow is intentionally manual-only until the missing GitHub Actions secret is restored. This prevents every source-code push from producing a false red deployment check.
+- Once `CLOUDFLARE_API_TOKEN` is restored in the organization repository, run **Restore Mercadito stable URL** once. It will deploy the minimal redirect Worker and verify the HTTP 308 redirect end-to-end.
