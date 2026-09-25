@@ -2,6 +2,9 @@ name: Restore Mercadito stable URL
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/student-stores
 
 permissions:
   contents: read
@@ -21,13 +24,10 @@ jobs:
           set -euo pipefail
           if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN is not available in Youteach-org/mercaditotec3.0"
-            echo "::error::Restore that GitHub Actions secret, then rerun this workflow."
             exit 1
           fi
 
-          npx --yes wrangler@4.132.0 deploy cloudflare-legacy-redirect.mjs \
-            --name mercaditotec \
-            --compatibility-date 2026-09-15
+          npx --yes wrangler@4.132.0 deploy --config wrangler.legacy-alias.jsonc
 
       - name: Verify stable URL redirects to live Worker
         run: |
