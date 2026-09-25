@@ -35,27 +35,35 @@ jobs:
           LEGACY="https://mercaditotec.youteach-tk.workers.dev/marketplace"
           TARGET_HOST="mercaditotec3-0.youteach-tk.workers.dev"
 
-          headers="$(curl -sS -D - -o /dev/null --max-redirs 0 "$LEGACY")"
-          printf '%s\n' "$headers"
+          ok=0
+          for attempt in $(seq 1 12); do
+            headers="$(curl -sS -D - -o /dev/null --max-redirs 0 "$LEGACY" || true)"
+            status="$(printf '%s\n' "$headers" | head -n 1 | awk '{print $2}')"
+            location="$(printf '%s\n' "$headers" | awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/\r$/, "", $2); print $2; exit}')"
 
-          status="$(printf '%s\n' "$headers" | head -n 1 | awk '{print $2}')"
-          location="$(printf '%s\n' "$headers" | awk 'BEGIN{IGNORECASE=1} /^location:/ {sub(/\r$/, "", $2); print $2; exit}')"
+            echo "Attempt $attempt: HTTP ${status:-none} Location: ${location:-none}"
 
-          if [ "$status" != "308" ]; then
-            echo "::error::Stable Mercadito URL returned HTTP $status instead of 308"
+            if [ "$status" = "308" ]; then
+              case "$location" in
+                https://$TARGET_HOST/marketplace*)
+                  ok=1
+                  break
+                  ;;
+              esac
+            fi
+
+            sleep 5
+          done
+
+          if [ "$ok" != "1" ]; then
+            echo "::error::Stable Mercadito URL did not expose the expected 308 redirect after retries"
             exit 1
           fi
-
-          case "$location" in
-            https://$TARGET_HOST/marketplace*) ;;
-            *)
-              echo "::error::Unexpected redirect target: $location"
-              exit 1
-              ;;
-          esac
 
           final_status="$(curl -L -sS -o /tmp/mercadito-stable -w '%{http_code}' "$LEGACY")"
           if [ "$final_status" -lt 200 ] || [ "$final_status" -ge 400 ]; then
             echo "::error::Stable Mercadito URL did not reach a healthy page; HTTP $final_status"
             exit 1
           fi
+
+          echo "Stable Mercadito URL is healthy; final HTTP $final_status"
