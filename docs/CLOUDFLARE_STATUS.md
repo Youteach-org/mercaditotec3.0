@@ -42,3 +42,7 @@ The alias Worker uses `wrangler.legacy-alias.jsonc` so its deployment is indepen
 - GitHub Actions Cloudflare token: available to this repository.
 - Vercel: legacy only; do not restore it as the deployment target.
 - No remaining Cloudflare hosting blocker is known for Mercadito.
+
+## Marketplace visual preview isolation
+
+The unapproved marketplace redesign was removed from `feature/student-stores`. Visual reconstruction is isolated on `preview/marketplace-approved-reference` until explicit approval. The active branch remains the production source of truth.
