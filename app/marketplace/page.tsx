@@ -1,4 +1,4 @@
-"use client";
+"use client";\n\n// Marketplace production layout intentionally remains on the last approved stable version.
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
