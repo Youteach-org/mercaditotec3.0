@@ -37,3 +37,257 @@ body {
 .chat-reactions-row button {
   box-shadow: 0 1px 3px rgba(0,0,0,0.18) !important;
 }
+
+/* MARKETPLACE COLLAGE */
+.marketplace-collage {
+  background-image:
+    radial-gradient(circle at 8% 12%, rgba(242, 121, 72, 0.09) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 92% 30%, rgba(36, 89, 200, 0.08) 0 1px, transparent 1.5px);
+  background-size: 22px 22px, 28px 28px;
+}
+
+.market-hand {
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  letter-spacing: -0.02em;
+}
+
+.market-hero {
+  border-radius: 34px 26px 54px 24px;
+}
+
+.market-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 44px;
+  z-index: 21;
+  pointer-events: none;
+  background: #fff9ee;
+  clip-path: polygon(
+    0 52%, 4% 35%, 9% 50%, 14% 31%, 20% 43%, 26% 26%, 32% 39%, 38% 24%,
+    45% 42%, 52% 30%, 58% 45%, 65% 28%, 72% 41%, 78% 27%, 84% 44%, 91% 31%,
+    96% 46%, 100% 34%, 100% 100%, 0 100%
+  );
+}
+
+.market-hero-paper {
+  clip-path: polygon(
+    2% 7%, 13% 1%, 26% 4%, 41% 0, 55% 4%, 71% 1%, 86% 7%, 98% 4%,
+    100% 26%, 97% 49%, 100% 72%, 96% 94%, 80% 98%, 62% 95%, 47% 100%,
+    31% 96%, 15% 99%, 3% 92%, 0 69%, 3% 46%, 0 24%
+  );
+}
+
+.market-hero-photo-main {
+  clip-path: polygon(
+    4% 5%, 18% 2%, 33% 4%, 51% 1%, 67% 4%, 83% 1%, 98% 6%,
+    96% 20%, 100% 36%, 98% 51%, 100% 69%, 96% 87%, 83% 96%, 67% 93%,
+    52% 98%, 36% 95%, 20% 98%, 5% 92%, 2% 75%, 4% 58%, 1% 40%, 3% 23%
+  );
+  box-shadow: inset 0 0 0 1px rgba(17,34,75,.08);
+}
+
+.market-hero-photo-small {
+  clip-path: polygon(3% 7%, 25% 1%, 48% 5%, 74% 0, 97% 8%, 100% 30%, 96% 56%, 99% 83%, 87% 97%, 62% 94%, 34% 100%, 7% 93%, 0 70%, 4% 44%, 0 22%);
+  transform: rotate(-5deg);
+}
+
+.market-hero-photo-note {
+  clip-path: polygon(7% 3%, 92% 0, 100% 12%, 96% 89%, 83% 100%, 5% 95%, 0 80%, 3% 14%);
+  transform: rotate(6deg);
+}
+
+.market-note {
+  filter: drop-shadow(0 10px 18px rgba(17,34,75,.16));
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+}
+
+.market-note-blue {
+  background: #12336d;
+  clip-path: polygon(7% 2%, 92% 6%, 99% 20%, 94% 92%, 80% 98%, 11% 94%, 2% 82%, 5% 14%);
+}
+
+.market-note-coral {
+  background: #ff8c73;
+  clip-path: polygon(4% 9%, 18% 2%, 40% 6%, 59% 0, 84% 4%, 97% 14%, 94% 86%, 82% 96%, 57% 92%, 34% 99%, 8% 93%, 1% 72%);
+}
+
+.market-search {
+  position: relative;
+}
+
+.market-search::before {
+  content: "";
+  position: absolute;
+  left: 9%;
+  right: 12%;
+  bottom: -8px;
+  height: 9px;
+  z-index: -1;
+  background: #f27948;
+  border-radius: 999px;
+  transform: rotate(-1.5deg);
+}
+
+.market-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  border: 1px solid rgba(17,34,75,.09);
+  background: rgba(255,255,255,.9);
+  padding: .55rem .9rem;
+  border-radius: 999px 999px 780px 999px;
+  box-shadow: 0 6px 18px rgba(17,34,75,.07);
+  color: #11224b;
+  font-size: .82rem;
+  font-weight: 900;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+
+.market-filter:nth-child(2n) {
+  transform: rotate(1deg);
+}
+
+.market-filter:nth-child(3n) {
+  border-radius: 780px 999px 999px 999px;
+  transform: rotate(-1deg);
+}
+
+.market-filter:hover {
+  transform: translateY(-2px) rotate(0deg);
+  box-shadow: 0 10px 24px rgba(17,34,75,.11);
+}
+
+.market-filter-active {
+  background: #fff0cc;
+  outline: 3px solid rgba(242,121,72,.18);
+}
+
+.market-count-note,
+.market-loading-note,
+.market-error-note,
+.market-empty-note {
+  background: #fff;
+  filter: drop-shadow(0 10px 18px rgba(17,34,75,.10));
+}
+
+.market-count-note {
+  background: #ffd84d;
+  clip-path: polygon(2% 10%, 94% 3%, 100% 18%, 96% 88%, 83% 98%, 5% 93%, 0 76%);
+}
+
+.market-loading-note,
+.market-empty-note {
+  clip-path: polygon(3% 8%, 19% 2%, 37% 5%, 56% 1%, 76% 5%, 96% 2%, 100% 18%, 97% 44%, 100% 73%, 94% 96%, 75% 92%, 57% 99%, 36% 94%, 16% 98%, 2% 91%, 0 68%, 3% 40%, 0 20%);
+}
+
+.market-error-note {
+  background: #ffe2dc;
+  clip-path: polygon(2% 7%, 97% 2%, 100% 18%, 96% 91%, 82% 98%, 5% 94%, 0 78%, 3% 22%);
+}
+
+.market-store-card {
+  filter: drop-shadow(0 12px 18px rgba(17,34,75,.12));
+  transform-origin: center;
+}
+
+.market-store-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(17,34,75,.07);
+}
+
+.market-cut-a {
+  clip-path: polygon(2% 4%, 18% 1%, 36% 4%, 56% 1%, 75% 4%, 96% 2%, 100% 15%, 97% 33%, 100% 53%, 97% 73%, 100% 91%, 88% 98%, 67% 95%, 49% 100%, 28% 96%, 8% 99%, 1% 88%, 4% 68%, 0 49%, 3% 27%);
+  transform: rotate(-.7deg);
+}
+
+.market-cut-b {
+  clip-path: polygon(5% 1%, 24% 4%, 41% 1%, 61% 5%, 82% 2%, 98% 8%, 95% 27%, 100% 48%, 96% 71%, 99% 93%, 83% 99%, 62% 95%, 43% 99%, 21% 96%, 3% 99%, 0 81%, 4% 61%, 1% 39%, 4% 19%);
+  transform: rotate(.8deg);
+}
+
+.market-cut-c {
+  clip-path: polygon(1% 8%, 14% 2%, 32% 5%, 48% 1%, 68% 4%, 89% 1%, 99% 10%, 96% 31%, 100% 55%, 96% 78%, 99% 95%, 79% 99%, 61% 95%, 42% 100%, 21% 96%, 4% 99%, 0 82%, 3% 59%, 0 35%, 4% 19%);
+  transform: rotate(-1deg);
+}
+
+.market-cut-d {
+  clip-path: polygon(4% 2%, 23% 5%, 43% 1%, 64% 4%, 84% 0, 98% 7%, 100% 25%, 97% 45%, 100% 65%, 96% 90%, 88% 99%, 66% 95%, 48% 100%, 25% 96%, 7% 99%, 1% 87%, 4% 65%, 0 46%, 3% 22%);
+  transform: rotate(.5deg);
+}
+
+.market-cut-e {
+  clip-path: polygon(2% 5%, 20% 1%, 39% 4%, 57% 0, 78% 5%, 96% 1%, 100% 18%, 97% 38%, 100% 58%, 96% 80%, 100% 94%, 84% 98%, 66% 95%, 45% 99%, 24% 96%, 4% 100%, 0 84%, 3% 63%, 0 42%, 4% 20%);
+  transform: rotate(-.4deg);
+}
+
+.market-cut-f {
+  clip-path: polygon(5% 3%, 22% 0, 42% 4%, 61% 1%, 81% 4%, 98% 2%, 100% 20%, 96% 42%, 100% 63%, 97% 85%, 91% 98%, 70% 95%, 52% 100%, 31% 96%, 10% 99%, 1% 90%, 4% 69%, 0 49%, 3% 25%);
+  transform: rotate(.9deg);
+}
+
+.market-store-card:hover {
+  filter: drop-shadow(0 18px 26px rgba(17,34,75,.18));
+}
+
+.market-photo-caption {
+  background: #ffd84d;
+  clip-path: polygon(2% 8%, 93% 1%, 100% 17%, 96% 89%, 80% 98%, 5% 93%, 0 76%);
+  box-shadow: 0 5px 12px rgba(17,34,75,.12);
+}
+
+.market-mosaic > a:nth-child(3n + 2) .market-photo-caption {
+  background: #ff9eb0;
+}
+
+.market-mosaic > a:nth-child(3n) .market-photo-caption {
+  background: #b8d7ff;
+}
+
+.market-footer-ribbon {
+  clip-path: polygon(0 25%, 6% 17%, 13% 23%, 20% 15%, 27% 22%, 34% 13%, 42% 21%, 50% 14%, 59% 23%, 68% 15%, 77% 22%, 86% 14%, 94% 20%, 100% 12%, 100% 100%, 0 100%);
+}
+
+@media (max-width: 1023px) {
+  .market-hero-paper {
+    clip-path: polygon(2% 4%, 96% 1%, 100% 9%, 97% 88%, 86% 96%, 64% 93%, 43% 100%, 22% 95%, 4% 99%, 0 89%, 3% 48%, 0 18%);
+  }
+
+  .market-hero-photo-main {
+    opacity: .92;
+  }
+
+  .market-store-card {
+    transform: rotate(0deg);
+  }
+}
+
+@media (max-width: 639px) {
+  .market-hero {
+    min-height: 610px;
+  }
+
+  .market-hero-paper {
+    height: 62%;
+  }
+
+  .market-hero-photo-main {
+    top: 42%;
+    right: -9%;
+    height: 46%;
+    width: 88%;
+    position: absolute;
+  }
+
+  .market-filter {
+    font-size: .75rem;
+    padding: .45rem .7rem;
+  }
+
+  .market-store-card {
+    min-height: 275px;
+  }
+}
