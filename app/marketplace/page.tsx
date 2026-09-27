@@ -5,11 +5,31 @@ import { useEffect, useMemo, useState } from "react";
 
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 
+type StoreFilter = "all" | "open";
+
+const CARD_LAYOUTS = [
+  "lg:col-span-5 lg:row-span-2",
+  "lg:col-span-4",
+  "lg:col-span-3",
+  "lg:col-span-3",
+  "lg:col-span-4",
+  "lg:col-span-5",
+];
+
+const CARD_SHAPES = [
+  "market-cut-a",
+  "market-cut-b",
+  "market-cut-c",
+  "market-cut-d",
+  "market-cut-e",
+  "market-cut-f",
+];
+
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2">
       <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+      <path d="m20 20-3.4-3.4" />
     </svg>
   );
 }
@@ -23,9 +43,9 @@ function PinIcon() {
   );
 }
 
-function StoreIcon() {
+function StoreMark({ className = "h-6 w-6" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8">
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="1.9">
       <path d="M4 9h16l-1.5-5h-13L4 9Z" />
       <path d="M5 9v10h14V9" />
       <path d="M9 19v-5h6v5" />
@@ -34,11 +54,41 @@ function StoreIcon() {
   );
 }
 
+function DoodleStar({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m32 5 5 19 18-8-13 15 17 8-19 1 7 18-15-12-12 13 3-19-19 2 17-10L7 19l19 6Z" />
+    </svg>
+  );
+}
+
+function HeroPhoto({
+  store,
+  className,
+}: {
+  store?: PublicStoreSummary;
+  className: string;
+}) {
+  return (
+    <div className={className}>
+      {store?.coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-[#ffd84d] text-[#12336d]">
+          <StoreMark className="h-16 w-16" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MarketplacePage() {
   const [stores, setStores] = useState<PublicStoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<StoreFilter>("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -65,238 +115,236 @@ export default function MarketplacePage() {
 
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
   const filteredStores = useMemo(() => {
-    if (!normalizedQuery) return stores;
+    return stores.filter((store) => {
+      if (filter === "open" && !store.openNow) return false;
+      if (!normalizedQuery) return true;
 
-    return stores.filter((store) =>
-      [store.name, store.description, store.deliveryLocation]
+      return [store.name, store.description, store.deliveryLocation]
         .filter(Boolean)
-        .some((value) => value.toLocaleLowerCase("es-MX").includes(normalizedQuery)),
-    );
-  }, [normalizedQuery, stores]);
+        .some((value) => value.toLocaleLowerCase("es-MX").includes(normalizedQuery));
+    });
+  }, [filter, normalizedQuery, stores]);
 
   const openStores = stores.filter((store) => store.openNow).length;
+  const heroStores = stores.slice(0, 3);
 
   return (
-    <main className="min-h-screen bg-[#f5f3ee] pb-12 text-slate-950">
-      <section className="relative overflow-hidden border-b border-black/5 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.24),_transparent_34%),radial-gradient(circle_at_85%_15%,_rgba(251,191,36,0.24),_transparent_28%),linear-gradient(135deg,#0f172a_0%,#172033_50%,#0f172a_100%)] text-white">
-        <div className="absolute -left-20 top-20 h-64 w-64 rounded-full border border-white/10" aria-hidden="true" />
-        <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border border-white/10" aria-hidden="true" />
-
-        <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-11 lg:px-8 lg:py-14">
-          <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-emerald-200 backdrop-blur">
-                <StoreIcon />
-                Mercadito Tec 3
-              </div>
-
-              <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                Tiendas de la comunidad
-              </h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                Descubre productos creados y vendidos por la comunidad. Explora tiendas aprobadas, consulta horarios y encuentra tu punto de entrega.
-              </p>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                  <p className="text-2xl font-black">{loading ? "—" : stores.length}</p>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Tiendas activas</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                  <p className="text-2xl font-black text-emerald-300">{loading ? "—" : openStores}</p>
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Abiertas ahora</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-2 rounded-3xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur-md">
-              <Link
-                href="/orders"
-                className="flex items-center justify-between rounded-2xl bg-emerald-400 px-4 py-3.5 font-black text-slate-950 transition hover:bg-emerald-300"
-              >
-                <span>Mis pedidos</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-              <Link
-                href="/mystore"
-                className="flex items-center justify-between rounded-2xl bg-white px-4 py-3.5 font-black text-slate-950 transition hover:bg-slate-100"
-              >
-                <span>Administrar mis tiendas</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-              <Link
-                href="/chat"
-                className="flex items-center justify-between rounded-2xl border border-white/15 px-4 py-3.5 font-bold text-white transition hover:bg-white/10"
-              >
-                <span>Chat general</span>
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
+    <main className="marketplace-collage min-h-screen overflow-hidden bg-[#fff9ee] pb-16 text-[#11224b]">
+      <section className="relative isolate mx-auto max-w-[1500px] px-3 pt-4 sm:px-5 lg:px-7">
+        <div className="market-hero relative min-h-[520px] overflow-hidden lg:min-h-[470px]">
+          <div className="market-hero-paper absolute inset-x-0 top-0 h-[58%] bg-[#ffd84d] lg:bottom-12 lg:left-0 lg:right-auto lg:h-auto lg:w-[48%]" aria-hidden="true" />
+          <div className="absolute left-[2%] top-[4%] z-20 max-w-[560px] px-5 pt-6 sm:px-9 sm:pt-8 lg:top-[7%] lg:px-12">
+            <p className="market-hand text-base font-black text-[#e84b2c] sm:text-lg">de estudiantes · para la comunidad</p>
+            <h1 className="mt-1 text-[3.3rem] font-black leading-[0.86] tracking-[-0.06em] text-[#102b66] sm:text-[4.8rem] lg:text-[5.7rem]">
+              Tiendas de la
+              <span className="block text-[#e84b2c]">comunidad</span>
+            </h1>
+            <p className="mt-4 max-w-lg text-sm font-bold leading-6 text-[#172b57] sm:text-base">
+              Productos, antojos y proyectos creados por la comunidad Tec. Compra, descubre y apoya talento local.
+            </p>
           </div>
+
+          <div className="absolute right-[-8%] top-[16%] z-10 h-[49%] w-[74%] lg:right-[1%] lg:top-[3%] lg:h-[84%] lg:w-[58%]">
+            <HeroPhoto store={heroStores[0]} className="market-hero-photo market-hero-photo-main absolute inset-0 overflow-hidden bg-[#f27948]" />
+            <HeroPhoto store={heroStores[1]} className="market-hero-photo market-hero-photo-small absolute bottom-[-6%] left-[-8%] hidden h-[45%] w-[37%] overflow-hidden border-[10px] border-[#fff9ee] bg-[#255bc6] sm:block" />
+            <HeroPhoto store={heroStores[2]} className="market-hero-photo market-hero-photo-note absolute right-[4%] top-[7%] hidden h-[30%] w-[24%] overflow-hidden border-[8px] border-[#fff9ee] bg-[#ff8ca0] md:block" />
+          </div>
+
+          <div className="market-note market-note-blue absolute right-[3%] top-[8%] z-30 hidden rotate-[5deg] px-5 py-4 text-center text-lg font-black leading-tight text-white lg:block">
+            pequeños negocios,
+            <br />
+            grandes historias
+          </div>
+
+          <div className="market-note market-note-coral absolute bottom-[11%] right-[4%] z-30 hidden -rotate-[4deg] px-4 py-3 text-center text-base font-black leading-tight text-[#11224b] md:block">
+            hecho por
+            <br />
+            estudiantes como tú
+          </div>
+
+          <DoodleStar className="absolute left-[45%] top-[7%] z-20 hidden h-10 w-10 -rotate-12 text-[#2459c8] lg:block" />
+          <span className="market-scribble absolute bottom-[26%] left-[43%] z-20 hidden text-5xl font-black text-[#ef5a36] lg:block" aria-hidden="true">↗</span>
+
+          <div className="absolute inset-x-3 bottom-3 z-40 sm:inset-x-8 lg:left-[28%] lg:right-[11%]">
+            <label className="market-search flex items-center gap-3 rounded-[2rem] bg-white px-4 py-3 shadow-[0_16px_35px_rgba(17,34,75,0.18)] ring-1 ring-[#11224b]/10">
+              <span className="text-[#11224b]"><SearchIcon /></span>
+              <span className="sr-only">Buscar tiendas</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="¿Qué se te antoja hoy?"
+                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#11224b] outline-none placeholder:font-semibold placeholder:text-[#66718d] sm:text-base"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery("")} className="rounded-full px-3 py-2 text-xs font-black text-[#66718d] hover:bg-[#fff3db]">
+                  Limpiar
+                </button>
+              )}
+            </label>
+          </div>
+        </div>
+
+        <div className="relative z-30 -mt-1 flex flex-wrap items-center justify-center gap-2 px-2 sm:gap-3 lg:-mt-5">
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={filter === "all" ? "market-filter market-filter-active" : "market-filter"}
+          >
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#2459c8] text-white"><StoreMark className="h-4 w-4" /></span>
+            Todas
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("open")}
+            className={filter === "open" ? "market-filter market-filter-active" : "market-filter"}
+          >
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ff8ca0] text-[#11224b]">●</span>
+            Abiertas ahora
+          </button>
+          <Link href="/orders" className="market-filter">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ffd84d] text-[#11224b]">↗</span>
+            Mis pedidos
+          </Link>
+          <Link href="/mystore" className="market-filter">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f27948] text-white">★</span>
+            Mis tiendas
+          </Link>
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <section className="relative -mt-5 z-10 rounded-3xl border border-black/5 bg-white p-3 shadow-xl shadow-slate-900/5 sm:p-4">
-          <label className="relative block">
-            <span className="sr-only">Buscar tiendas</span>
-            <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-400">
-              <SearchIcon />
-            </span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por tienda, producto o punto de entrega"
-              className="h-14 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-base font-semibold text-slate-950 outline-none transition placeholder:font-medium placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-            />
-          </label>
-        </section>
-
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-emerald-700">Explorar</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              Encuentra tu próxima tienda favorita
+      <section className="relative mx-auto mt-8 max-w-[1500px] px-3 sm:px-5 lg:px-7">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4 px-2 sm:px-4">
+          <div className="relative">
+            <p className="market-hand text-sm font-black uppercase tracking-[0.12em] text-[#e84b2c]">descubre lo que hacen tus compañeros</p>
+            <h2 className="mt-1 text-4xl font-black tracking-[-0.04em] text-[#112b63] sm:text-5xl">
+              Tiendas destacadas
             </h2>
+            <span className="absolute -right-9 top-8 rotate-12 text-4xl text-[#f3a300]" aria-hidden="true">✦</span>
           </div>
+
           {!loading && !error && stores.length > 0 && (
-            <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-500 shadow-sm ring-1 ring-black/5">
-              {filteredStores.length} de {stores.length} tienda{stores.length === 1 ? "" : "s"}
-            </p>
+            <div className="market-count-note rotate-[-2deg] px-4 py-2 text-sm font-black text-[#11224b]">
+              {filteredStores.length} de {stores.length} tiendas
+            </div>
           )}
         </div>
 
         {loading && (
-          <section className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className="overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-black/5">
-                <div className="h-44 animate-pulse bg-slate-200" />
-                <div className="p-5">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
-                  <div className="mt-3 h-4 w-full animate-pulse rounded bg-slate-100" />
-                  <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-slate-100" />
-                </div>
-              </div>
-            ))}
-          </section>
+          <div className="market-loading-note mx-auto mt-10 max-w-md rotate-[-2deg] px-6 py-8 text-center">
+            <p className="market-hand text-xl font-black text-[#11224b]">Armando el mercadito…</p>
+          </div>
         )}
 
         {!loading && error && (
-          <section className="mt-6 rounded-3xl border border-red-200 bg-red-50 p-6 font-semibold text-red-700 shadow-sm">
+          <div className="market-error-note mx-auto mt-8 max-w-xl px-6 py-6 text-center font-black text-[#7b1d20]">
             {error}
-          </section>
+          </div>
         )}
 
         {!loading && !error && stores.length === 0 && (
-          <section className="mt-6 overflow-hidden rounded-[2rem] border border-black/5 bg-white p-8 text-center shadow-sm sm:p-12">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-              <StoreIcon />
-            </div>
-            <h2 className="mt-5 text-2xl font-black text-slate-950">Todavía no hay tiendas activas</h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600 sm:text-base">
-              Las tiendas aparecerán aquí después de ser revisadas y aprobadas por administración.
-            </p>
-          </section>
+          <div className="market-empty-note mx-auto mt-8 max-w-xl px-8 py-10 text-center">
+            <StoreMark className="mx-auto h-12 w-12 text-[#2459c8]" />
+            <h3 className="mt-3 text-2xl font-black text-[#11224b]">Todavía no hay tiendas activas</h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#5e6780]">Las tiendas aparecerán aquí después de ser aprobadas.</p>
+          </div>
         )}
 
         {!loading && !error && stores.length > 0 && filteredStores.length === 0 && (
-          <section className="mt-6 rounded-[2rem] border border-black/5 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-xl font-black text-slate-950">No encontramos coincidencias</h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Prueba con otro nombre de tienda o punto de entrega.
-            </p>
+          <div className="market-empty-note mx-auto mt-8 max-w-xl px-8 py-10 text-center">
+            <h3 className="text-2xl font-black text-[#11224b]">No encontramos esa tienda</h3>
+            <p className="mt-2 text-sm font-semibold text-[#5e6780]">Prueba con otro nombre o cambia el filtro.</p>
             <button
               type="button"
-              onClick={() => setQuery("")}
-              className="mt-5 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white hover:bg-slate-800"
+              onClick={() => {
+                setQuery("");
+                setFilter("all");
+              }}
+              className="mt-5 rounded-full bg-[#2459c8] px-5 py-2.5 text-sm font-black text-white"
             >
-              Limpiar búsqueda
+              Ver todas
             </button>
-          </section>
+          </div>
         )}
 
         {!loading && !error && filteredStores.length > 0 && (
-          <section className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredStores.map((store) => (
-              <Link
-                key={store.id}
-                href={`/marketplace/stores/${store.slug}`}
-                className="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-black/5 transition duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10"
-              >
-                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900">
-                  {store.coverUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={store.coverUrl}
-                      alt=""
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-white/75">
-                      <StoreIcon />
-                    </div>
-                  )}
+          <div className="market-mosaic grid auto-rows-[minmax(190px,auto)] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5">
+            {filteredStores.map((store, index) => {
+              const large = index % 6 === 0;
+              const shape = CARD_SHAPES[index % CARD_SHAPES.length];
+              const layout = CARD_LAYOUTS[index % CARD_LAYOUTS.length];
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/45 via-transparent to-transparent" aria-hidden="true" />
+              return (
+                <Link
+                  key={store.id}
+                  href={`/marketplace/stores/${store.slug}`}
+                  className={`group relative block min-h-[250px] ${layout}`}
+                >
+                  <article className={`market-store-card ${shape} relative h-full min-h-[250px] overflow-hidden bg-white transition duration-200 group-hover:-translate-y-1 ${large ? "lg:min-h-[520px]" : "lg:min-h-[250px]"}`}>
+                    <div className={`relative overflow-hidden bg-[#d9e7ff] ${large ? "h-[58%] min-h-[240px]" : "h-[150px]"}`}>
+                      {store.coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={store.coverUrl} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-[#ffd84d] text-[#2459c8]">
+                          <StoreMark className="h-14 w-14" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#11224b]/35 via-transparent to-transparent" aria-hidden="true" />
 
-                  <span
-                    className={`absolute right-4 top-4 rounded-full px-3 py-1.5 text-xs font-black shadow-lg backdrop-blur ${store.openNow
-                      ? "bg-emerald-400 text-emerald-950"
-                      : "bg-white/90 text-slate-700"
-                    }`}
-                  >
-                    {store.openNow ? "Abierta ahora" : "Cerrada"}
-                  </span>
-                </div>
+                      <span className={`absolute right-4 top-4 rounded-full px-3 py-1.5 text-xs font-black shadow-md ${store.openNow ? "bg-[#dbe7ff] text-[#174ebc]" : "bg-[#ffe1e0] text-[#9d2e2e]"}`}>
+                        {store.openNow ? "● Abierta" : "● Cerrada"}
+                      </span>
 
-                <div className="relative px-5 pb-5 pt-12">
-                  <div className="absolute -top-9 left-5 h-18 w-18 overflow-hidden rounded-2xl border-4 border-white bg-slate-100 shadow-lg">
-                    {store.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-slate-500">
-                        <StoreIcon />
+                      <div className={`market-photo-caption absolute ${index % 2 === 0 ? "left-4 top-4 -rotate-3" : "bottom-4 left-4 rotate-2"} max-w-[55%] px-3 py-2 text-sm font-black leading-tight text-[#11224b]`}>
+                        {index % 3 === 0 ? "hecho con talento local" : index % 3 === 1 ? "ideas que se antojan" : "pequeños negocios, grandes historias"}
                       </div>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-xl font-black tracking-tight text-slate-950 transition group-hover:text-emerald-700">
+                    <div className={`relative px-5 pb-6 ${large ? "pt-12" : "pt-10"}`}>
+                      <div className="absolute -top-9 left-5 flex h-20 w-20 items-center justify-center overflow-hidden rounded-[42%_58%_48%_52%/55%_42%_58%_45%] border-[5px] border-white bg-[#fff4d6] shadow-lg">
+                        {store.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <StoreMark className="h-8 w-8 text-[#2459c8]" />
+                        )}
+                      </div>
+
+                      <h3 className={`font-black tracking-[-0.03em] text-[#11224b] ${large ? "text-3xl" : "text-xl"}`}>
                         {store.name}
                       </h3>
-                      <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-600">
-                        {store.description || "Conoce esta tienda y explora sus productos."}
+                      <p className={`mt-2 font-semibold leading-5 text-[#5e6780] ${large ? "line-clamp-3 text-base" : "line-clamp-2 text-sm"}`}>
+                        {store.description || "Conoce esta tienda y descubre lo que ofrece."}
                       </p>
-                    </div>
-                  </div>
 
-                  {store.deliveryLocation && (
-                    <div className="mt-4 flex items-start gap-2 rounded-2xl bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700">
-                      <span className="mt-0.5 text-emerald-700">
-                        <PinIcon />
-                      </span>
-                      <span className="line-clamp-2">{store.deliveryLocation}</span>
-                    </div>
-                  )}
+                      {store.deliveryLocation && (
+                        <p className="mt-4 flex items-center gap-2 text-xs font-black text-[#50607f]">
+                          <span className="text-[#2459c8]"><PinIcon /></span>
+                          <span className="line-clamp-1">{store.deliveryLocation}</span>
+                        </p>
+                      )}
 
-                  <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-                    <span className="text-sm font-black text-emerald-700">Entrar a la tienda</span>
-                    <span
-                      aria-hidden="true"
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-50 font-black text-emerald-700 transition group-hover:bg-emerald-600 group-hover:text-white"
-                    >
-                      →
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </section>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="market-hand text-sm font-black text-[#e84b2c]">entra a la tienda</span>
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#2459c8] text-lg font-black text-white transition group-hover:translate-x-1">→</span>
+                      </div>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
+          </div>
         )}
-      </div>
+
+        <div className="relative mt-10 hidden min-h-24 items-center justify-between overflow-hidden px-7 py-5 text-white md:flex">
+          <div className="market-footer-ribbon absolute inset-0 bg-[#12336d]" aria-hidden="true" />
+          <p className="market-hand relative z-10 max-w-xl text-2xl font-black">más estudiantes · más ideas · más historias</p>
+          <Link href="/chat" className="relative z-10 rounded-full bg-[#ffd84d] px-5 py-2.5 text-sm font-black text-[#11224b]">
+            Conecta con la comunidad →
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
