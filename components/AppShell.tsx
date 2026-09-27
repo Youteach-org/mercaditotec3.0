@@ -56,24 +56,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
   const showAdmin = isAdminRole(appUser);
-  const marketplaceHome = pathname === "/marketplace";
 
   return (
     <div className="min-h-screen flex flex-col">
       {!loading && firebaseUser && (
-        <header className={marketplaceHome
-          ? "sticky top-0 z-50 bg-[#fffaf0]/95 shadow-[0_8px_28px_rgba(17,34,75,0.08)] backdrop-blur"
-          : "sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur"
-        }>
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
           <div className="mx-auto w-full max-w-7xl px-3 sm:px-6">
             <div className="flex min-h-14 items-center justify-between gap-3">
-              <Link href="/marketplace" className={marketplaceHome
-                ? "shrink-0 text-xl font-black tracking-[-0.04em] sm:text-2xl"
-                : "shrink-0 font-black tracking-tight text-slate-950"
-              }>
-                {marketplaceHome ? (
-                  <span><span className="text-[#12336d]">Mercadito</span><span className="text-[#ef5a36]">Tec</span></span>
-                ) : "MercaditoTec"}
+              <Link href="/marketplace" className="shrink-0 font-black tracking-tight text-slate-950">
+                MercaditoTec
               </Link>
 
               <nav className="hidden min-w-0 items-center gap-1 md:flex" aria-label="Navegación principal">
@@ -84,13 +75,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       key={item.href}
                       href={item.href}
                       className={
-                        marketplaceHome
-                          ? active
-                            ? "relative px-3 py-2 text-sm font-black text-[#12336d] after:absolute after:inset-x-2 after:-bottom-0.5 after:h-1 after:rounded-full after:bg-[#ef5a36]"
-                            : "rounded-full px-3 py-2 text-sm font-bold text-[#344365] hover:bg-[#fff1d8] hover:text-[#12336d]"
-                          : active
-                            ? "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
-                            : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                        active
+                          ? "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
+                          : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                       }
                     >
                       {item.label}
@@ -101,13 +88,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     href="/admin"
                     className={
-                      marketplaceHome
-                        ? pathname.startsWith("/admin")
-                          ? "relative px-3 py-2 text-sm font-black text-[#12336d] after:absolute after:inset-x-2 after:-bottom-0.5 after:h-1 after:rounded-full after:bg-[#ef5a36]"
-                          : "rounded-full px-3 py-2 text-sm font-bold text-[#344365] hover:bg-[#fff1d8] hover:text-[#12336d]"
-                        : pathname.startsWith("/admin")
-                          ? "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
-                          : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                      pathname.startsWith("/admin")
+                        ? "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
+                        : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                     }
                   >
                     Admin
@@ -118,10 +101,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 href="/notifications"
                 aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
-                className={marketplaceHome
-                  ? "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff1d8] text-xl text-[#12336d] hover:bg-[#ffe3af]"
-                  : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"
-                }
+                className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"
               >
                 <span aria-hidden="true">🔔</span>
                 {unreadCount > 0 && (
@@ -133,10 +113,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <nav
-              className={marketplaceHome
-                ? "-mx-3 flex gap-1 overflow-x-auto px-3 pb-2 pt-1 md:hidden"
-                : "-mx-3 flex gap-1 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden"
-              }
+              className="-mx-3 flex gap-1 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden"
               aria-label="Navegación principal móvil"
             >
               {NAV_ITEMS.map((item) => {
@@ -146,13 +123,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={
-                      marketplaceHome
-                        ? active
-                          ? "shrink-0 rounded-full bg-[#12336d] px-3 py-2 text-xs font-black text-white"
-                          : "shrink-0 rounded-full bg-[#fff1d8] px-3 py-2 text-xs font-bold text-[#344365]"
-                        : active
-                          ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
-                          : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                      active
+                        ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
+                        : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
                     }
                   >
                     {item.label}
@@ -163,13 +136,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/admin"
                   className={
-                    marketplaceHome
-                      ? pathname.startsWith("/admin")
-                        ? "shrink-0 rounded-full bg-[#12336d] px-3 py-2 text-xs font-black text-white"
-                        : "shrink-0 rounded-full bg-[#fff1d8] px-3 py-2 text-xs font-bold text-[#344365]"
-                      : pathname.startsWith("/admin")
-                        ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
-                        : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                    pathname.startsWith("/admin")
+                      ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
+                      : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
                   }
                 >
                   Admin
