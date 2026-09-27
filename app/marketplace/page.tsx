@@ -3,27 +3,21 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { DEMO_MARKETPLACE_HERO, DEMO_STORES } from "@/lib/store/demoMarketplace";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 
 type StoreFilter = "all" | "open";
 
-const CARD_LAYOUTS = [
-  "lg:col-span-5 lg:row-span-2",
-  "lg:col-span-4",
-  "lg:col-span-3",
-  "lg:col-span-3",
-  "lg:col-span-4",
-  "lg:col-span-5",
+const PREVIEW_TAGS = [
+  "postres que alegran el día ♡",
+  "snacks para cada break",
+  "buenas tortas, mejores ideas",
+  "café · ideas · amigos",
+  "arte que conecta",
+  "todo para tus grandes ideas",
 ];
 
-const CARD_SHAPES = [
-  "market-cut-a",
-  "market-cut-b",
-  "market-cut-c",
-  "market-cut-d",
-  "market-cut-e",
-  "market-cut-f",
-];
+const PREVIEW_BADGES = ["POSTRES", "SNACK LAB", "TORTAS", "CAFÉ", "ARTESANÍAS", "PAPELERÍA"];
 
 function SearchIcon() {
   return (
@@ -43,7 +37,7 @@ function PinIcon() {
   );
 }
 
-function StoreMark({ className = "h-6 w-6" }: { className?: string }) {
+function StoreIcon({ className = "h-6 w-6" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="1.9">
       <path d="M4 9h16l-1.5-5h-13L4 9Z" />
@@ -54,37 +48,96 @@ function StoreMark({ className = "h-6 w-6" }: { className?: string }) {
   );
 }
 
-function DoodleStar({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="m32 5 5 19 18-8-13 15 17 8-19 1 7 18-15-12-12 13 3-19-19 2 17-10L7 19l19 6Z" />
-    </svg>
-  );
-}
+function DemoLogo({ name, index }: { name: string; index: number }) {
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("");
 
-function HeroPhoto({
-  store,
-  className,
-}: {
-  store?: PublicStoreSummary;
-  className: string;
-}) {
   return (
-    <div className={className}>
-      {store?.coverUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center bg-[#ffd84d] text-[#12336d]">
-          <StoreMark className="h-16 w-16" />
-        </div>
-      )}
+    <div className={`demo-logo demo-logo-${index % 6}`} aria-hidden="true">
+      <span>{initials}</span>
     </div>
   );
 }
 
+function StorePiece({
+  store,
+  index,
+  previewMode,
+}: {
+  store: PublicStoreSummary;
+  index: number;
+  previewMode: boolean;
+}) {
+  const article = (
+    <article className={`approved-store-piece approved-store-piece-${index % 6}`}>
+      <div className="approved-store-photo">
+        {store.coverUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-[#ffd34e] text-[#12336d]">
+            <StoreIcon className="h-14 w-14" />
+          </div>
+        )}
+
+        <div className="approved-store-badge">
+          {PREVIEW_BADGES[index % PREVIEW_BADGES.length]}
+        </div>
+
+        <div className="approved-store-doodle">
+          {PREVIEW_TAGS[index % PREVIEW_TAGS.length]}
+        </div>
+      </div>
+
+      <div className="approved-store-info">
+        <div className="approved-store-logo">
+          {store.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <DemoLogo name={store.name} index={index} />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate text-lg font-black tracking-[-0.035em] text-[#10275b] sm:text-xl">
+              {store.name}
+            </h3>
+            <span className={store.openNow ? "approved-status approved-status-open" : "approved-status approved-status-closed"}>
+              {store.openNow ? "Abierta" : "Cerrada"}
+            </span>
+          </div>
+          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-[#5c6580]">
+            {store.description}
+          </p>
+          {store.deliveryLocation && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-black text-[#596985]">
+              <span className="text-[#205ac7]"><PinIcon /></span>
+              {store.deliveryLocation}
+            </p>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+
+  if (previewMode) {
+    return <div className={`approved-store-slot approved-store-slot-${index % 6}`}>{article}</div>;
+  }
+
+  return (
+    <Link href={`/marketplace/stores/${store.slug}`} className={`approved-store-slot approved-store-slot-${index % 6}`}>
+      {article}
+    </Link>
+  );
+}
+
 export default function MarketplacePage() {
-  const [stores, setStores] = useState<PublicStoreSummary[]>([]);
+  const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -97,7 +150,7 @@ export default function MarketplacePage() {
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
-        if (!cancelled) setStores(Array.isArray(data.stores) ? data.stores : []);
+        if (!cancelled) setLiveStores(Array.isArray(data.stores) ? data.stores : []);
       })
       .catch((loadError) => {
         if (!cancelled) {
@@ -113,9 +166,12 @@ export default function MarketplacePage() {
     };
   }, []);
 
+  const previewMode = !loading && !error && liveStores.length === 0;
+  const sourceStores = previewMode ? DEMO_STORES : liveStores;
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
+
   const filteredStores = useMemo(() => {
-    return stores.filter((store) => {
+    return sourceStores.filter((store) => {
       if (filter === "open" && !store.openNow) return false;
       if (!normalizedQuery) return true;
 
@@ -123,227 +179,160 @@ export default function MarketplacePage() {
         .filter(Boolean)
         .some((value) => value.toLocaleLowerCase("es-MX").includes(normalizedQuery));
     });
-  }, [filter, normalizedQuery, stores]);
+  }, [filter, normalizedQuery, sourceStores]);
 
-  const openStores = stores.filter((store) => store.openNow).length;
-  const heroStores = stores.slice(0, 3);
+  const openStores = sourceStores.filter((store) => store.openNow).length;
+  const featuredStores = filteredStores.slice(0, 6);
+  const additionalStores = filteredStores.slice(6);
+  const heroImage = previewMode ? DEMO_MARKETPLACE_HERO : sourceStores[0]?.coverUrl;
 
   return (
-    <main className="marketplace-collage min-h-screen overflow-hidden bg-[#fff9ee] pb-16 text-[#11224b]">
-      <section className="relative isolate mx-auto max-w-[1500px] px-3 pt-4 sm:px-5 lg:px-7">
-        <div className="market-hero relative min-h-[520px] overflow-hidden lg:min-h-[470px]">
-          <div className="market-hero-paper absolute inset-x-0 top-0 h-[58%] bg-[#ffd84d] lg:bottom-12 lg:left-0 lg:right-auto lg:h-auto lg:w-[48%]" aria-hidden="true" />
-          <div className="absolute left-[2%] top-[4%] z-20 max-w-[560px] px-5 pt-6 sm:px-9 sm:pt-8 lg:top-[7%] lg:px-12">
-            <p className="market-hand text-base font-black text-[#e84b2c] sm:text-lg">de estudiantes · para la comunidad</p>
-            <h1 className="mt-1 text-[3.3rem] font-black leading-[0.86] tracking-[-0.06em] text-[#102b66] sm:text-[4.8rem] lg:text-[5.7rem]">
-              Tiendas de la
-              <span className="block text-[#e84b2c]">comunidad</span>
-            </h1>
-            <p className="mt-4 max-w-lg text-sm font-bold leading-6 text-[#172b57] sm:text-base">
-              Productos, antojos y proyectos creados por la comunidad Tec. Compra, descubre y apoya talento local.
-            </p>
-          </div>
-
-          <div className="absolute right-[-8%] top-[16%] z-10 h-[49%] w-[74%] lg:right-[1%] lg:top-[3%] lg:h-[84%] lg:w-[58%]">
-            <HeroPhoto store={heroStores[0]} className="market-hero-photo market-hero-photo-main absolute inset-0 overflow-hidden bg-[#f27948]" />
-            <HeroPhoto store={heroStores[1]} className="market-hero-photo market-hero-photo-small absolute bottom-[-6%] left-[-8%] hidden h-[45%] w-[37%] overflow-hidden border-[10px] border-[#fff9ee] bg-[#255bc6] sm:block" />
-            <HeroPhoto store={heroStores[2]} className="market-hero-photo market-hero-photo-note absolute right-[4%] top-[7%] hidden h-[30%] w-[24%] overflow-hidden border-[8px] border-[#fff9ee] bg-[#ff8ca0] md:block" />
-          </div>
-
-          <div className="market-note market-note-blue absolute right-[3%] top-[8%] z-30 hidden rotate-[5deg] px-5 py-4 text-center text-lg font-black leading-tight text-white lg:block">
-            pequeños negocios,
-            <br />
-            grandes historias
-          </div>
-
-          <div className="market-note market-note-coral absolute bottom-[11%] right-[4%] z-30 hidden -rotate-[4deg] px-4 py-3 text-center text-base font-black leading-tight text-[#11224b] md:block">
-            hecho por
-            <br />
-            estudiantes como tú
-          </div>
-
-          <DoodleStar className="absolute left-[45%] top-[7%] z-20 hidden h-10 w-10 -rotate-12 text-[#2459c8] lg:block" />
-          <span className="market-scribble absolute bottom-[26%] left-[43%] z-20 hidden text-5xl font-black text-[#ef5a36] lg:block" aria-hidden="true">↗</span>
-
-          <div className="absolute inset-x-3 bottom-3 z-40 sm:inset-x-8 lg:left-[28%] lg:right-[11%]">
-            <label className="market-search flex items-center gap-3 rounded-[2rem] bg-white px-4 py-3 shadow-[0_16px_35px_rgba(17,34,75,0.18)] ring-1 ring-[#11224b]/10">
-              <span className="text-[#11224b]"><SearchIcon /></span>
-              <span className="sr-only">Buscar tiendas</span>
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="¿Qué se te antoja hoy?"
-                className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#11224b] outline-none placeholder:font-semibold placeholder:text-[#66718d] sm:text-base"
-              />
-              {query && (
-                <button type="button" onClick={() => setQuery("")} className="rounded-full px-3 py-2 text-xs font-black text-[#66718d] hover:bg-[#fff3db]">
-                  Limpiar
-                </button>
-              )}
-            </label>
-          </div>
+    <main className="approved-marketplace min-h-screen overflow-hidden bg-[#fff9ee] pb-14 text-[#10275b]">
+      <section className="approved-hero relative mx-auto max-w-[1560px] overflow-hidden">
+        <div className="approved-hero-photo" aria-hidden="true">
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={heroImage} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-[#7db5f1]" />
+          )}
         </div>
 
-        <div className="relative z-30 -mt-1 flex flex-wrap items-center justify-center gap-2 px-2 sm:gap-3 lg:-mt-5">
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={filter === "all" ? "market-filter market-filter-active" : "market-filter"}
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#2459c8] text-white"><StoreMark className="h-4 w-4" /></span>
+        <div className="approved-title-paper">
+          <p className="approved-hand text-sm font-black uppercase tracking-[0.08em] text-[#ef5b35] sm:text-base">
+            de estudiantes · para estudiantes
+          </p>
+          <h1 className="mt-1 text-[3.7rem] font-black leading-[0.82] tracking-[-0.065em] text-[#0d2c69] sm:text-[5.2rem] lg:text-[6.7rem]">
+            Tiendas de la
+            <span className="block text-[#e94f2f]">comunidad</span>
+          </h1>
+          <p className="mt-5 max-w-[520px] text-sm font-bold leading-6 text-[#183568] sm:text-base">
+            Descubre productos, antojos y proyectos creados por la comunidad. Compra local, conecta y apoya talento estudiantil.
+          </p>
+        </div>
+
+        <div className="approved-hero-note approved-hero-note-blue">
+          <span>pequeños negocios</span>
+          <strong>grandes historias</strong>
+        </div>
+
+        <div className="approved-hero-note approved-hero-note-coral">
+          hecho por
+          <br />
+          estudiantes como tú
+        </div>
+
+        <div className="approved-hero-scribble approved-hand">más que compras,<br />somos comunidad ♡</div>
+
+        {previewMode && (
+          <div className="approved-demo-stamp">
+            VISTA DEMO
+            <span>datos ficticios de previsualización</span>
+          </div>
+        )}
+      </section>
+
+      <section className="relative z-20 mx-auto -mt-8 max-w-[1120px] px-4">
+        <label className="approved-search flex items-center gap-3 bg-white px-5 py-3.5 shadow-[0_18px_36px_rgba(16,39,91,0.16)]">
+          <SearchIcon />
+          <span className="sr-only">Buscar tiendas</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Busca tiendas, antojos o puntos de entrega..."
+            className="min-w-0 flex-1 bg-transparent text-sm font-bold text-[#10275b] outline-none placeholder:text-[#7c8498] sm:text-base"
+          />
+          {query && (
+            <button type="button" onClick={() => setQuery("")} className="approved-hand text-xs font-black text-[#e94f2f]">
+              limpiar
+            </button>
+          )}
+        </label>
+
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2.5">
+          <button type="button" onClick={() => setFilter("all")} className={filter === "all" ? "approved-filter approved-filter-active" : "approved-filter"}>
+            <StoreIcon className="h-4 w-4" />
             Todas
           </button>
-          <button
-            type="button"
-            onClick={() => setFilter("open")}
-            className={filter === "open" ? "market-filter market-filter-active" : "market-filter"}
-          >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ff8ca0] text-[#11224b]">●</span>
+          <button type="button" onClick={() => setFilter("open")} className={filter === "open" ? "approved-filter approved-filter-active" : "approved-filter"}>
+            <span aria-hidden="true">●</span>
             Abiertas ahora
           </button>
-          <Link href="/orders" className="market-filter">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#ffd84d] text-[#11224b]">↗</span>
-            Mis pedidos
-          </Link>
-          <Link href="/mystore" className="market-filter">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f27948] text-white">★</span>
-            Mis tiendas
-          </Link>
+          <Link href="/orders" className="approved-filter">Mis pedidos</Link>
+          <Link href="/mystore" className="approved-filter">Mis tiendas</Link>
         </div>
       </section>
 
       <section className="relative mx-auto mt-8 max-w-[1500px] px-3 sm:px-5 lg:px-7">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-4 px-2 sm:px-4">
-          <div className="relative">
-            <p className="market-hand text-sm font-black uppercase tracking-[0.12em] text-[#e84b2c]">descubre lo que hacen tus compañeros</p>
-            <h2 className="mt-1 text-4xl font-black tracking-[-0.04em] text-[#112b63] sm:text-5xl">
-              Tiendas destacadas
-            </h2>
-            <span className="absolute -right-9 top-8 rotate-12 text-4xl text-[#f3a300]" aria-hidden="true">✦</span>
-          </div>
-
-          {!loading && !error && stores.length > 0 && (
-            <div className="market-count-note rotate-[-2deg] px-4 py-2 text-sm font-black text-[#11224b]">
-              {filteredStores.length} de {stores.length} tiendas
-            </div>
-          )}
+        <div className="approved-section-heading">
+          <span className="approved-section-paint" aria-hidden="true" />
+          <h2 className="relative text-4xl font-black tracking-[-0.05em] text-[#10275b] sm:text-5xl">Tiendas destacadas</h2>
+          <span className="approved-heading-star" aria-hidden="true">✦</span>
         </div>
 
         {loading && (
-          <div className="market-loading-note mx-auto mt-10 max-w-md rotate-[-2deg] px-6 py-8 text-center">
-            <p className="market-hand text-xl font-black text-[#11224b]">Armando el mercadito…</p>
+          <div className="approved-paper-message mx-auto mt-16 max-w-md">
+            <p className="approved-hand text-xl font-black">Armando el mercadito…</p>
           </div>
         )}
 
         {!loading && error && (
-          <div className="market-error-note mx-auto mt-8 max-w-xl px-6 py-6 text-center font-black text-[#7b1d20]">
-            {error}
-          </div>
+          <div className="approved-paper-message approved-paper-error mx-auto mt-12 max-w-xl">{error}</div>
         )}
 
-        {!loading && !error && stores.length === 0 && (
-          <div className="market-empty-note mx-auto mt-8 max-w-xl px-8 py-10 text-center">
-            <StoreMark className="mx-auto h-12 w-12 text-[#2459c8]" />
-            <h3 className="mt-3 text-2xl font-black text-[#11224b]">Todavía no hay tiendas activas</h3>
-            <p className="mt-2 text-sm font-semibold leading-6 text-[#5e6780]">Las tiendas aparecerán aquí después de ser aprobadas.</p>
-          </div>
-        )}
-
-        {!loading && !error && stores.length > 0 && filteredStores.length === 0 && (
-          <div className="market-empty-note mx-auto mt-8 max-w-xl px-8 py-10 text-center">
-            <h3 className="text-2xl font-black text-[#11224b]">No encontramos esa tienda</h3>
-            <p className="mt-2 text-sm font-semibold text-[#5e6780]">Prueba con otro nombre o cambia el filtro.</p>
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setFilter("all");
-              }}
-              className="mt-5 rounded-full bg-[#2459c8] px-5 py-2.5 text-sm font-black text-white"
-            >
+        {!loading && !error && filteredStores.length === 0 && (
+          <div className="approved-paper-message mx-auto mt-12 max-w-xl">
+            <h3 className="text-xl font-black">No encontramos coincidencias.</h3>
+            <button type="button" onClick={() => { setQuery(""); setFilter("all"); }} className="mt-4 rounded-full bg-[#205ac7] px-5 py-2.5 text-sm font-black text-white">
               Ver todas
             </button>
           </div>
         )}
 
-        {!loading && !error && filteredStores.length > 0 && (
-          <div className="market-mosaic grid auto-rows-[minmax(190px,auto)] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-12 lg:gap-5">
-            {filteredStores.map((store, index) => {
-              const large = index % 6 === 0;
-              const shape = CARD_SHAPES[index % CARD_SHAPES.length];
-              const layout = CARD_LAYOUTS[index % CARD_LAYOUTS.length];
+        {!loading && !error && featuredStores.length > 0 && (
+          <div className="approved-collage-board">
+            <div className="approved-collage-note approved-hand">apoya talento Tec ↘</div>
+            <div className="approved-collage-note approved-collage-note-right approved-hand">mismas ideas,<br />más comunidad ♡</div>
 
-              return (
-                <Link
-                  key={store.id}
-                  href={`/marketplace/stores/${store.slug}`}
-                  className={`group relative block min-h-[250px] ${layout}`}
-                >
-                  <article className={`market-store-card ${shape} relative h-full min-h-[250px] overflow-hidden bg-white transition duration-200 group-hover:-translate-y-1 ${large ? "lg:min-h-[520px]" : "lg:min-h-[250px]"}`}>
-                    <div className={`relative overflow-hidden bg-[#d9e7ff] ${large ? "h-[58%] min-h-[240px]" : "h-[150px]"}`}>
-                      {store.coverUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={store.coverUrl} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center bg-[#ffd84d] text-[#2459c8]">
-                          <StoreMark className="h-14 w-14" />
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#11224b]/35 via-transparent to-transparent" aria-hidden="true" />
-
-                      <span className={`absolute right-4 top-4 rounded-full px-3 py-1.5 text-xs font-black shadow-md ${store.openNow ? "bg-[#dbe7ff] text-[#174ebc]" : "bg-[#ffe1e0] text-[#9d2e2e]"}`}>
-                        {store.openNow ? "● Abierta" : "● Cerrada"}
-                      </span>
-
-                      <div className={`market-photo-caption absolute ${index % 2 === 0 ? "left-4 top-4 -rotate-3" : "bottom-4 left-4 rotate-2"} max-w-[55%] px-3 py-2 text-sm font-black leading-tight text-[#11224b]`}>
-                        {index % 3 === 0 ? "hecho con talento local" : index % 3 === 1 ? "ideas que se antojan" : "pequeños negocios, grandes historias"}
-                      </div>
-                    </div>
-
-                    <div className={`relative px-5 pb-6 ${large ? "pt-12" : "pt-10"}`}>
-                      <div className="absolute -top-9 left-5 flex h-20 w-20 items-center justify-center overflow-hidden rounded-[42%_58%_48%_52%/55%_42%_58%_45%] border-[5px] border-white bg-[#fff4d6] shadow-lg">
-                        {store.logoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <StoreMark className="h-8 w-8 text-[#2459c8]" />
-                        )}
-                      </div>
-
-                      <h3 className={`font-black tracking-[-0.03em] text-[#11224b] ${large ? "text-3xl" : "text-xl"}`}>
-                        {store.name}
-                      </h3>
-                      <p className={`mt-2 font-semibold leading-5 text-[#5e6780] ${large ? "line-clamp-3 text-base" : "line-clamp-2 text-sm"}`}>
-                        {store.description || "Conoce esta tienda y descubre lo que ofrece."}
-                      </p>
-
-                      {store.deliveryLocation && (
-                        <p className="mt-4 flex items-center gap-2 text-xs font-black text-[#50607f]">
-                          <span className="text-[#2459c8]"><PinIcon /></span>
-                          <span className="line-clamp-1">{store.deliveryLocation}</span>
-                        </p>
-                      )}
-
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="market-hand text-sm font-black text-[#e84b2c]">entra a la tienda</span>
-                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#2459c8] text-lg font-black text-white transition group-hover:translate-x-1">→</span>
-                      </div>
-                    </div>
-                  </article>
-                </Link>
-              );
-            })}
+            {featuredStores.map((store, index) => (
+              <StorePiece key={store.id} store={store} index={index} previewMode={previewMode} />
+            ))}
           </div>
         )}
 
-        <div className="relative mt-10 hidden min-h-24 items-center justify-between overflow-hidden px-7 py-5 text-white md:flex">
-          <div className="market-footer-ribbon absolute inset-0 bg-[#12336d]" aria-hidden="true" />
-          <p className="market-hand relative z-10 max-w-xl text-2xl font-black">más estudiantes · más ideas · más historias</p>
-          <Link href="/chat" className="relative z-10 rounded-full bg-[#ffd84d] px-5 py-2.5 text-sm font-black text-[#11224b]">
-            Conecta con la comunidad →
-          </Link>
-        </div>
+        {additionalStores.length > 0 && (
+          <div className="approved-more-wrap mt-14">
+            <h3 className="approved-hand mb-5 text-2xl font-black text-[#e94f2f]">más tiendas para descubrir ↓</h3>
+            <div className="flex flex-wrap gap-5">
+              {additionalStores.map((store, index) => (
+                <Link key={store.id} href={`/marketplace/stores/${store.slug}`} className="approved-more-piece">
+                  <div className="h-28 overflow-hidden rounded-[30%_18%_26%_16%/18%_30%_16%_28%] bg-[#dbe8ff]">
+                    {store.coverUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
+                    )}
+                  </div>
+                  <div className="-mt-3 px-3 pb-3">
+                    <h4 className="font-black">{store.name}</h4>
+                    <p className="text-xs font-semibold text-[#6a7287]">{store.deliveryLocation}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 px-3">
+            <p className="approved-hand text-lg font-black text-[#e94f2f]">
+              {previewMode ? "Así se verá cuando lleguen las primeras tiendas reales." : `${openStores} abiertas ahora · ${sourceStores.length} activas`}
+            </p>
+            <Link href="/chat" className="approved-community-link">
+              comunidad, ideas y conversaciones →
+            </Link>
+          </div>
+        )}
       </section>
     </main>
   );
