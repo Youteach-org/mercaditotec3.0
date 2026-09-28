@@ -1,0 +1,45 @@
+name: Store approved marketplace reference
+
+on:
+  push:
+    branches:
+      - feature/student-stores
+    paths:
+      - ".github/workflows/store-approved-marketplace-reference.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  store-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/student-stores
+
+      - name: Download canonical approved image
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/design
+          curl --fail --location --retry 3 \
+            "https://cdn.creativeclaw.co/u/ad2cc6b8/images/c5329d76-5457-4556-a37e-17d0c5c28c4b.png" \
+            --output docs/design/marketplace-approved-reference.png
+          echo "62933f7da5a80370b7d7584486b121747ba7c9da33c8b2395bfc2d524e40a4de  docs/design/marketplace-approved-reference.png" | sha256sum --check
+
+      - name: Commit canonical reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/design/marketplace-approved-reference.png && git ls-files --error-unmatch docs/design/marketplace-approved-reference.png >/dev/null 2>&1; then
+            echo "Canonical reference already stored."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/design/marketplace-approved-reference.png
+          git commit -m "design: store canonical approved marketplace reference"
+          git push origin HEAD:feature/student-stores
