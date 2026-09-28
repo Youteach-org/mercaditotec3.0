@@ -106,7 +106,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <span className="mt-1 block text-[9px] font-black uppercase tracking-[0.19em] text-[#123d82]">
                       de estudiantes · para estudiantes
                     </span>
-                    <span className="absolute ml-[268px] -mt-[44px] rotate-[-18deg] text-[25px] font-black tracking-[-8px] text-[#f3a500]" aria-hidden="true">///</span>
+                    <svg className="absolute ml-[270px] -mt-[48px] h-9 w-9 rotate-[-10deg] text-[#f3a500]" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" aria-hidden="true">
+                      <path d="M7 10 12 2M19 13 20 3M28 17 36 11" />
+                    </svg>
                   </span>
                 ) : "MercaditoTec"}
               </Link>
