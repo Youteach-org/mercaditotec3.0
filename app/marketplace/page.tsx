@@ -297,6 +297,9 @@ export default function MarketplacePage() {
         <div className="mkt-market-photo" aria-hidden="true">
           <div className="mkt-market-photo-shade" />
         </div>
+        <div className="mkt-bunting" aria-hidden="true">
+          <span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span />
+        </div>
 
         <div className="mkt-title-paper">
           <h1>
