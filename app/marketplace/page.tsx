@@ -243,6 +243,11 @@ export default function MarketplacePage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CategoryId>("all");
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
+  const [forceDemo, setForceDemo] = useState(false);
+
+  useEffect(() => {
+    setForceDemo(new URLSearchParams(window.location.search).get("visual") === "1");
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -265,7 +270,9 @@ export default function MarketplacePage() {
     };
   }, []);
 
-  const previewMode = !loading && !error && liveStores.length === 0;
+  const effectiveLoading = forceDemo ? false : loading;
+  const effectiveError = forceDemo ? "" : error;
+  const previewMode = forceDemo || (!loading && !error && liveStores.length === 0);
   const sourceStores: PublicStoreSummary[] = previewMode ? DEMO_MARKETPLACE_STORES : liveStores;
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
 
@@ -348,13 +355,13 @@ export default function MarketplacePage() {
 
         {previewMode && <div className="mkt-preview-chip">VISTA DEMO</div>}
 
-        {loading && <div className="mkt-canvas-message">Cargando tiendas…</div>}
-        {!loading && error && <div className="mkt-canvas-message mkt-canvas-error">{error}</div>}
-        {!loading && !error && featured.length === 0 && (
+        {effectiveLoading && <div className="mkt-canvas-message">Cargando tiendas…</div>}
+        {!effectiveLoading && effectiveError && <div className="mkt-canvas-message mkt-canvas-error">{effectiveError}</div>}
+        {!effectiveLoading && !effectiveError && featured.length === 0 && (
           <div className="mkt-canvas-message">No encontramos coincidencias.</div>
         )}
 
-        {!loading && !error && (
+        {!effectiveLoading && !effectiveError && (
           <>
             <div className="mkt-bottom-blue">
               <div className="mkt-bottom-blue-photo" />
