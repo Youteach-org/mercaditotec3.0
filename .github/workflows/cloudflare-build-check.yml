@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/student-stores
+      - preview/marketplace-approved-reference
   workflow_dispatch:
 
 permissions:
