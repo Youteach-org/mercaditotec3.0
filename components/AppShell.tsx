@@ -106,6 +106,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     <span className="mt-1 block text-[9px] font-black uppercase tracking-[0.19em] text-[#123d82]">
                       de estudiantes · para estudiantes
                     </span>
+                    <span className="absolute ml-[268px] -mt-[44px] rotate-[-18deg] text-[25px] font-black tracking-[-8px] text-[#f3a500]" aria-hidden="true">///</span>
                   </span>
                 ) : "MercaditoTec"}
               </Link>
@@ -149,21 +150,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </nav>
 
-              <Link
-                href="/notifications"
-                aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
-                className={marketplaceHome
-                  ? "relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-[#102f6d] hover:bg-[#fff0cf]"
-                  : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"
-                }
-              >
-                <span aria-hidden="true">🔔</span>
-                {unreadCount > 0 && (
-                  <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-black leading-none text-white">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </Link>
+              {!marketplaceHome && (
+                <Link
+                  href="/notifications"
+                  aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
+                  className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"
+                >
+                  <span aria-hidden="true">🔔</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-black leading-none text-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              )}
             </div>
 
             <nav
