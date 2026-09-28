@@ -72,7 +72,7 @@ body {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255,246,228,.18), rgba(255,246,228,0) 38%),
-    url("https://images.unsplash.com/photo-1662148931332-d5a014aa255a?auto=format&fit=crop&w=1900&q=88") center 54% / cover no-repeat;
+    url("https://images.unsplash.com/photo-1662148931823-b0f72b89a6fc?auto=format&fit=crop&w=1900&q=88") center 54% / cover no-repeat;
 }
 
 .mkt-market-photo::after {
@@ -115,7 +115,7 @@ body {
 .mkt-title-paper h1 {
   margin: 0;
   color: #0d3479;
-  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
+  font-family: var(--font-market-hand), cursive;
   font-size: clamp(34px, 5.4vw, 78px);
   font-weight: 1000;
   letter-spacing: -.075em;
@@ -258,7 +258,7 @@ body {
   top: 23.7%;
   width: 24.1%;
   height: 19.9%;
-  background: url("https://images.unsplash.com/photo-1743356806915-99d6cf6edae5?auto=format&fit=crop&w=1000&q=88") center / cover no-repeat;
+  background: url("https://images.unsplash.com/photo-1763615834709-cd4b196980db?auto=format&fit=crop&w=1000&q=88") center / cover no-repeat;
   clip-path: polygon(0 7%, 90% 0, 100% 14%, 96% 89%, 79% 100%, 0 94%);
 }
 
