@@ -72,7 +72,7 @@ body {
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(255,246,228,.18), rgba(255,246,228,0) 38%),
-    url("https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1900&q=88") center 54% / cover no-repeat;
+    url("https://images.unsplash.com/photo-1662148931332-d5a014aa255a?auto=format&fit=crop&w=1900&q=88") center 54% / cover no-repeat;
 }
 
 .mkt-market-photo::after {
@@ -115,7 +115,7 @@ body {
 .mkt-title-paper h1 {
   margin: 0;
   color: #0d3479;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
   font-size: clamp(34px, 5.4vw, 78px);
   font-weight: 1000;
   letter-spacing: -.075em;
@@ -132,7 +132,7 @@ body {
 .mkt-title-paper p {
   margin: 2.1% 0 0 27%;
   color: #12346f;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
   font-size: clamp(8px, 1.05vw, 15px);
   font-weight: 1000;
   line-height: 1.28;
@@ -149,7 +149,7 @@ body {
 .mkt-future-note,
 .mkt-students-note,
 .mkt-bottom-blue-copy {
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
 }
 
 .mkt-pink-note {
@@ -223,7 +223,7 @@ body {
   position: absolute;
   z-index: 20;
   pointer-events: none;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
   font-weight: 1000;
 }
 
@@ -258,7 +258,7 @@ body {
   top: 23.7%;
   width: 24.1%;
   height: 19.9%;
-  background: url("https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1000&q=88") center / cover no-repeat;
+  background: url("https://images.unsplash.com/photo-1743356806915-99d6cf6edae5?auto=format&fit=crop&w=1000&q=88") center / cover no-repeat;
   clip-path: polygon(0 7%, 90% 0, 100% 14%, 96% 89%, 79% 100%, 0 94%);
 }
 
@@ -393,7 +393,7 @@ body {
 }
 
 .mkt-category-button > span:last-child {
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
   font-size: clamp(8px, .92vw, 14px);
   font-weight: 1000;
   white-space: nowrap;
@@ -614,7 +614,7 @@ body {
   place-items: center;
   background: #ffd54c;
   color: #12346f;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
   font-weight: 1000;
 }
 
@@ -627,7 +627,7 @@ body {
   padding: 2.5% 4%;
   color: #102f70;
   background: #ff9fbd;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
   font-size: clamp(10px, 1.25vw, 18px);
   font-weight: 1000;
   line-height: .95;
@@ -855,7 +855,7 @@ body {
   left: 16%;
   top: 32%;
   color: #ffd54c;
-  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
   font-size: clamp(27px, 4vw, 62px);
   transform: rotate(-10deg);
 }
