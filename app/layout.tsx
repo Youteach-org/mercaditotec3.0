@@ -1,5 +1,5 @@
 ﻿import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Kalam, Permanent_Marker } from "next/font/google";
 
 import ClientAppShell from "@/components/ClientAppShell";
 import "./globals.css";
@@ -12,6 +12,18 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const marketHand = Kalam({
+  variable: "--font-market-hand",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const marketMarker = Permanent_Marker({
+  variable: "--font-market-marker",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -27,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${marketHand.variable} ${marketMarker.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ClientAppShell>{children}</ClientAppShell>
