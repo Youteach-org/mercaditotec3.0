@@ -93,9 +93,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           : "sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur"
         }>
           <div className={marketplaceHome ? "mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
-            <div className={marketplaceHome ? "flex min-h-[70px] items-center justify-between gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
+            <div className={marketplaceHome ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
               <Link href="/marketplace" className={marketplaceHome
-                ? "shrink-0 leading-none"
+                ? "w-[300px] shrink-0 leading-none"
                 : "shrink-0 font-black tracking-tight text-slate-950"
               }>
                 {marketplaceHome ? (
@@ -113,7 +113,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 ) : "MercaditoTec"}
               </Link>
 
-              <nav className="hidden min-w-0 items-center gap-1 md:flex" aria-label="Navegación principal">
+              <nav className={marketplaceHome ? "ml-[170px] hidden min-w-0 items-center gap-1 md:flex" : "hidden min-w-0 items-center gap-1 md:flex"} aria-label="Navegación principal">
                 {NAV_ITEMS.map((item) => {
                   const active = isCurrentPath(pathname, item.href);
                   return (
