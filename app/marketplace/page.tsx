@@ -353,8 +353,6 @@ export default function MarketplacePage() {
           <span className="mkt-star" aria-hidden="true">☆</span>
         </div>
 
-        {previewMode && <div className="mkt-preview-chip">VISTA DEMO</div>}
-
         {effectiveLoading && <div className="mkt-canvas-message">Cargando tiendas…</div>}
         {!effectiveLoading && effectiveError && <div className="mkt-canvas-message mkt-canvas-error">{effectiveError}</div>}
         {!effectiveLoading && !effectiveError && featured.length === 0 && (
