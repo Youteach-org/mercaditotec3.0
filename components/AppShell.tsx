@@ -48,6 +48,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { firebaseUser, appUser, loading } = useSession();
   const [fallbackUnreadCount, setFallbackUnreadCount] = useState(0);
+  const [visualPreview, setVisualPreview] = useState(false);
+
+  useEffect(() => {
+    if (pathname !== "/marketplace") {
+      setVisualPreview(false);
+      return;
+    }
+    setVisualPreview(new URLSearchParams(window.location.search).get("visual") === "1");
+  }, [pathname]);
 
   const profileUnreadCount =
     typeof appUser?.unreadNotificationCount === "number"
@@ -78,7 +87,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {!loading && firebaseUser && (
+      {!loading && (firebaseUser || visualPreview) && (
         <header className={marketplaceHome
           ? "sticky top-0 z-50 bg-[#fffaf0]/98 shadow-[0_2px_10px_rgba(16,47,108,0.05)] backdrop-blur"
           : "sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur"
