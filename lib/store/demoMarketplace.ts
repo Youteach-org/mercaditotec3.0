@@ -1,0 +1,131 @@
+import type { PublicStoreSummary } from "./publicMarketplace";
+import type { StoreSchedule } from "./schedule";
+
+export type DemoMarketplaceCategory =
+  | "food"
+  | "drinks"
+  | "desserts"
+  | "crafts"
+  | "stationery";
+
+export interface DemoMarketplaceStore extends PublicStoreSummary {
+  demoCategory: DemoMarketplaceCategory;
+  demoRating: number;
+  demoReviewCount: number;
+  demoTags: string[];
+}
+
+const CLOSED_SCHEDULE: StoreSchedule = {
+  monday: { slots: [] },
+  tuesday: { slots: [] },
+  wednesday: { slots: [] },
+  thursday: { slots: [] },
+  friday: { slots: [] },
+  saturday: { slots: [] },
+  sunday: { slots: [] },
+};
+
+export const DEMO_MARKETPLACE_STORES: DemoMarketplaceStore[] = [
+  {
+    id: "demo-postres-ana",
+    name: "Postres de Ana",
+    slug: "demo-postres-ana",
+    description: "Postres caseros que alegran el día",
+    deliveryLocation: "Campus Central",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "desserts",
+    demoRating: 4.9,
+    demoReviewCount: 120,
+    demoTags: ["Postres", "Dulces"],
+  },
+  {
+    id: "demo-snack-lab",
+    name: "Snack Lab",
+    slug: "demo-snack-lab",
+    description: "Snacks creativos para mentes brillantes",
+    deliveryLocation: "Campus Central",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "food",
+    demoRating: 4.8,
+    demoReviewCount: 98,
+    demoTags: ["Comida", "Snacks"],
+  },
+  {
+    id: "demo-tortas-punto",
+    name: "Tortas El Punto",
+    slug: "demo-tortas-punto",
+    description: "Tortas bien servidas para seguir la jornada",
+    deliveryLocation: "Campus Central",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1550317138-10000687a72b?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "food",
+    demoRating: 4.7,
+    demoReviewCount: 150,
+    demoTags: ["Comida", "Tortas"],
+  },
+  {
+    id: "demo-cafe-campus",
+    name: "Café del Campus",
+    slug: "demo-cafe-campus",
+    description: "Buen café para grandes ideas",
+    deliveryLocation: "Campus Norte",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "drinks",
+    demoRating: 4.8,
+    demoReviewCount: 110,
+    demoTags: ["Bebidas", "Café"],
+  },
+  {
+    id: "demo-artesanias-morelia",
+    name: "Artesanías Morelia",
+    slug: "demo-artesanias-morelia",
+    description: "Accesorios únicos, hechos con el corazón",
+    deliveryLocation: "Campus Norte",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "crafts",
+    demoRating: 4.9,
+    demoReviewCount: 76,
+    demoTags: ["Artesanías", "Accesorios"],
+  },
+  {
+    id: "demo-papeleria-express",
+    name: "Papelería Express",
+    slug: "demo-papeleria-express",
+    description: "Todo lo que necesitas para dar lo mejor de ti",
+    deliveryLocation: "Campus Central",
+    logoUrl: null,
+    coverUrl: "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=1000&q=88",
+    schedule: CLOSED_SCHEDULE,
+    operationalMode: "manual",
+    manualOpen: true,
+    openNow: true,
+    demoCategory: "stationery",
+    demoRating: 4.9,
+    demoReviewCount: 134,
+    demoTags: ["Papelería", "Útiles"],
+  },
+];
