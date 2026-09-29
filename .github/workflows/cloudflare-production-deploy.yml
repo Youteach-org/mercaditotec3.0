@@ -106,6 +106,12 @@ jobs:
             exit 1
           fi
 
+          MARKETPLACE_JSON="$(curl -fsS -H 'Cache-Control: no-cache' "$BASE/api/marketplace?verify=$(date +%s)")"
+          STORE_COUNT="$(printf '%s' "$MARKETPLACE_JSON" | jq '.stores | length')"
+          echo "Public marketplace active stores: $STORE_COUNT"
+          echo "Public store names:"
+          printf '%s' "$MARKETPLACE_JSON" | jq -r '.stores[]? | " - \(.name) [\(.slug)]"'
+
           HEALTH="$(curl -fsS "$BASE/__health")"
           printf '%s\n' "$HEALTH"
           printf '%s' "$HEALTH" | grep -q '"firebaseSecretPresent": true' || {
