@@ -43,25 +43,38 @@ The alias Worker uses `wrangler.legacy-alias.jsonc` so its deployment is indepen
 - Vercel: legacy only; do not restore it as the deployment target.
 - No remaining Cloudflare hosting blocker is known for Mercadito.
 
-## Marketplace visual preview isolation
+## Marketplace integration status
 
-The unapproved marketplace redesign was removed from `feature/student-stores`. Visual reconstruction is isolated on `preview/marketplace-approved-reference` until explicit approval. The active branch remains the production source of truth.
+The marketplace redesign was explicitly approved for integration on 2026-09-29 so authenticated flows and real store data can be tested end to end.
 
-As of 2026-09-29, the review branch has its own Cloudflare Worker:
+Branches integrated from the approved marketplace implementation:
 
-- Worker: `mercaditotec-preview`
-- Review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
-- Deploy workflow: `.github/workflows/cloudflare-marketplace-preview.yml`
-- Verified deploy run: `36533114382`
-- Verified Worker version: `703d037f-6d4a-4d7c-a69b-60fa593d2b73`
-- HTTP verification: `200`
-- Scalable collage implementation commit: `f6c5182ae1f53bca43bf049ebc7cb6e2faf22902`
-- Canonical capture run: `36533114310` — success
-- Capture artifact: `11017417593`
-- Build verification run: `36533241034` — `23` test files / `177` tests passed
-- Latest review pass: store information papers forced above image clouds; six reusable cloud variants; editable collage label/note/tags/shape persisted per store; stores after the first six continue in the same collage system below the canonical board
+- `main`
+- `feature/student-stores`
+- `preview/marketplace-approved-reference`
 
-The preview Worker is independent from `mercaditotec3-0` and must not replace production until the user explicitly approves the rendered marketplace.
+Production deployment:
+
+- Worker: `mercaditotec3-0`
+- Runtime: `https://mercaditotec3-0.youteach-tk.workers.dev`
+- Deploy workflow: `.github/workflows/cloudflare-production-deploy.yml`
+- Deploy run: `36626622592` — success
+- Worker version: `dbc450a4-93b6-4d08-9402-c7648a6332b5`
+- `/`: HTTP `200`
+- `/marketplace`: HTTP `200`
+- `/api/marketplace`: HTTP `200`
+- `/icon.svg`: HTTP `200`
+- `/__health`: HTTP `200`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: present
+
+Browser verification after the deployment settled:
+
+- Verification workflow: `.github/workflows/cloudflare-production-recheck.yml`
+- Run: `36627264465` — success
+- All 10 marketplace JS/CSS assets returned HTTP `200`
+- Headless Chrome rendered the marketplace without the loading state or the data-load error state.
+
+The isolated preview Worker remains available for visual-only checks, but real functional testing should now use the production Worker because it has the production Firebase runtime secret and live API/data path.
 
 ### Browser icon branding — 2026-09-29
 
