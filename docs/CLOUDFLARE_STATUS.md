@@ -62,3 +62,13 @@ As of 2026-09-29, the review branch has its own Cloudflare Worker:
 - Latest review pass: store information papers forced above image clouds; six reusable cloud variants; editable collage label/note/tags/shape persisted per store; stores after the first six continue in the same collage system below the canonical board
 
 The preview Worker is independent from `mercaditotec3-0` and must not replace production until the user explicitly approves the rendered marketplace.
+
+### Browser icon branding — 2026-09-29
+
+- Legacy Vercel-era favicon removed from the preview branch.
+- MercaditoTec SVG app icon added and referenced explicitly in root metadata.
+- Unused `public/vercel.svg` removed.
+- Build check `36618625759`: success.
+- Preview deploy `36618546517`: success.
+- Worker version: `8cbf3236-ed73-4c3d-b003-2cef70125b25`.
+- Review route: HTTP `200`.
