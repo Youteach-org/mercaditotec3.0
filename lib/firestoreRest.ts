@@ -486,6 +486,33 @@ export class CollectionReference<T extends DocumentData = DocumentData> extends 
     super(path);
   }
 
+  async list(limit = 250): Promise<QuerySnapshot<T>> {
+    const root = await transport.documentsRoot();
+    const safeLimit = Math.min(1000, Math.max(1, Math.floor(limit)));
+    const params = new URLSearchParams({
+      pageSize: String(safeLimit),
+    });
+
+    const response = await transport.request(
+      `${root}/${this.collectionPath}?${params.toString()}`,
+      { method: "GET" },
+    );
+
+    const body = (await response.json()) as {
+      documents?: FirestoreDocument[];
+    };
+
+    const docs = (body.documents ?? []).map((document) => {
+      const path = documentPathFromName(document.name);
+      return new QueryDocumentSnapshot<T>(
+        new DocumentReference<T>(path),
+        document,
+      );
+    });
+
+    return new QuerySnapshot<T>(docs);
+  }
+
   doc(id: string = randomId()): DocumentReference<T> {
     return new DocumentReference<T>(`${this.collectionPath}/${id}`);
   }
