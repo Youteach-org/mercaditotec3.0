@@ -8,6 +8,10 @@ import {
   type DemoMarketplaceCategory,
   type DemoMarketplaceStore,
 } from "@/lib/store/demoMarketplace";
+import {
+  marketplaceVariantIndex,
+  resolveMarketplaceVariant,
+} from "@/lib/store/marketplacePresentation";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 
 type CategoryId = "all" | DemoMarketplaceCategory;
@@ -21,14 +25,6 @@ const CATEGORY_ITEMS: Array<{ id: CategoryId; label: string }> = [
   { id: "all", label: "Más categorías" },
 ];
 
-const CARD_NOTES = [
-  "LA VIDA ES MÁS DULCE EN EL TEC :)",
-  "IDEAS QUE TAMBIÉN SE ANTOJAN :)",
-  "BUENAS TORTAS, MEJORES PLÁTICAS",
-  "CAFÉ · IDEAS · AMIGOS · PLANES",
-  "ARTE QUE CONECTA ♡",
-  "TUS IDEAS TAMBIÉN NECESITAN BUENAS HERRAMIENTAS :)",
-];
 
 function inferredCategory(store: PublicStoreSummary): DemoMarketplaceCategory {
   if ("demoCategory" in store) {
@@ -41,6 +37,10 @@ function inferredCategory(store: PublicStoreSummary): DemoMarketplaceCategory {
   if (/artesan|joyer|accesorio|hecho a mano/.test(text)) return "crafts";
   if (/papeler|libreta|cuaderno|pluma|útil|util/.test(text)) return "stationery";
   return "food";
+}
+
+function categoryLabel(category: DemoMarketplaceCategory): string {
+  return CATEGORY_ITEMS.find((item) => item.id === category)?.label ?? "Tienda";
 }
 
 function SearchIcon() {
@@ -226,22 +226,31 @@ function DemoLogo({ index, name }: { index: number; name: string }) {
 
 function StoreCard({
   store,
-  index,
+  slotIndex,
   previewMode,
   onPreview,
+  gallery = false,
 }: {
   store: PublicStoreSummary;
-  index: number;
+  slotIndex: number;
   previewMode: boolean;
   onPreview: (store: PublicStoreSummary) => void;
+  gallery?: boolean;
 }) {
   const demo = "demoRating" in store ? (store as DemoMarketplaceStore) : null;
-  const tags = demo?.demoTags ?? [inferredCategory(store)];
+  const variant = resolveMarketplaceVariant(store.marketplaceVariant, store.id);
+  const variantIndex = marketplaceVariantIndex(variant);
+  const tags =
+    store.marketplaceTags.length > 0
+      ? store.marketplaceTags
+      : demo?.demoTags ?? [categoryLabel(inferredCategory(store))];
   const rating = demo?.demoRating ?? null;
   const reviewCount = demo?.demoReviewCount ?? null;
+  const ribbonLabel = store.marketplaceLabel.trim() || store.name;
+  const note = store.marketplaceNote.trim();
 
   const body = (
-    <article className={`mkt-store-card mkt-store-card-${index}`}>
+    <article className={`mkt-store-card mkt-store-card-${slotIndex} mkt-store-variant-${variantIndex}`}>
       <div className="mkt-store-photo">
         {store.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -251,9 +260,11 @@ function StoreCard({
         )}
       </div>
 
-      <div className={`mkt-store-ribbon mkt-store-ribbon-${index}`}>
-        {index === 0 ? "POSTRES" : index === 1 ? "SNACK LAB" : index === 2 ? "TORTAS EL PUNTO" : index === 3 ? "Café del Campus" : index === 4 ? "Artesanías Morelia" : "PAPELERÍA EXPRESS"}
-      </div>
+      {ribbonLabel && (
+        <div className={`mkt-store-ribbon mkt-store-ribbon-${slotIndex}`}>
+          {ribbonLabel}
+        </div>
+      )}
 
       <div className="mkt-store-copy">
         <div className="mkt-store-logo">
@@ -261,7 +272,7 @@ function StoreCard({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={store.logoUrl} alt="" />
           ) : (
-            <DemoLogo index={index} name={store.name} />
+            <DemoLogo index={variantIndex} name={store.name} />
           )}
         </div>
         <div className="mkt-store-copy-main">
@@ -281,11 +292,17 @@ function StoreCard({
         </div>
       </div>
 
-      <div className={`mkt-hand-note mkt-hand-note-${index}`}>{CARD_NOTES[index] ?? ""}</div>
+      {note && (
+        <div className={`mkt-hand-note mkt-hand-note-${slotIndex}`}>{note}</div>
+      )}
     </article>
   );
 
-  const className = `mkt-store-slot mkt-store-slot-${index}`;
+  const className = [
+    "mkt-store-slot",
+    gallery ? "mkt-more-store" : `mkt-store-slot-${slotIndex}`,
+    `mkt-store-variant-${variantIndex}`,
+  ].join(" ");
 
   if (previewMode) {
     return (
@@ -364,6 +381,7 @@ export default function MarketplacePage() {
   }, [category, normalizedQuery, sourceStores]);
 
   const featured = filteredStores.slice(0, 6);
+  const additionalStores = filteredStores.slice(6);
 
   return (
     <main className="mkt-page">
@@ -451,7 +469,7 @@ export default function MarketplacePage() {
               <StoreCard
                 key={store.id}
                 store={store}
-                index={index}
+                slotIndex={index}
                 previewMode={previewMode}
                 onPreview={setPreviewStore}
               />
@@ -467,6 +485,27 @@ export default function MarketplacePage() {
         <Doodle className="mkt-squiggle-c">♡</Doodle>
         <Doodle className="mkt-squiggle-d">✦</Doodle>
       </section>
+
+      {!effectiveLoading && !effectiveError && additionalStores.length > 0 && (
+        <section className="mkt-more-section" aria-label="Más tiendas de la comunidad">
+          <div className="mkt-more-heading">
+            <span>Más tiendas de la comunidad</span>
+            <b aria-hidden="true">↘</b>
+          </div>
+          <div className="mkt-more-stores">
+            {additionalStores.map((store, index) => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                slotIndex={index % 6}
+                gallery
+                previewMode={previewMode}
+                onPreview={setPreviewStore}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {previewStore && (
         <div className="mkt-modal-backdrop" onMouseDown={() => setPreviewStore(null)}>
