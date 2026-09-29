@@ -81,9 +81,23 @@ jobs:
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
           "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --disable-dev-shm-usage             --virtual-time-budget=12000             --dump-dom             "$BASE/marketplace?verify=$(date +%s)"             > /tmp/browser-dom.html             2> /tmp/browser-console.txt
 
-          grep -q "Tiendas de la comunidad" /tmp/browser-dom.html || {
+          grep -q "mkt-approved-canvas" /tmp/browser-dom.html || {
+            echo "::error::Marketplace canvas is missing from the hydrated browser DOM"
             tail -n 200 /tmp/browser-console.txt || true
+            head -c 6000 /tmp/browser-dom.html || true
             exit 1
           }
+
+          if grep -q "Cargando tiendas" /tmp/browser-dom.html; then
+            echo "::error::Marketplace remained stuck loading in the browser"
+            head -c 6000 /tmp/browser-dom.html || true
+            exit 1
+          fi
+
+          if grep -q "No se pudo cargar el Mercadito" /tmp/browser-dom.html; then
+            echo "::error::Marketplace rendered its data-load error state"
+            head -c 6000 /tmp/browser-dom.html || true
+            exit 1
+          fi
 
           echo "Production browser runtime verified."
