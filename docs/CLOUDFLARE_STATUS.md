@@ -109,3 +109,18 @@ Verified deployment:
 - unauthenticated `/api/admin/users`: HTTP `401`;
 - Firebase runtime secret present.
 
+
+## Store editor collage controls — 2026-09-29
+
+The store create/edit flow now exposes the informational collage elements used on the marketplace home card.
+
+- A live **Marketplace card preview** was added inside the store editor.
+- The preview shows the selected cloud silhouette, cover image, over-photo label, torn information paper, logo, tags, delivery location, and post-it.
+- The previous "Nota del papelito" field is now labeled **Texto del post-it** and explains that it controls the post-it shown on the marketplace home card.
+- Changes are reflected live in the preview while the owner edits the store.
+- The same editor is used for both newly created stores and existing editable stores, so these controls are available in both flows.
+
+Implementation:
+- `components/store/MarketplaceCardEditorPreview.tsx`
+- `components/store/StoreBuilderClient.tsx`
+
