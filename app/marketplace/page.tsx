@@ -117,6 +117,52 @@ function CategoryIcon({ id }: { id: CategoryId }) {
   );
 }
 
+function MarketplaceClipDefs() {
+  return (
+    <svg className="mkt-clip-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <clipPath id="mkt-title-cut" clipPathUnits="objectBoundingBox">
+          <path d="M.02,.13 C.07,.045 .15,.055 .21,.035 C.29,.005 .36,.045 .43,.025 C.51,.005 .57,.045 .64,.025 C.73,.005 .79,.055 .86,.035 C.93,.02 .98,.07 .985,.15 C.995,.22 .965,.27 .99,.34 C1,.41 .965,.46 .99,.54 C1,.62 .965,.67 .985,.75 C.995,.83 .95,.88 .89,.91 C.82,.955 .75,.925 .68,.965 C.60,.995 .53,.955 .46,.98 C.38,.995 .31,.955 .24,.975 C.16,.985 .10,.94 .055,.90 C.015,.86 .035,.79 .015,.73 C.005,.65 .035,.59 .012,.52 C0,.44 .035,.38 .012,.31 C0,.23 .03,.18 .02,.13 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-0" clipPathUnits="objectBoundingBox">
+          <path d="M.08,.16 C.10,.07 .19,.045 .27,.075 C.33,.02 .43,.025 .49,.07 C.56,.02 .68,.025 .73,.075 C.82,.035 .91,.08 .92,.17 C.985,.20 .995,.30 .95,.36 C.995,.43 .995,.53 .95,.59 C.99,.68 .95,.78 .87,.80 C.86,.90 .76,.95 .68,.91 C.62,.975 .51,.985 .44,.94 C.36,.985 .25,.965 .21,.90 C.12,.94 .04,.87 .05,.79 C.00,.73 .015,.62 .065,.58 C.015,.50 .02,.40 .07,.35 C.02,.28 .025,.20 .08,.16 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-1" clipPathUnits="objectBoundingBox">
+          <path d="M.055,.20 C.055,.11 .14,.055 .22,.08 C.29,.025 .39,.035 .45,.075 C.52,.02 .63,.02 .69,.07 C.78,.035 .88,.07 .90,.15 C.975,.18 .995,.28 .955,.35 C.995,.42 .995,.52 .95,.59 C.985,.69 .94,.78 .86,.80 C.83,.90 .73,.94 .65,.90 C.58,.97 .47,.98 .40,.93 C.31,.97 .21,.94 .18,.87 C.09,.90 .02,.83 .045,.75 C.00,.68 .015,.58 .06,.54 C.015,.46 .02,.35 .065,.31 C.02,.27 .02,.23 .055,.20 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-2" clipPathUnits="objectBoundingBox">
+          <path d="M.045,.18 C.065,.095 .14,.055 .22,.08 C.28,.025 .39,.03 .45,.07 C.52,.025 .62,.02 .68,.065 C.76,.025 .87,.055 .90,.14 C.975,.16 .995,.26 .955,.33 C.995,.40 .995,.50 .955,.56 C.99,.65 .95,.74 .88,.77 C.86,.87 .76,.92 .68,.89 C.61,.95 .51,.965 .44,.925 C.35,.97 .25,.95 .20,.885 C.11,.92 .035,.855 .05,.78 C.005,.72 .01,.61 .055,.565 C.01,.49 .015,.39 .06,.34 C.02,.28 .015,.22 .045,.18 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-3" clipPathUnits="objectBoundingBox">
+          <path d="M.065,.17 C.075,.09 .15,.055 .23,.08 C.30,.025 .40,.03 .46,.07 C.54,.02 .65,.03 .70,.075 C.79,.035 .89,.075 .91,.16 C.98,.19 .995,.29 .955,.36 C.995,.44 .99,.54 .945,.60 C.985,.69 .94,.79 .86,.81 C.83,.90 .73,.94 .65,.90 C.58,.97 .47,.98 .40,.93 C.31,.97 .22,.94 .18,.87 C.09,.91 .02,.84 .045,.76 C.00,.69 .015,.59 .06,.54 C.015,.46 .02,.36 .065,.31 C.02,.25 .025,.20 .065,.17 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-4" clipPathUnits="objectBoundingBox">
+          <path d="M.045,.21 C.055,.12 .14,.07 .22,.09 C.29,.035 .38,.04 .45,.075 C.53,.025 .63,.03 .69,.07 C.78,.035 .88,.07 .91,.15 C.98,.18 .995,.28 .955,.35 C.995,.43 .99,.53 .95,.59 C.99,.68 .95,.77 .87,.80 C.85,.89 .75,.94 .67,.90 C.60,.965 .50,.97 .43,.925 C.34,.97 .24,.945 .20,.88 C.11,.91 .035,.85 .05,.77 C.005,.70 .015,.60 .06,.55 C.015,.48 .02,.38 .065,.33 C.02,.27 .02,.23 .045,.21 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-cloud-5" clipPathUnits="objectBoundingBox">
+          <path d="M.04,.19 C.055,.105 .135,.06 .215,.085 C.28,.03 .38,.03 .445,.07 C.52,.02 .63,.025 .69,.07 C.78,.03 .88,.06 .91,.145 C.98,.17 .995,.27 .955,.34 C.995,.42 .99,.52 .95,.58 C.99,.67 .95,.76 .875,.79 C.85,.885 .75,.93 .67,.895 C.60,.96 .50,.97 .43,.925 C.34,.97 .24,.945 .19,.88 C.10,.915 .03,.85 .05,.775 C.005,.705 .015,.605 .06,.555 C.015,.48 .02,.38 .06,.33 C.02,.27 .015,.22 .04,.19 Z" />
+        </clipPath>
+
+        <clipPath id="mkt-copy-0" clipPathUnits="objectBoundingBox">
+          <path d="M.03,.12 L.14,.07 L.27,.10 L.39,.05 L.52,.09 L.66,.04 L.80,.09 L.96,.06 L.98,.28 L.95,.48 L.99,.70 L.95,.91 L.80,.88 L.66,.94 L.51,.89 L.36,.95 L.22,.89 L.07,.93 L.02,.72 L.05,.51 L.01,.31 Z" />
+        </clipPath>
+        <clipPath id="mkt-copy-1" clipPathUnits="objectBoundingBox">
+          <path d="M.02,.11 L.15,.06 L.29,.10 L.43,.05 L.57,.09 L.71,.04 L.85,.09 L.98,.06 L.97,.29 L.99,.51 L.96,.73 L.98,.91 L.83,.88 L.68,.94 L.53,.89 L.37,.95 L.22,.89 L.06,.93 L.03,.72 L.05,.50 L.01,.29 Z" />
+        </clipPath>
+        <clipPath id="mkt-copy-2" clipPathUnits="objectBoundingBox">
+          <path d="M.03,.10 L.18,.06 L.31,.10 L.46,.05 L.60,.09 L.74,.04 L.88,.09 L.98,.08 L.96,.30 L.99,.50 L.96,.72 L.98,.90 L.84,.88 L.70,.94 L.55,.89 L.40,.95 L.24,.89 L.07,.93 L.03,.73 L.05,.52 L.01,.31 Z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
+
 function StudentIllustration() {
   return (
     <svg viewBox="0 0 390 220" aria-hidden="true" className="mkt-students-svg">
@@ -203,9 +249,10 @@ function StoreCard({
         ) : (
           <div className="mkt-store-photo-fallback">TIENDA</div>
         )}
-        <div className={`mkt-store-ribbon mkt-store-ribbon-${index}`}>
-          {index === 0 ? "POSTRES" : index === 1 ? "SNACK LAB" : index === 2 ? "TORTAS EL PUNTO" : index === 3 ? "Café del Campus" : index === 4 ? "Artesanías Morelia" : "PAPELERÍA EXPRESS"}
-        </div>
+      </div>
+
+      <div className={`mkt-store-ribbon mkt-store-ribbon-${index}`}>
+        {index === 0 ? "POSTRES" : index === 1 ? "SNACK LAB" : index === 2 ? "TORTAS EL PUNTO" : index === 3 ? "Café del Campus" : index === 4 ? "Artesanías Morelia" : "PAPELERÍA EXPRESS"}
       </div>
 
       <div className="mkt-store-copy">
@@ -320,6 +367,7 @@ export default function MarketplacePage() {
 
   return (
     <main className="mkt-page">
+      <MarketplaceClipDefs />
       <section className="mkt-approved-canvas" aria-label="Mercadito Tec">
         <div className="mkt-market-photo" aria-hidden="true">
           <div className="mkt-market-photo-shade" />
