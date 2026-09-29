@@ -1461,7 +1461,7 @@ body {
   .mkt-category-button.is-active .mkt-category-icon-wrap {
     transform: translateY(-2px) rotate(-2deg);
     outline: 0;
-    box-shadow: 0 0 0 4px rgba(255, 213, 76, .45);
+    box-shadow: none;
   }
 
   .mkt-category-button > span:last-child {
@@ -1475,8 +1475,7 @@ body {
   .mkt-category-button.is-active > span:last-child {
     background: transparent;
     box-shadow: none;
-    text-decoration: underline 3px #ffd54c;
-    text-underline-offset: 3px;
+    text-decoration: none;
   }
 
   .mkt-featured-heading {
@@ -1493,9 +1492,9 @@ body {
   /* The approved composition starts the middle/right shops higher,
      overlapping the "Tiendas destacadas" gesture instead of forming a row. */
   .mkt-store-slot-0 {
-    left: 1.0%;
+    left: .8%;
     top: 48.0%;
-    width: 24.1%;
+    width: 26.0%;
     height: 29.7%;
     transform: rotate(-3.2deg);
     z-index: 31;
@@ -1511,36 +1510,36 @@ body {
   }
 
   .mkt-store-slot-2 {
-    left: 44.8%;
+    left: 45.5%;
     top: 43.0%;
-    width: 24.5%;
+    width: 24.2%;
     height: 28.0%;
     transform: rotate(-1.4deg);
     z-index: 29;
   }
 
   .mkt-store-slot-3 {
-    left: 69.9%;
+    left: 70.5%;
     top: 41.8%;
-    width: 25.7%;
+    width: 25.6%;
     height: 29.1%;
     transform: rotate(1.7deg);
     z-index: 28;
   }
 
   .mkt-store-slot-4 {
-    left: 29.9%;
+    left: 30.7%;
     top: 70.0%;
-    width: 26.0%;
+    width: 26.4%;
     height: 21.8%;
     transform: rotate(-2.8deg);
     z-index: 33;
   }
 
   .mkt-store-slot-5 {
-    left: 57.8%;
+    left: 58.5%;
     top: 69.6%;
-    width: 27.1%;
+    width: 26.8%;
     height: 22.4%;
     transform: rotate(1.4deg);
     z-index: 32;
@@ -1800,5 +1799,36 @@ body {
   .mkt-squiggle-d {
     left: 26.3%;
     top: 42.8%;
+  }
+}
+
+
+@media (min-width: 981px) {
+  .mkt-featured-brush {
+    clip-path: polygon(0 19%, 7% 8%, 17% 14%, 29% 3%, 40% 12%, 53% 5%, 67% 13%, 80% 4%, 92% 12%, 100% 8%, 97% 84%, 86% 79%, 73% 91%, 59% 83%, 44% 93%, 31% 84%, 17% 92%, 4% 84%);
+  }
+
+  .mkt-store-ribbon {
+    clip-path: polygon(0 18%, 7% 7%, 20% 12%, 33% 2%, 47% 10%, 61% 4%, 76% 12%, 90% 5%, 100% 11%, 97% 84%, 85% 79%, 72% 91%, 58% 83%, 43% 92%, 27% 82%, 13% 91%, 2% 82%);
+  }
+
+  .mkt-store-ribbon-1 {
+    padding-left: 6%;
+    padding-right: 6%;
+  }
+
+  .mkt-store-ribbon-2,
+  .mkt-store-ribbon-3 {
+    clip-path: polygon(1% 10%, 10% 3%, 23% 8%, 38% 2%, 51% 7%, 65% 1%, 81% 8%, 97% 4%, 100% 88%, 86% 82%, 72% 92%, 56% 84%, 40% 93%, 24% 84%, 8% 91%);
+  }
+
+  .mkt-store-ribbon-4,
+  .mkt-store-ribbon-5 {
+    clip-path: polygon(0 15%, 9% 5%, 21% 12%, 36% 2%, 50% 10%, 64% 4%, 80% 11%, 96% 5%, 100% 85%, 87% 80%, 73% 91%, 58% 82%, 42% 91%, 27% 83%, 12% 91%, 2% 83%);
+  }
+
+  .mkt-store-card-0 .mkt-store-copy {
+    left: 9%;
+    right: 7%;
   }
 }
