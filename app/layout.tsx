@@ -29,6 +29,10 @@ const marketMarker = Permanent_Marker({
 export const metadata: Metadata = {
   title: "MercaditoTec",
   description: "MercaditoTec",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
