@@ -12,6 +12,7 @@ import {
   marketplaceVariantIndex,
   resolveMarketplaceVariant,
 } from "@/lib/store/marketplacePresentation";
+import { shouldUseMarketplaceDemo } from "@/lib/store/marketplacePreview";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 
 type CategoryId = "all" | DemoMarketplaceCategory;
@@ -329,11 +330,16 @@ export default function MarketplacePage() {
   const [forceDemo, setForceDemo] = useState(false);
 
   useEffect(() => {
-    setForceDemo(new URLSearchParams(window.location.search).get("visual") === "1");
+    setForceDemo(
+      shouldUseMarketplaceDemo(window.location.search, window.location.hostname),
+    );
   }, []);
 
   useEffect(() => {
-    const visualPreview = new URLSearchParams(window.location.search).get("visual") === "1";
+    const visualPreview = shouldUseMarketplaceDemo(
+      window.location.search,
+      window.location.hostname,
+    );
     if (visualPreview) {
       setForceDemo(true);
       setLoading(false);
