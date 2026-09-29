@@ -250,6 +250,14 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
+    const visualPreview = new URLSearchParams(window.location.search).get("visual") === "1";
+    if (visualPreview) {
+      setForceDemo(true);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
     let cancelled = false;
 
     void fetch("/api/marketplace")
@@ -382,6 +390,7 @@ export default function MarketplacePage() {
               />
             ))}
 
+            <div className="mkt-discover-note" aria-hidden="true">DESCUBRE <span>→</span></div>
             <div className="mkt-future-note">AQUÍ<br />TAMBIÉN SE<br />CONSTRUYE<br />EL FUTURO<br />☺</div>
           </>
         )}
