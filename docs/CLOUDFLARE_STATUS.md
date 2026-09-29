@@ -124,3 +124,16 @@ Implementation:
 - `components/store/MarketplaceCardEditorPreview.tsx`
 - `components/store/StoreBuilderClient.tsx`
 
+
+## Mobile marketplace navigation — 2026-09-29
+
+The public marketplace header now renders on mobile even when no user is signed in.
+
+- Logged-out mobile users can see **Mercadito**, **Iniciar sesión**, and **Crear cuenta**.
+- Logged-in mobile users continue to see **Mercadito**, **Pedidos**, **Mis tiendas**, **Chat**, **Perfil**, and **Admin** when applicable.
+- The desktop public marketplace now also exposes **Iniciar sesión** and **Crear cuenta** instead of hiding the entire shell.
+- The marketplace logo width was relaxed on small screens so the account actions are not pushed out of view.
+
+Implementation:
+- `components/AppShell.tsx`
+
