@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mercaditotec-preview",
+  "main": "cloudflare-runtime-entry.mjs",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat", "allow_eval_during_startup"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
