@@ -1395,3 +1395,410 @@ body {
   .mkt-store-slot-2 .mkt-hand-note { right: -3%; bottom: -14%; }
   .mkt-store-slot-4 .mkt-hand-note { right: -18%; bottom: -7%; }
 }
+
+/* CANONICAL REFERENCE ALIGNMENT — 2026-09-28 */
+@media (min-width: 981px) {
+  /* The 1448×1086 reference includes the persistent app header.
+     The marketplace canvas itself therefore remains 1448×1018. */
+  .mkt-approved-canvas {
+    aspect-ratio: 1448 / 1018;
+  }
+
+  .mkt-search {
+    left: 28.4%;
+    top: 24.2%;
+    width: 41.8%;
+    height: 4.9%;
+    border: 2px solid rgba(17, 57, 126, .10);
+    box-shadow: 0 4px 12px rgba(13, 52, 121, .12);
+  }
+
+  .mkt-search button {
+    min-width: 20.5%;
+    border-radius: 999px;
+  }
+
+  /* Canonical categories are individual cream stickers, not a nav strip. */
+  .mkt-category-strip {
+    left: 25.7%;
+    top: 30.2%;
+    width: 45.2%;
+    height: 10.4%;
+    display: block;
+  }
+
+  .mkt-category-button {
+    position: absolute;
+    width: 14.2%;
+    gap: 1px;
+    transform-origin: 50% 50%;
+  }
+
+  .mkt-category-button:nth-child(1) { left: 0; top: 6%; transform: rotate(-3deg); }
+  .mkt-category-button:nth-child(2) { left: 17%; top: 0; transform: rotate(2deg); }
+  .mkt-category-button:nth-child(3) { left: 34%; top: 5%; transform: rotate(-2deg); }
+  .mkt-category-button:nth-child(4) { left: 51%; top: 1%; transform: rotate(2deg); }
+  .mkt-category-button:nth-child(5) { left: 68%; top: 5%; transform: rotate(-2deg); }
+  .mkt-category-button:nth-child(6) { left: 85%; top: 0; transform: rotate(2deg); }
+
+  .mkt-category-icon-wrap {
+    width: clamp(58px, 5.45vw, 79px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    border-radius: 48% 52% 46% 54% / 52% 44% 56% 48%;
+    background: #fff0ca !important;
+    box-shadow: none;
+  }
+
+  .mkt-category-button:nth-child(2) .mkt-category-icon-wrap,
+  .mkt-category-button:nth-child(4) .mkt-category-icon-wrap,
+  .mkt-category-button:nth-child(6) .mkt-category-icon-wrap {
+    background: #ffedc3 !important;
+  }
+
+  .mkt-category-button:hover .mkt-category-icon-wrap,
+  .mkt-category-button.is-active .mkt-category-icon-wrap {
+    transform: translateY(-2px) rotate(-2deg);
+    outline: 0;
+    box-shadow: 0 0 0 4px rgba(255, 213, 76, .45);
+  }
+
+  .mkt-category-button > span:last-child {
+    margin-top: 0;
+    padding: 2px 4px;
+    background: transparent;
+    box-shadow: none;
+    white-space: nowrap;
+  }
+
+  .mkt-category-button.is-active > span:last-child {
+    background: transparent;
+    box-shadow: none;
+    text-decoration: underline 3px #ffd54c;
+    text-underline-offset: 3px;
+  }
+
+  .mkt-featured-heading {
+    left: 1.6%;
+    top: 40.7%;
+    width: 24.8%;
+    height: 6.6%;
+  }
+
+  .mkt-featured-heading h2 {
+    transform: rotate(-3deg);
+  }
+
+  /* The approved composition starts the middle/right shops higher,
+     overlapping the "Tiendas destacadas" gesture instead of forming a row. */
+  .mkt-store-slot-0 {
+    left: 1.0%;
+    top: 48.0%;
+    width: 24.1%;
+    height: 29.7%;
+    transform: rotate(-3.2deg);
+    z-index: 31;
+  }
+
+  .mkt-store-slot-1 {
+    left: 24.3%;
+    top: 42.1%;
+    width: 20.9%;
+    height: 29.2%;
+    transform: rotate(1.7deg);
+    z-index: 30;
+  }
+
+  .mkt-store-slot-2 {
+    left: 44.8%;
+    top: 43.0%;
+    width: 24.5%;
+    height: 28.0%;
+    transform: rotate(-1.4deg);
+    z-index: 29;
+  }
+
+  .mkt-store-slot-3 {
+    left: 69.9%;
+    top: 41.8%;
+    width: 25.7%;
+    height: 29.1%;
+    transform: rotate(1.7deg);
+    z-index: 28;
+  }
+
+  .mkt-store-slot-4 {
+    left: 29.9%;
+    top: 70.0%;
+    width: 26.0%;
+    height: 21.8%;
+    transform: rotate(-2.8deg);
+    z-index: 33;
+  }
+
+  .mkt-store-slot-5 {
+    left: 57.8%;
+    top: 69.6%;
+    width: 27.1%;
+    height: 22.4%;
+    transform: rotate(1.4deg);
+    z-index: 32;
+  }
+
+  /* Remove the invented generic ecommerce card shell.  In the reference,
+     the photo island and white paper copy are separate collage pieces. */
+  .mkt-store-card,
+  .mkt-store-card-0,
+  .mkt-store-card-1,
+  .mkt-store-card-2,
+  .mkt-store-card-3,
+  .mkt-store-card-4,
+  .mkt-store-card-5 {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .mkt-store-slot:hover .mkt-store-card {
+    transform: translateY(-3px);
+    box-shadow: none;
+  }
+
+  .mkt-store-photo {
+    left: 2%;
+    right: 2%;
+    top: 0;
+    height: 67%;
+    border: clamp(5px, .5vw, 8px) solid #fffdf6;
+    box-shadow: 0 8px 15px rgba(13, 52, 121, .12);
+  }
+
+  .mkt-store-card-0 .mkt-store-photo {
+    left: 4%;
+    right: 4%;
+    height: 66%;
+    border-radius: 48% 52% 44% 56% / 43% 48% 52% 57%;
+  }
+
+  .mkt-store-card-1 .mkt-store-photo {
+    left: 1%;
+    right: 1%;
+    height: 72%;
+    border-radius: 47% 53% 42% 58% / 39% 45% 55% 61%;
+  }
+
+  .mkt-store-card-2 .mkt-store-photo {
+    left: 0;
+    right: 0;
+    height: 70%;
+    border-radius: 34% 43% 31% 41% / 32% 37% 44% 36%;
+  }
+
+  .mkt-store-card-3 .mkt-store-photo {
+    left: 1%;
+    right: 1%;
+    height: 72%;
+    border-radius: 27% 42% 34% 28% / 31% 37% 29% 40%;
+  }
+
+  .mkt-store-card-4 .mkt-store-photo {
+    left: 0;
+    right: 0;
+    height: 66%;
+    border-radius: 31% 40% 29% 38% / 35% 29% 41% 32%;
+  }
+
+  .mkt-store-card-5 .mkt-store-photo {
+    left: 0;
+    right: 0;
+    height: 66%;
+    border-radius: 22% 34% 25% 29% / 31% 24% 36% 27%;
+  }
+
+  .mkt-store-copy {
+    left: 7%;
+    right: 7%;
+    bottom: 0;
+    min-height: 36%;
+    padding: 3.8% 4.5% 3%;
+    border-radius: 18% 13% 20% 11% / 24% 18% 22% 16%;
+    box-shadow: 0 6px 12px rgba(13, 52, 121, .08);
+  }
+
+  .mkt-store-card-0 .mkt-store-copy { left: 8%; right: 8%; min-height: 38%; }
+  .mkt-store-card-1 .mkt-store-copy { left: 7%; right: 7%; min-height: 33%; }
+  .mkt-store-card-2 .mkt-store-copy { left: 8%; right: 7%; min-height: 35%; }
+  .mkt-store-card-3 .mkt-store-copy { left: 6%; right: 6%; min-height: 34%; }
+  .mkt-store-card-4 .mkt-store-copy { left: 7%; right: 6%; min-height: 38%; }
+  .mkt-store-card-5 .mkt-store-copy { left: 7%; right: 5%; min-height: 39%; }
+
+  .mkt-store-logo {
+    width: clamp(31px, 3.25vw, 47px);
+    margin-top: -12%;
+    border-width: 4px;
+  }
+
+  .mkt-store-ribbon {
+    box-shadow: none;
+  }
+
+  .mkt-store-ribbon-0 {
+    left: 4%;
+    top: 13%;
+    transform: rotate(-5deg);
+  }
+
+  .mkt-store-ribbon-1 {
+    left: 5%;
+    top: 0;
+    max-width: 66%;
+    transform: rotate(-8deg);
+  }
+
+  .mkt-store-ribbon-2 {
+    left: 8%;
+    top: 4%;
+    transform: rotate(-5deg);
+  }
+
+  .mkt-store-ribbon-3 {
+    left: 31%;
+    top: 3%;
+    transform: rotate(-4deg);
+  }
+
+  .mkt-store-ribbon-4 {
+    left: 4%;
+    top: 1%;
+    max-width: 65%;
+    transform: rotate(-5deg);
+  }
+
+  .mkt-store-ribbon-5 {
+    left: 5%;
+    top: 1%;
+    max-width: 66%;
+    transform: rotate(-4deg);
+  }
+
+  .mkt-hand-note-0 { right: -5%; bottom: 7%; width: 31%; }
+  .mkt-hand-note-1 { right: -8%; bottom: 6%; width: 28%; }
+  .mkt-hand-note-2 { right: -7%; bottom: 7%; width: 31%; }
+  .mkt-hand-note-3 { right: -4%; bottom: 5%; width: 27%; }
+  .mkt-hand-note-4 { right: -8%; bottom: 0%; width: 30%; }
+  .mkt-hand-note-5 { right: -31%; top: 22%; width: 31%; }
+
+  /* Delete the blue circle introduced by the previous pass. */
+  .mkt-store-slot-3::after {
+    display: none;
+    content: none;
+  }
+
+  .mkt-store-slot-5::after {
+    display: none;
+    content: none;
+  }
+
+  .mkt-discover-note {
+    position: absolute;
+    z-index: 38;
+    left: 82.2%;
+    top: 72.0%;
+    color: #f15b32;
+    font-family: var(--font-market-hand), "Segoe Print", cursive;
+    font-size: clamp(15px, 1.65vw, 24px);
+    font-weight: 1000;
+    letter-spacing: .02em;
+    transform: rotate(-8deg);
+    white-space: nowrap;
+  }
+
+  .mkt-discover-note span {
+    display: inline-block;
+    margin-left: .15em;
+    transform: translateY(-.05em);
+  }
+
+  /* The canonical bottom edge is a campus panorama spanning the canvas,
+     with the cobalt paint block layered over its left side. */
+  .mkt-bottom-campus {
+    z-index: 4;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 13.8%;
+    background-position: center 58%;
+    clip-path: polygon(0 17%, 7% 9%, 16% 15%, 25% 6%, 35% 13%, 44% 8%, 54% 14%, 64% 7%, 74% 14%, 84% 6%, 94% 13%, 100% 8%, 100% 100%, 0 100%);
+  }
+
+  .mkt-bottom-blue {
+    left: 0;
+    bottom: 8.0%;
+    width: 31.7%;
+    height: 17.5%;
+    clip-path: polygon(0 6%, 9% 0, 19% 7%, 31% 2%, 43% 8%, 55% 1%, 68% 7%, 80% 2%, 92% 8%, 100% 3%, 96% 92%, 82% 88%, 68% 95%, 52% 89%, 38% 96%, 24% 89%, 10% 96%, 0 91%);
+  }
+
+  .mkt-bottom-blue-photo {
+    display: none;
+  }
+
+  .mkt-bottom-blue::after {
+    background: #123d84;
+  }
+
+  .mkt-bottom-blue-copy {
+    left: 45%;
+    top: 23%;
+  }
+
+  .mkt-bottom-heart {
+    left: 18%;
+    top: 35%;
+  }
+
+  .mkt-future-note {
+    right: 2.2%;
+    bottom: 3.7%;
+    width: 8.8%;
+  }
+
+  .mkt-students-art {
+    right: .8%;
+    top: 28.8%;
+    width: 25.8%;
+    height: 18.7%;
+  }
+
+  .mkt-campus-photo {
+    width: 23.5%;
+  }
+
+  .mkt-campus-note {
+    left: 2.2%;
+  }
+
+  .mkt-squiggle-a {
+    left: 20.5%;
+    top: 43.8%;
+  }
+
+  .mkt-squiggle-b {
+    left: 68.5%;
+    top: 42.4%;
+  }
+
+  .mkt-squiggle-c {
+    left: 70.0%;
+    top: 67.7%;
+  }
+
+  .mkt-squiggle-d {
+    left: 26.3%;
+    top: 42.8%;
+  }
+}
