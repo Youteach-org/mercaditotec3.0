@@ -39,11 +39,36 @@ jobs:
             esac
           }
 
+          echo "Waiting for the integrated MercaditoTec build to reach the production Worker..."
+          icon_ready=0
+          for attempt in {1..30}; do
+            icon_status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/mercadito-icon.svg -w '%{http_code}' "$BASE/icon.svg" || true)"
+            if [ "$icon_status" = "200" ] && grep -q "MercaditoTec" /tmp/mercadito-icon.svg; then
+              icon_ready=1
+              echo "MercaditoTec app icon is live on production."
+              break
+            fi
+            echo "Attempt $attempt/30: production has not received the integrated build yet (icon HTTP $icon_status)."
+            sleep 10
+          done
+
+          if [ "$icon_ready" -ne 1 ]; then
+            echo "::error::Production Worker did not receive the integrated MercaditoTec build in time"
+            head -c 1000 /tmp/mercadito-icon.svg 2>/dev/null || true
+            exit 1
+          fi
+
           probe "/__health" /tmp/health.txt
           probe "/__probe" /tmp/probe.txt
           probe "/" /tmp/root.html
           probe "/marketplace" /tmp/marketplace.html
           probe "/api/marketplace" /tmp/marketplace.json
+          probe "/icon.svg" /tmp/icon.svg
+
+          grep -q "MercaditoTec" /tmp/icon.svg || {
+            echo "::error::Production browser icon is not the MercaditoTec icon"
+            exit 1
+          }
 
           grep -q '"firebaseSecretPresent": true' /tmp/health.txt || {
             echo "::error::Cloudflare runtime does not expose FIREBASE_SERVICE_ACCOUNT_JSON"
