@@ -1,7 +1,7 @@
 import type { User } from "firebase/auth";
 
 import type { StoreOperationalMode, StoreSchedule } from "./schedule";
-import type { StoreStatus } from "./domain";
+import type { MarketplaceVariant, StoreStatus } from "./domain";
 
 export interface StoreApiRecord {
   id: string;
@@ -19,6 +19,10 @@ export interface StoreApiRecord {
   schedule: StoreSchedule;
   operationalMode: StoreOperationalMode;
   manualOpen: boolean | null;
+  marketplaceLabel: string;
+  marketplaceNote: string;
+  marketplaceTags: string[];
+  marketplaceVariant: MarketplaceVariant | null;
   createdAt: string | null;
   updatedAt: string | null;
   submittedAt: string | null;
