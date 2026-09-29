@@ -171,6 +171,11 @@ Implementation files:
 - Worker version `8cbf3236-ed73-4c3d-b003-2cef70125b25`.
 - Preview route verification: HTTP `200`.
 
-## Review rule
+## Integration decision — 2026-09-29
 
-Do not merge or deploy this redesign to the production Worker until the user explicitly approves the navigable preview.
+The user explicitly requested integration into the real application so authenticated flows, store editing, APIs, and additional-store behavior can be tested end to end.
+
+- Fast-forward `main` to the approved marketplace implementation.
+- Fast-forward `feature/student-stores` to the same commit because that branch remains the source connected to the production Cloudflare Worker.
+- Keep `preview/marketplace-approved-reference` as the implementation/history branch.
+- On production hosts, the marketplace uses live data; automatic demo mode is restricted to the isolated `mercaditotec-preview.youteach-tk.workers.dev` host or explicit `?visual=1`.
