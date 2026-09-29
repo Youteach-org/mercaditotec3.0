@@ -47,17 +47,18 @@ The alias Worker uses `wrangler.legacy-alias.jsonc` so its deployment is indepen
 
 The unapproved marketplace redesign was removed from `feature/student-stores`. Visual reconstruction is isolated on `preview/marketplace-approved-reference` until explicit approval. The active branch remains the production source of truth.
 
-As of 2026-09-28, the review branch has its own Cloudflare Worker:
+As of 2026-09-29, the review branch has its own Cloudflare Worker:
 
 - Worker: `mercaditotec-preview`
 - Review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
 - Deploy workflow: `.github/workflows/cloudflare-marketplace-preview.yml`
-- Verified deploy run: `36518201466`
-- Verified Worker version: `fc750d80-c7d5-4016-b397-8de71b89f90a`
+- Verified deploy run: `36533114382`
+- Verified Worker version: `703d037f-6d4a-4d7c-a69b-60fa593d2b73`
 - HTTP verification: `200`
-- Source implementation commit verified visually/deployed: `26b0dc747ba88b7f87c8489918417aeb70dd3f5a`
-- Canonical capture run: `36518201425` — success
-- Capture artifact: `11012385117`
-- Latest review pass: vector cloud store islands, torn-paper information pieces, irregular marketplace header, and torn yellow title cutout
+- Scalable collage implementation commit: `f6c5182ae1f53bca43bf049ebc7cb6e2faf22902`
+- Canonical capture run: `36533114310` — success
+- Capture artifact: `11017417593`
+- Build verification run: `36533241034` — `23` test files / `177` tests passed
+- Latest review pass: store information papers forced above image clouds; six reusable cloud variants; editable collage label/note/tags/shape persisted per store; stores after the first six continue in the same collage system below the canonical board
 
 The preview Worker is independent from `mercaditotec3-0` and must not replace production until the user explicitly approves the rendered marketplace.
