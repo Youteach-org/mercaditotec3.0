@@ -2135,3 +2135,234 @@ body {
     border-radius: inherit !important;
   }
 }
+
+/* VECTOR COLLAGE FINAL PASS — 2026-09-28 */
+
+.mkt-clip-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Top navigation: a paper strip that breaks into the photo instead of a
+   rigid rectangle. */
+.mkt-shell-header {
+  background: #fffaf0 !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.mkt-shell-header::after {
+  bottom: -13px !important;
+  height: 25px !important;
+  background: #fffaf0 !important;
+  clip-path: polygon(
+    0 0, 100% 0, 100% 53%,
+    95% 61%, 90% 54%, 85% 67%, 79% 57%, 73% 69%, 67% 58%,
+    61% 72%, 55% 59%, 49% 70%, 43% 58%, 37% 69%, 31% 57%,
+    25% 67%, 19% 56%, 13% 66%, 7% 55%, 0 63%
+  ) !important;
+  filter: drop-shadow(0 3px 3px rgba(13,52,121,.05)) !important;
+}
+
+/* The yellow announcement is one continuous cutout, like the approved
+   reference, not a clipped rectangle plus decorative patches. */
+.mkt-title-paper {
+  background: #ffd54c !important;
+  clip-path: url(#mkt-title-cut) !important;
+  overflow: hidden !important;
+  filter: drop-shadow(0 11px 13px rgba(17,49,113,.13)) !important;
+  isolation: auto !important;
+}
+
+.mkt-title-paper::before,
+.mkt-title-paper::after {
+  display: none !important;
+  content: none !important;
+}
+
+.mkt-title-paper h1,
+.mkt-title-paper p {
+  position: relative;
+  z-index: 2;
+}
+
+/* Store photography becomes a true cloud/collage island. The white outer
+   layer and a slightly scaled inner image create the irregular white rim
+   visible in the reference. */
+@media (min-width: 981px) {
+  .mkt-store-photo {
+    overflow: visible !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fffdf6 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 8px 8px rgba(13,52,121,.14));
+  }
+
+  .mkt-store-card-0 .mkt-store-photo { clip-path: url(#mkt-cloud-0) !important; }
+  .mkt-store-card-1 .mkt-store-photo { clip-path: url(#mkt-cloud-1) !important; }
+  .mkt-store-card-2 .mkt-store-photo { clip-path: url(#mkt-cloud-2) !important; }
+  .mkt-store-card-3 .mkt-store-photo { clip-path: url(#mkt-cloud-3) !important; }
+  .mkt-store-card-4 .mkt-store-photo { clip-path: url(#mkt-cloud-4) !important; }
+  .mkt-store-card-5 .mkt-store-photo { clip-path: url(#mkt-cloud-5) !important; }
+
+  .mkt-store-photo > img,
+  .mkt-store-photo > .mkt-store-photo-fallback {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 0 !important;
+    clip-path: inherit !important;
+    transform: scale(.955);
+    transform-origin: center;
+  }
+
+  .mkt-store-photo::after {
+    inset: 0 !important;
+    clip-path: inherit !important;
+    transform: scale(.955);
+    transform-origin: center;
+    background: linear-gradient(180deg, transparent 65%, rgba(13,52,121,.10)) !important;
+  }
+
+  /* The label belongs to the collage, not inside the clipped photo. */
+  .mkt-store-ribbon {
+    z-index: 12 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 4px 3px rgba(13,52,121,.08));
+  }
+
+  .mkt-store-ribbon-0 {
+    left: 5% !important;
+    top: 16% !important;
+  }
+
+  .mkt-store-ribbon-1 {
+    left: 1% !important;
+    top: 3% !important;
+  }
+
+  .mkt-store-ribbon-2 {
+    left: 8% !important;
+    top: 5% !important;
+  }
+
+  .mkt-store-ribbon-3 {
+    left: 30% !important;
+    top: 4% !important;
+  }
+
+  .mkt-store-ribbon-4 {
+    left: 4% !important;
+    top: 4% !important;
+  }
+
+  .mkt-store-ribbon-5 {
+    left: 5% !important;
+    top: 4% !important;
+  }
+
+  /* The information areas are torn paper scraps with different profiles,
+     not six rounded UI cards. */
+  .mkt-store-copy {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    filter: drop-shadow(0 5px 4px rgba(13,52,121,.08));
+  }
+
+  .mkt-store-card-0 .mkt-store-copy,
+  .mkt-store-card-3 .mkt-store-copy {
+    clip-path: url(#mkt-copy-0) !important;
+  }
+
+  .mkt-store-card-1 .mkt-store-copy,
+  .mkt-store-card-4 .mkt-store-copy {
+    clip-path: url(#mkt-copy-1) !important;
+  }
+
+  .mkt-store-card-2 .mkt-store-copy,
+  .mkt-store-card-5 .mkt-store-copy {
+    clip-path: url(#mkt-copy-2) !important;
+  }
+
+  /* Preserve the reference's different silhouettes and overlap rhythm. */
+  .mkt-store-slot-0 {
+    left: 1.1% !important;
+    top: 48.0% !important;
+    width: 25.0% !important;
+    height: 29.6% !important;
+    transform: rotate(-2.7deg) !important;
+  }
+
+  .mkt-store-slot-1 {
+    left: 24.6% !important;
+    top: 43.0% !important;
+    width: 20.8% !important;
+    height: 28.8% !important;
+    transform: rotate(1.2deg) !important;
+  }
+
+  .mkt-store-slot-2 {
+    left: 45.4% !important;
+    top: 43.2% !important;
+    width: 24.1% !important;
+    height: 28.0% !important;
+    transform: rotate(-1.0deg) !important;
+  }
+
+  .mkt-store-slot-3 {
+    left: 70.2% !important;
+    top: 42.4% !important;
+    width: 25.4% !important;
+    height: 28.7% !important;
+    transform: rotate(1.1deg) !important;
+  }
+
+  .mkt-store-slot-4 {
+    left: 30.1% !important;
+    top: 70.8% !important;
+    width: 26.7% !important;
+    height: 21.7% !important;
+    transform: rotate(-2.2deg) !important;
+  }
+
+  .mkt-store-slot-5 {
+    left: 58.1% !important;
+    top: 70.5% !important;
+    width: 27.5% !important;
+    height: 21.8% !important;
+    transform: rotate(1.0deg) !important;
+  }
+
+  .mkt-store-card-0 .mkt-store-photo { left: 3% !important; right: 3% !important; height: 66% !important; }
+  .mkt-store-card-1 .mkt-store-photo { left: 0 !important; right: 0 !important; height: 71% !important; }
+  .mkt-store-card-2 .mkt-store-photo { left: 0 !important; right: 0 !important; height: 69% !important; }
+  .mkt-store-card-3 .mkt-store-photo { left: 0 !important; right: 0 !important; height: 71% !important; }
+  .mkt-store-card-4 .mkt-store-photo { left: 0 !important; right: 0 !important; height: 68% !important; }
+  .mkt-store-card-5 .mkt-store-photo { left: 0 !important; right: 0 !important; height: 68% !important; }
+
+  .mkt-store-card-0 .mkt-store-copy { left: 8% !important; right: 7% !important; bottom: 0 !important; min-height: 38% !important; }
+  .mkt-store-card-1 .mkt-store-copy { left: 7% !important; right: 5% !important; bottom: 0 !important; min-height: 34% !important; }
+  .mkt-store-card-2 .mkt-store-copy { left: 8% !important; right: 6% !important; bottom: 0 !important; min-height: 35% !important; }
+  .mkt-store-card-3 .mkt-store-copy { left: 7% !important; right: 5% !important; bottom: 0 !important; min-height: 34% !important; }
+  .mkt-store-card-4 .mkt-store-copy { left: 7% !important; right: 5% !important; bottom: 0 !important; min-height: 39% !important; }
+  .mkt-store-card-5 .mkt-store-copy { left: 7% !important; right: 4% !important; bottom: 0 !important; min-height: 39% !important; }
+
+  /* Keep the little paper notes as loose collage pieces. */
+  .mkt-hand-note {
+    border-radius: 0 !important;
+    clip-path: polygon(3% 8%, 96% 2%, 100% 90%, 7% 100%, 0 17%);
+  }
+}
+
+@media (max-width: 980px) {
+  .mkt-title-paper {
+    clip-path: url(#mkt-title-cut) !important;
+  }
+}
