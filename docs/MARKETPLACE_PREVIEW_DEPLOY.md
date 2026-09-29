@@ -64,6 +64,20 @@ Changes made after comparing the running capture with the approved reference:
 
 The deployed preview is the isolated Worker, not the production `mercaditotec3-0` Worker.
 
+## User review pass — organic cutouts
+
+Feedback applied after the first navigable preview review:
+
+- store cover islands changed from smooth oval shapes to irregular cloud/torn-paper silhouettes;
+- white information papers under the stores changed from rounded cards to irregular paper scraps;
+- the marketplace top navigation gained an organic torn-paper lower edge instead of reading as a rigid rectangle;
+- the large yellow "Tiendas de la comunidad" announcement was rebuilt from overlapping irregular paper pieces instead of a clipped rectangular box;
+- the changes remain isolated to `preview/marketplace-approved-reference`; production is still untouched.
+
+Implementation commits for this pass:
+- `795e5b67f91890a1ca27032653f80434df54ddef` — organic marketplace header hook;
+- `1a88aea3daebaef9b516e27929801d79f8bc9db6` — organic title paper and cloud/torn store silhouettes.
+
 ## Review rule
 
 Do not merge or deploy this redesign to the production Worker until the user explicitly approves the navigable preview.
