@@ -89,10 +89,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       {!loading && (firebaseUser || visualPreview) && (
         <header className={marketplaceHome
-          ? "sticky top-0 z-50 bg-[#fffaf0]/98 shadow-[0_2px_10px_rgba(16,47,108,0.05)] backdrop-blur"
+          ? "mkt-shell-header sticky top-0 z-50 bg-[#fffaf0]/98"
           : "sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur"
         }>
-          <div className={marketplaceHome ? "mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
+          <div className={marketplaceHome ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
             <div className={marketplaceHome ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
               <Link href="/marketplace" className={marketplaceHome
                 ? "w-[300px] shrink-0 leading-none"
