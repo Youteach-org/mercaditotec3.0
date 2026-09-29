@@ -94,7 +94,7 @@ export default function AdminUsersPage() {
     );
   }, [query, users]);
 
-  async function updateTrust(user: AdminUserSummary, status: "verified" | "revoked") {
+  async function revokeTrust(user: AdminUserSummary) {
     if (!firebaseUser) return;
     setWorkingUid(user.uid);
     setError("");
@@ -104,14 +104,14 @@ export default function AdminUsersPage() {
       const response = await storeApiFetch(
         firebaseUser,
         `/api/admin/users/${user.uid}/trust`,
-        { method: "POST", body: JSON.stringify({ status }) },
+        { method: "POST", body: JSON.stringify({ status: "revoked" }) },
       );
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "No se pudo actualizar al usuario.");
       setUsers((current) =>
         current.map((item) => (item.uid === user.uid ? (data.user as AdminUserSummary) : item)),
       );
-      setMessage(status === "verified" ? "Alumno confirmado." : "Confirmación de alumno revocada.");
+      setMessage("Confirmación de alumno revocada.");
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "No se pudo actualizar al usuario.");
     } finally {
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
             <div>
               <h1 className="text-3xl font-black text-gray-900">Usuarios</h1>
               <p className="mt-1 text-gray-600">
-                Revisa la confianza de los alumnos y administra los permisos del sitio.
+                Revisa el estado de los alumnos y sus avales. La confirmación se obtiene automáticamente al llegar a 2 avales.
               </p>
             </div>
             <input
@@ -257,26 +257,26 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-                    {user.studentStatus !== "verified" && (
-                      <button
-                        type="button"
-                        disabled={working}
-                        onClick={() => void updateTrust(user, "verified")}
-                        className="rounded-xl bg-emerald-600 px-3.5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                      >
-                        Confirmar alumno
-                      </button>
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                    {user.studentStatus === "pending" && (
+                      <span className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800">
+                        Se confirmará automáticamente al llegar a 2/2 avales.
+                      </span>
                     )}
-                    {user.studentStatus !== "revoked" && (
+                    {user.studentStatus === "verified" && (
                       <button
                         type="button"
                         disabled={working}
-                        onClick={() => void updateTrust(user, "revoked")}
+                        onClick={() => void revokeTrust(user)}
                         className="rounded-xl border border-red-200 px-3.5 py-2.5 text-sm font-bold text-red-700 disabled:opacity-50"
                       >
                         Revocar confirmación
                       </button>
+                    )}
+                    {user.studentStatus === "revoked" && (
+                      <span className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-bold text-red-800">
+                        Confirmación revocada por administración.
+                      </span>
                     )}
 
                     {isSuperadmin && !isSelf && user.adminRole !== "superadmin" && (
