@@ -85,3 +85,17 @@ The isolated preview Worker remains available for visual-only checks, but real f
 - Preview deploy `36618546517`: success.
 - Worker version: `8cbf3236-ed73-4c3d-b003-2cef70125b25`.
 - Review route: HTTP `200`.
+
+## Student verification and admin users — 2026-09-29
+
+The store-approval gate remains tied to the student trust system: a store owner must have `studentStatus: "verified"` before an admin can approve the store.
+
+The admin path no longer allows manual verification of a pending student. Verification is obtained only through the existing two-endorsement flow. The admin users screen is limited to viewing trust state/endorsement count and revoking an already verified account when needed.
+
+To improve reliability of the users screen, `/api/admin/users` now lists the `users` collection through the Firestore REST document-list endpoint instead of a generic no-filter query.
+
+Production deploy verification now also checks:
+
+- `/admin/users` exists and returns a normal page response;
+- `/api/admin/users` exists and returns HTTP `401` when called without authentication.
+
