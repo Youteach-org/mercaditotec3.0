@@ -79,6 +79,7 @@ export default function StoreBuilderClient() {
   const [sellerName, setSellerName] = useState("");
   const [loading, setLoading] = useState(true);
   const [infoSaving, setInfoSaving] = useState(false);
+  const [infoSavedMessage, setInfoSavedMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [validationMessage, setValidationMessage] = useState("");
@@ -174,6 +175,7 @@ export default function StoreBuilderClient() {
     }
 
     setInfoSaving(true);
+    if (showError) setInfoSavedMessage("");
     try {
       const response = await storeApiFetch(firebaseUser, `/api/stores/${store.id}`, {
         method: "PATCH",
@@ -193,8 +195,12 @@ export default function StoreBuilderClient() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "No se pudo guardar la información.");
       setStore(data.store as StoreApiRecord);
+      if (showError) setInfoSavedMessage("Cambios guardados.");
     } catch (saveError) {
-      if (showError) setValidationMessage(saveError instanceof Error ? saveError.message : "No se pudo guardar la información.");
+      if (showError) {
+        setInfoSavedMessage("");
+        setValidationMessage(saveError instanceof Error ? saveError.message : "No se pudo guardar la información.");
+      }
     } finally {
       setInfoSaving(false);
     }
@@ -399,7 +405,22 @@ export default function StoreBuilderClient() {
                 </div>
               </div>
 
-              <p className="mt-3 text-xs text-gray-400">Los cambios se guardan automáticamente.</p>
+              <div className="mt-5 flex flex-col gap-2 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">El autoguardado sigue activo, pero también puedes guardar manualmente.</p>
+                  {infoSavedMessage && (
+                    <p className="mt-1 text-sm font-bold text-emerald-700" role="status">{infoSavedMessage}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void persistInformation(true)}
+                  disabled={!editable || infoSaving}
+                  className="w-full rounded-xl bg-[#1457c5] px-5 py-3 font-black text-white shadow-sm hover:bg-[#0e49aa] disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+                >
+                  {infoSaving ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
             </section>
 
             <div className="relative">
