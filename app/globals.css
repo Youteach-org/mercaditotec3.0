@@ -2027,3 +2027,73 @@ body {
     inset: -3% -2% -5%;
   }
 }
+
+/* CLOUD REFINEMENT — rounded organic store islands — 2026-09-28 */
+@media (min-width: 981px) {
+  .mkt-store-card-0 .mkt-store-photo,
+  .mkt-store-card-1 .mkt-store-photo,
+  .mkt-store-card-2 .mkt-store-photo,
+  .mkt-store-card-3 .mkt-store-photo,
+  .mkt-store-card-4 .mkt-store-photo,
+  .mkt-store-card-5 .mkt-store-photo {
+    clip-path: none !important;
+    border-radius: 0 !important;
+  }
+
+  .mkt-store-card-0 .mkt-store-photo,
+  .mkt-store-card-3 .mkt-store-photo {
+    --mkt-cloud-mask:
+      radial-gradient(ellipse 23% 31% at 10% 22%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 27% 27% at 30% 11%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 29% 26% at 55% 9%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 25% 29% at 80% 15%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 19% 34% at 94% 36%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 31% at 93% 72%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 27% 25% at 76% 91%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 28% 24% at 49% 94%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 25% 27% at 23% 89%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 32% at 7% 63%, #000 98%, transparent 100%),
+      linear-gradient(#000 0 0) center / 84% 88% no-repeat,
+      linear-gradient(#000 0 0) center / 95% 62% no-repeat;
+    -webkit-mask: var(--mkt-cloud-mask);
+    mask: var(--mkt-cloud-mask);
+  }
+
+  .mkt-store-card-1 .mkt-store-photo,
+  .mkt-store-card-4 .mkt-store-photo {
+    --mkt-cloud-mask:
+      radial-gradient(ellipse 21% 34% at 8% 30%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 25% 28% at 24% 12%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 29% 24% at 49% 8%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 26% 27% at 74% 13%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 35% at 94% 31%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 34% at 94% 66%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 26% 27% at 77% 88%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 28% 23% at 52% 94%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 25% 26% at 27% 90%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 21% 34% at 8% 68%, #000 98%, transparent 100%),
+      linear-gradient(#000 0 0) center / 86% 87% no-repeat,
+      linear-gradient(#000 0 0) center / 96% 60% no-repeat;
+    -webkit-mask: var(--mkt-cloud-mask);
+    mask: var(--mkt-cloud-mask);
+  }
+
+  .mkt-store-card-2 .mkt-store-photo,
+  .mkt-store-card-5 .mkt-store-photo {
+    --mkt-cloud-mask:
+      radial-gradient(ellipse 19% 38% at 7% 31%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 23% 31% at 22% 13%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 27% 27% at 45% 8%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 25% 28% at 68% 11%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 37% at 91% 26%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 19% 38% at 94% 62%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 23% 31% at 78% 86%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 27% 26% at 55% 94%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 26% 27% at 31% 91%, #000 98%, transparent 100%),
+      radial-gradient(ellipse 20% 36% at 8% 70%, #000 98%, transparent 100%),
+      linear-gradient(#000 0 0) center / 88% 86% no-repeat,
+      linear-gradient(#000 0 0) center / 97% 58% no-repeat;
+    -webkit-mask: var(--mkt-cloud-mask);
+    mask: var(--mkt-cloud-mask);
+  }
+}
