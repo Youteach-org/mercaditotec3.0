@@ -35,9 +35,21 @@ describe("public marketplace visibility", () => {
       schedule: createEmptyStoreSchedule(),
       operationalMode: "manual",
       manualOpen: true,
+      marketplaceLabel: "TORTAS EL PUNTO",
+      marketplaceNote: "BUENAS TORTAS, MEJORES PLÁTICAS",
+      marketplaceTags: ["Comida", "Tortas"],
+      marketplaceVariant: "cloud-3",
     });
 
-    expect(value).toMatchObject({ id: "store-1", slug: "tienda-uno", openNow: true });
+    expect(value).toMatchObject({
+      id: "store-1",
+      slug: "tienda-uno",
+      openNow: true,
+      marketplaceLabel: "TORTAS EL PUNTO",
+      marketplaceNote: "BUENAS TORTAS, MEJORES PLÁTICAS",
+      marketplaceTags: ["Comida", "Tortas"],
+      marketplaceVariant: "cloud-3",
+    });
     expect(value).not.toHaveProperty("ownerUid");
   });
 
