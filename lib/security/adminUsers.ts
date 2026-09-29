@@ -32,12 +32,18 @@ export interface AdminUserSummary {
   createdAt: string | null;
 }
 
-export function parseAdminTrustChange(input: unknown): "verified" | "revoked" {
+export function parseAdminTrustChange(input: unknown): "revoked" {
   if (!input || typeof input !== "object") {
     throw new AdminUserError(400, "Acción de confianza inválida.");
   }
   const status = String((input as Record<string, unknown>).status ?? "");
-  if (status !== "verified" && status !== "revoked") {
+  if (status === "verified") {
+    throw new AdminUserError(
+      409,
+      "La confirmación de alumno se obtiene únicamente con 2 avales.",
+    );
+  }
+  if (status !== "revoked") {
     throw new AdminUserError(400, "Acción de confianza inválida.");
   }
   return status;
@@ -81,7 +87,7 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
 }
 
 export async function listUsersForAdmin(): Promise<AdminUserSummary[]> {
-  const snapshot = await getAdminDb().collection("users").limit(250).get();
+  const snapshot = await getAdminDb().collection("users").list(250);
   return snapshot.docs
     .map((document) => toSummary(document.id, document.data()))
     .sort((a, b) =>
@@ -96,7 +102,7 @@ export async function setStudentTrustByAdmin(
   actorUid: string,
   actorRole: AdminRole,
   targetUid: string,
-  status: "verified" | "revoked",
+  status: "revoked",
 ): Promise<AdminUserSummary> {
   const db = getAdminDb();
   const reference = db.collection("users").doc(targetUid);
@@ -110,25 +116,19 @@ export async function setStudentTrustByAdmin(
   const now = Timestamp.now();
 
   const update: Record<string, unknown> = {
-    studentStatus: status,
+    studentStatus: "revoked",
+    studentRevokedAt: now,
     updatedAt: now,
   };
-
-  if (status === "verified") {
-    update.studentVerifiedAt = now;
-    update.studentRevokedAt = null;
-  } else {
-    update.studentRevokedAt = now;
-  }
 
   await reference.update(update);
   await writeAuditEntry({
     actorUid,
     actorRole,
-    action: status === "verified" ? "user.student.verify" : "user.student.revoke",
+    action: "user.student.revoke",
     targetType: "user",
     targetId: targetUid,
-    metadata: { previousStatus, nextStatus: status },
+    metadata: { previousStatus, nextStatus: "revoked" },
   });
 
   return toSummary(targetUid, { ...current, ...update });
