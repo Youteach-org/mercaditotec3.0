@@ -12,6 +12,7 @@ import {
   makeStoreSlug,
   normalizeStoreName,
   validateStoreDraftInput,
+  type MarketplaceVariant,
   type StoreEditableInput,
   type StoreStatus,
 } from "./domain";
@@ -52,6 +53,10 @@ export interface StoreBaseRecord {
   schedule: StoreSchedule;
   operationalMode: StoreOperationalMode;
   manualOpen: boolean | null;
+  marketplaceLabel: string;
+  marketplaceNote: string;
+  marketplaceTags: string[];
+  marketplaceVariant: MarketplaceVariant | null;
 }
 
 export interface StoreRecord extends StoreBaseRecord {
@@ -92,6 +97,10 @@ export function buildCreateStoreMutation(
       slug: null,
       description: validated.description,
       deliveryLocation: validated.deliveryLocation ?? "",
+      marketplaceLabel: validated.marketplaceLabel ?? "",
+      marketplaceNote: validated.marketplaceNote ?? "",
+      marketplaceTags: validated.marketplaceTags ?? [],
+      marketplaceVariant: validated.marketplaceVariant ?? null,
       status: "draft" as const,
       reviewMessage: null,
       suspensionReason: null,
@@ -117,6 +126,10 @@ export function buildOwnerStoreUpdate(
     nameNormalized: normalizeStoreName(validated.name),
     description: validated.description,
     deliveryLocation: validated.deliveryLocation ?? "",
+    marketplaceLabel: validated.marketplaceLabel ?? "",
+    marketplaceNote: validated.marketplaceNote ?? "",
+    marketplaceTags: validated.marketplaceTags ?? [],
+    marketplaceVariant: validated.marketplaceVariant ?? null,
   };
 }
 
@@ -185,6 +198,20 @@ function toStoreRecord(id: string, data: DocumentData): StoreRecord {
     schedule: normalizeStoredSchedule(data.schedule),
     operationalMode: data.operationalMode === "manual" ? "manual" : "automatic",
     manualOpen: typeof data.manualOpen === "boolean" ? data.manualOpen : null,
+    marketplaceLabel: typeof data.marketplaceLabel === "string" ? data.marketplaceLabel : "",
+    marketplaceNote: typeof data.marketplaceNote === "string" ? data.marketplaceNote : "",
+    marketplaceTags: Array.isArray(data.marketplaceTags)
+      ? data.marketplaceTags.filter((value): value is string => typeof value === "string")
+      : [],
+    marketplaceVariant:
+      data.marketplaceVariant === "cloud-1" ||
+      data.marketplaceVariant === "cloud-2" ||
+      data.marketplaceVariant === "cloud-3" ||
+      data.marketplaceVariant === "cloud-4" ||
+      data.marketplaceVariant === "cloud-5" ||
+      data.marketplaceVariant === "cloud-6"
+        ? data.marketplaceVariant
+        : null,
     createdAt: data.createdAt as Timestamp,
     updatedAt: data.updatedAt as Timestamp,
     submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt : null,
@@ -230,6 +257,10 @@ function makeNewStoreRecord(
         slug: null,
         description: "",
         deliveryLocation: "",
+        marketplaceLabel: "",
+        marketplaceNote: "",
+        marketplaceTags: [],
+        marketplaceVariant: null,
         status: "draft" as const,
         reviewMessage: null,
         suspensionReason: null,
@@ -316,6 +347,10 @@ export async function updateStoreByOwner(
       nameNormalized: update.nameNormalized,
       description: update.description,
       deliveryLocation: update.deliveryLocation,
+      marketplaceLabel: update.marketplaceLabel,
+      marketplaceNote: update.marketplaceNote,
+      marketplaceTags: update.marketplaceTags,
+      marketplaceVariant: update.marketplaceVariant,
       updatedAt: now,
     });
 
