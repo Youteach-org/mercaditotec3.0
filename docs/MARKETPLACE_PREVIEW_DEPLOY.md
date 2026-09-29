@@ -51,18 +51,20 @@ Changes made after comparing the running capture with the approved reference:
 - preserved the app header + 1448×1018 marketplace canvas relationship so the complete captured viewport remains 1448×1086;
 - made forced visual mode skip the live API request.
 
-## Verified deployment — 2026-09-28
+## Verified deployment — 2026-09-29
 
 Latest verified user-review deployment:
 
-- Source commit: `7955acf999cd0bdda7a66ee55a0ef77d3e5e4d4f`
-- Canonical visual capture run: `36516460712` — success
-- Cloudflare build-check run: `36516460701` — success
-- Cloudflare preview deploy run: `36516460751` — success
-- Worker version: `b7d27f19-763e-4eac-8587-80ae73f522df`
+- Scalable collage implementation commit: `f6c5182ae1f53bca43bf049ebc7cb6e2faf22902`
+- Documentation head verified by CI: `59a17492ab94e333230fb437c59796f49b915134`
+- Canonical visual capture run: `36533114310` — success
+- Cloudflare build-check run: `36533241034` — success
+- Test suite: `23` files / `177` tests passed
+- Cloudflare preview deploy run: `36533114382` — success
+- Worker version: `703d037f-6d4a-4d7c-a69b-60fa593d2b73`
 - Verified review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
 - HTTP verification from the deploy workflow: `200`
-- Latest 1448×1086 capture artifact: `11011097703`
+- Latest 1448×1086 capture artifact: `11017417593`
 
 The deployed preview is the isolated Worker, not the production `mercaditotec3-0` Worker.
 
