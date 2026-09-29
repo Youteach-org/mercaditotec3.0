@@ -40,6 +40,10 @@ describe("validateStoreDraftInput", () => {
         "Postres y botanas para estudiantes.",
       deliveryLocation:
         "Entrego afuera de cafetería y en el edificio A.",
+      marketplaceLabel: "  POSTRES CASEROS  ",
+      marketplaceNote: "  LA VIDA ES MÁS DULCE  ",
+      marketplaceTags: ["Postres", " Hecho a mano ", "Postres"],
+      marketplaceVariant: "cloud-4",
     });
 
     expect(result).toEqual({
@@ -48,10 +52,52 @@ describe("validateStoreDraftInput", () => {
         "Postres y botanas para estudiantes.",
       deliveryLocation:
         "Entrego afuera de cafetería y en el edificio A.",
+      marketplaceLabel: "POSTRES CASEROS",
+      marketplaceNote: "LA VIDA ES MÁS DULCE",
+      marketplaceTags: ["Postres", "Hecho a mano"],
+      marketplaceVariant: "cloud-4",
     });
     expect(result.deliveryLocation).toBe(
       "Entrego afuera de cafetería y en el edificio A.",
     );
+  });
+
+
+  it("rechaza una variante visual inexistente", () => {
+    expect(() =>
+      validateStoreDraftInput({
+        name: "Tienda válida",
+        description: "Prueba",
+        deliveryLocation: "Cafetería",
+        marketplaceVariant: "oval-99",
+      })
+    ).toThrow("La forma visual de la tienda no es válida.");
+  });
+
+  it("limita etiquetas y textos del collage", () => {
+    expect(() =>
+      validateStoreDraftInput({
+        name: "Tienda válida",
+        description: "Prueba",
+        marketplaceLabel: "x".repeat(41),
+      })
+    ).toThrow("El rótulo del collage no puede exceder 40 caracteres.");
+
+    expect(() =>
+      validateStoreDraftInput({
+        name: "Tienda válida",
+        description: "Prueba",
+        marketplaceNote: "x".repeat(91),
+      })
+    ).toThrow("La nota del collage no puede exceder 90 caracteres.");
+
+    expect(() =>
+      validateStoreDraftInput({
+        name: "Tienda válida",
+        description: "Prueba",
+        marketplaceTags: ["Uno", "Dos", "Tres", "Cuatro"],
+      })
+    ).toThrow("Puedes mostrar como máximo 3 etiquetas en el collage.");
   });
 
   it("rechaza nombres demasiado cortos", () => {
