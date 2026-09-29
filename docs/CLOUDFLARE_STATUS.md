@@ -46,3 +46,15 @@ The alias Worker uses `wrangler.legacy-alias.jsonc` so its deployment is indepen
 ## Marketplace visual preview isolation
 
 The unapproved marketplace redesign was removed from `feature/student-stores`. Visual reconstruction is isolated on `preview/marketplace-approved-reference` until explicit approval. The active branch remains the production source of truth.
+
+As of 2026-09-28, the review branch has its own Cloudflare Worker:
+
+- Worker: `mercaditotec-preview`
+- Review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
+- Deploy workflow: `.github/workflows/cloudflare-marketplace-preview.yml`
+- Verified deploy run: `36508518261`
+- Verified Worker version: `40919960-3a35-4fb7-83d2-7093343ed2c7`
+- HTTP verification: `200`
+- Source implementation commit verified visually/deployed: `69a07c8fd32c31a2e2b63fb486a57d6401dd4674`
+
+The preview Worker is independent from `mercaditotec3-0` and must not replace production until the user explicitly approves the rendered marketplace.
