@@ -1,4 +1,4 @@
-import type { StoreStatus } from "./domain";
+import type { MarketplaceVariant, StoreStatus } from "./domain";
 import type { ProductPriceType, ProductVisibility } from "./productDomain";
 import {
   isStoreOpenNow,
@@ -18,6 +18,10 @@ export interface PublicStoreSource {
   schedule: StoreSchedule;
   operationalMode: StoreOperationalMode;
   manualOpen: boolean | null;
+  marketplaceLabel: string;
+  marketplaceNote: string;
+  marketplaceTags: string[];
+  marketplaceVariant: MarketplaceVariant | null;
 }
 
 export interface PublicStoreSummary {
@@ -31,6 +35,10 @@ export interface PublicStoreSummary {
   schedule: StoreSchedule;
   operationalMode: StoreOperationalMode;
   manualOpen: boolean | null;
+  marketplaceLabel: string;
+  marketplaceNote: string;
+  marketplaceTags: string[];
+  marketplaceVariant: MarketplaceVariant | null;
   openNow: boolean;
 }
 
@@ -89,6 +97,10 @@ export function serializePublicStore(
     schedule: store.schedule,
     operationalMode: store.operationalMode,
     manualOpen: store.manualOpen,
+    marketplaceLabel: store.marketplaceLabel,
+    marketplaceNote: store.marketplaceNote,
+    marketplaceTags: [...store.marketplaceTags],
+    marketplaceVariant: store.marketplaceVariant,
     openNow: isStoreOpenNow(
       store.schedule,
       store.operationalMode,
