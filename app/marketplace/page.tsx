@@ -119,27 +119,46 @@ function CategoryIcon({ id }: { id: CategoryId }) {
 
 function StudentIllustration() {
   return (
-    <svg viewBox="0 0 360 210" aria-hidden="true" className="mkt-students-svg">
-      <g fill="none" stroke="#123b83" strokeLinecap="round" strokeLinejoin="round" strokeWidth="6">
-        <circle cx="75" cy="62" r="25" fill="#fffaf0" />
-        <path d="M43 165c3-45 14-73 33-73s31 28 34 73" fill="#f47b3f" />
-        <path d="M50 54c8-20 26-24 43-12M60 71c7 5 15 5 22 0" />
-        <path d="M40 103c-15 15-21 31-20 48M109 107c16 12 26 27 30 44" />
-        <path d="M40 96c-8-28 5-51 31-57M97 49c11 9 15 21 14 36" />
-        <path d="M36 74c-9 0-13 5-13 12s4 12 13 12M113 74c9 0 13 5 13 12s-4 12-13 12" />
-        <circle cx="170" cy="82" r="22" fill="#fffaf0" />
-        <path d="M142 170c3-43 13-67 29-67 17 0 28 24 31 67" fill="#fffaf0" />
-        <path d="M151 72c8-17 26-22 40-11M157 90c6 5 14 5 20 0" />
-        <circle cx="263" cy="75" r="24" fill="#fffaf0" />
-        <path d="M228 170c4-44 16-70 36-70 19 0 31 26 35 70" fill="#fffaf0" />
-        <path d="M243 66c9-18 27-22 42-10M251 84c7 5 15 5 22 0" />
-        <path d="M187 113c13 7 23 18 29 34M225 119c-12 8-20 18-24 31" />
-        <path d="M153 143h41v27h-41z" fill="#fff" />
-        <path d="M160 151h27M160 158h22" strokeWidth="3" />
+    <svg viewBox="0 0 390 220" aria-hidden="true" className="mkt-students-svg">
+      <g fill="none" stroke="#123b83" strokeLinecap="round" strokeLinejoin="round" strokeWidth="5">
+        {/* Student 1: headphones + backpack */}
+        <path d="M42 86c0-31 15-50 40-50 26 0 42 20 42 51" />
+        <path d="M49 83c-10-2-17 6-16 17 1 10 8 16 18 14M116 83c10-2 17 6 16 17-1 10-8 16-18 14" />
+        <path d="M53 77c4-24 17-36 32-36 16 0 28 13 31 36" />
+        <ellipse cx="83" cy="79" rx="27" ry="31" fill="#fffaf0" />
+        <path d="M61 62c8-16 28-21 44-11M68 82h1M94 82h1M72 96c7 7 15 7 22 0" />
+        <path d="M48 191c3-50 14-78 36-78 23 0 36 28 40 78" fill="#f47b3f" />
+        <path d="M57 125c-14 13-21 32-22 57M111 126c16 13 25 31 28 56" />
+        <path d="M46 143c-17 4-25 20-21 38M121 141c16 5 24 18 24 37" />
+        <path d="M57 129c-13 8-19 20-21 35M109 129c12 9 18 20 20 35" strokeWidth="3.5" />
+
+        {/* Student 2: long hair + notebook */}
+        <ellipse cx="196" cy="82" rx="25" ry="29" fill="#fffaf0" />
+        <path d="M172 77c0-26 13-42 32-42 18 0 32 17 31 44M174 63c7-17 24-24 43-15" />
+        <path d="M181 83h1M205 83h1M184 96c6 6 14 6 20 0" />
+        <path d="M162 191c3-49 14-79 35-79 21 0 34 30 37 79" fill="#fffaf0" />
+        <path d="M166 126c-13 10-21 26-23 50M226 127c14 12 21 28 23 49" />
+        <path d="M178 143h42v31h-42z" fill="#fffaf0" />
+        <path d="M185 151h27M185 158h24M185 165h18" strokeWidth="3" />
+
+        {/* Student 3: ponytail + shoulder bag */}
+        <ellipse cx="306" cy="79" rx="26" ry="30" fill="#fffaf0" />
+        <path d="M282 73c1-25 14-39 33-39 17 0 30 14 32 35M286 58c8-15 25-21 42-12" />
+        <path d="M332 47c20 3 28 15 24 31M291 80h1M316 80h1M294 95c7 6 15 6 22 0" />
+        <path d="M269 191c4-49 17-79 38-79 22 0 36 30 40 79" fill="#fffaf0" />
+        <path d="M276 129c-15 12-23 27-25 48M338 130c15 12 22 28 24 47" />
+        <path d="M326 121c11 16 17 36 19 61" strokeWidth="3.5" />
+        <path d="M338 154c14 1 24 9 28 23" />
       </g>
-      <g fill="none" stroke="#f15c2f" strokeLinecap="round" strokeWidth="5">
-        <path d="M11 48l16 9M17 34l7 15M316 57l17-10M322 72l20 1" />
-        <path d="M321 109c10-18 22-17 26-6 4-11 16-12 20-2 5 13-9 24-21 33-12-8-27-16-25-25Z" />
+
+      <g fill="none" stroke="#f15b32" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4.5">
+        <path d="M14 58l15 7M19 43l7 13M359 57l15-10M363 72l18 1" />
+        <path d="M245 60c8-15 19-14 23-5 4-10 15-10 19-1 4 12-9 21-20 29-11-8-24-14-22-23Z" />
+        <path d="M351 112c7-13 17-12 20-4 3-8 13-9 16-1 4 10-7 18-16 25-9-6-21-12-20-20Z" />
+      </g>
+
+      <g fill="#f47b3f" stroke="#123b83" strokeWidth="3">
+        <path d="M38 133c8-7 14-8 21-4l-2 18-20 0 1-14Z" />
       </g>
     </svg>
   );
