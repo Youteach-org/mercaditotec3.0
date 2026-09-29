@@ -22,6 +22,10 @@ describe("parseStoreEditableInput", () => {
       name: "Dulces Fer",
       description: "Postres y botanas",
       deliveryLocation: "Entrego afuera de cafetería",
+      marketplaceLabel: "",
+      marketplaceNote: "",
+      marketplaceTags: [],
+      marketplaceVariant: null,
     });
   });
 
@@ -65,6 +69,10 @@ describe("serializeStore", () => {
       },
       operationalMode: "automatic",
       manualOpen: null,
+      marketplaceLabel: "POSTRES",
+      marketplaceNote: "HECHO EN EL TEC",
+      marketplaceTags: ["Postres", "Dulces"],
+      marketplaceVariant: "cloud-1",
       createdAt: timestamp,
       updatedAt: timestamp,
       submittedAt: null,
@@ -76,6 +84,10 @@ describe("serializeStore", () => {
     expect(result.submittedAt).toBeNull();
     expect(result.slug).toBe("dulces-fer");
     expect(result.deliveryLocation).toBe("Cafetería");
+    expect(result.marketplaceLabel).toBe("POSTRES");
+    expect(result.marketplaceNote).toBe("HECHO EN EL TEC");
+    expect(result.marketplaceTags).toEqual(["Postres", "Dulces"]);
+    expect(result.marketplaceVariant).toBe("cloud-1");
   });
 });
 
