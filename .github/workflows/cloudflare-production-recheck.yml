@@ -1,0 +1,89 @@
+name: Verify integrated production runtime
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/cloudflare-production-recheck.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify production after deployment settles
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://mercaditotec3-0.youteach-tk.workers.dev"
+
+          sleep 20
+
+          for path in "/" "/marketplace" "/api/marketplace" "/icon.svg" "/__health"; do
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o "/tmp/check-$(echo "$path" | tr '/?' '__')" -w '%{http_code}' "$BASE$path")"
+            echo "$path -> HTTP $status"
+            case "$status" in
+              2*|3*) ;;
+              *) exit 1 ;;
+            esac
+          done
+
+          curl -fsS "$BASE/icon.svg" | grep -q "MercaditoTec"
+          curl -fsS "$BASE/__health" | grep -q '"firebaseSecretPresent": true'
+
+          curl -fsS "$BASE/marketplace" -o /tmp/marketplace.html
+
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          from urllib.parse import urljoin
+          import pathlib
+
+          class Assets(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.urls = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if tag == "script" and attrs.get("src"):
+                      self.urls.append(attrs["src"])
+                  if tag == "link" and attrs.get("rel") == "stylesheet" and attrs.get("href"):
+                      self.urls.append(attrs["href"])
+
+          p = Assets()
+          p.feed(pathlib.Path("/tmp/marketplace.html").read_text(errors="replace"))
+          urls = []
+          for value in p.urls:
+              full = urljoin("https://mercaditotec3-0.youteach-tk.workers.dev/marketplace", value)
+              if full not in urls:
+                  urls.append(full)
+
+          if not urls:
+              raise SystemExit("No JS/CSS assets found")
+
+          pathlib.Path("/tmp/assets.txt").write_text("\n".join(urls) + "\n")
+          print(f"Checking {len(urls)} browser assets")
+          PY
+
+          while IFS= read -r asset; do
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/asset -w '%{http_code}' "$asset")"
+            echo "Asset HTTP $status: $asset"
+            case "$status" in
+              2*|3*) ;;
+              *) exit 1 ;;
+            esac
+          done < /tmp/assets.txt
+
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --disable-dev-shm-usage             --virtual-time-budget=12000             --dump-dom             "$BASE/marketplace?verify=$(date +%s)"             > /tmp/browser-dom.html             2> /tmp/browser-console.txt
+
+          grep -q "Tiendas de la comunidad" /tmp/browser-dom.html || {
+            tail -n 200 /tmp/browser-console.txt || true
+            exit 1
+          }
+
+          echo "Production browser runtime verified."
