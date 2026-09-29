@@ -53,14 +53,16 @@ Changes made after comparing the running capture with the approved reference:
 
 ## Verified deployment — 2026-09-28
 
-- Source commit: `69a07c8fd32c31a2e2b63fb486a57d6401dd4674`
-- Canonical visual capture run: `36508518457` — success
-- Cloudflare build-check run: `36508518135` — success
-- Cloudflare preview deploy run: `36508518261` — success
-- Worker version: `40919960-3a35-4fb7-83d2-7093343ed2c7`
+Latest verified user-review deployment:
+
+- Source commit: `7955acf999cd0bdda7a66ee55a0ef77d3e5e4d4f`
+- Canonical visual capture run: `36516460712` — success
+- Cloudflare build-check run: `36516460701` — success
+- Cloudflare preview deploy run: `36516460751` — success
+- Worker version: `b7d27f19-763e-4eac-8587-80ae73f522df`
 - Verified review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
 - HTTP verification from the deploy workflow: `200`
-- Latest 1448×1086 capture artifact: `11008700022`
+- Latest 1448×1086 capture artifact: `11011097703`
 
 The deployed preview is the isolated Worker, not the production `mercaditotec3-0` Worker.
 
@@ -76,7 +78,9 @@ Feedback applied after the first navigable preview review:
 
 Implementation commits for this pass:
 - `795e5b67f91890a1ca27032653f80434df54ddef` — organic marketplace header hook;
-- `1a88aea3daebaef9b516e27929801d79f8bc9db6` — organic title paper and cloud/torn store silhouettes.
+- `1a88aea3daebaef9b516e27929801d79f8bc9db6` — first organic title/store cutout pass;
+- `056b05dd6328e8659ecee83a6a47d9e560623212` — attempted rounded mask treatment; capture showed rectangular fallback in Chromium;
+- `7955acf999cd0bdda7a66ee55a0ef77d3e5e4d4f` — browser-stable soft asymmetric cloud silhouettes, verified by capture and deployed.
 
 ## Review rule
 
