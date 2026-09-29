@@ -31,6 +31,20 @@ function storeSource(id: string, data: Record<string, unknown>): PublicStoreSour
     schedule: normalizeStoredSchedule(data.schedule),
     operationalMode: data.operationalMode === "manual" ? "manual" : "automatic",
     manualOpen: typeof data.manualOpen === "boolean" ? data.manualOpen : null,
+    marketplaceLabel: typeof data.marketplaceLabel === "string" ? data.marketplaceLabel : "",
+    marketplaceNote: typeof data.marketplaceNote === "string" ? data.marketplaceNote : "",
+    marketplaceTags: Array.isArray(data.marketplaceTags)
+      ? data.marketplaceTags.filter((value): value is string => typeof value === "string")
+      : [],
+    marketplaceVariant:
+      data.marketplaceVariant === "cloud-1" ||
+      data.marketplaceVariant === "cloud-2" ||
+      data.marketplaceVariant === "cloud-3" ||
+      data.marketplaceVariant === "cloud-4" ||
+      data.marketplaceVariant === "cloud-5" ||
+      data.marketplaceVariant === "cloud-6"
+        ? data.marketplaceVariant
+        : null,
   };
 }
 
