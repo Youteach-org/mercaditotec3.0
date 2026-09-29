@@ -159,6 +159,14 @@ Implementation files:
 - `app/marketplace/page.tsx`
 - `app/globals.css`
 
+## Browser/app icon branding — 2026-09-29
+
+- Removed the legacy `app/favicon.ico` that still showed the old Vercel-era browser icon.
+- Added `app/icon.svg` with a MercaditoTec storefront mark using the marketplace blue, orange, cream, and yellow accents.
+- Root metadata now points explicitly to `/icon.svg`, which also changes the URL used by the browser and avoids continuing to display a cached legacy favicon.
+- Removed the unused `public/vercel.svg` starter asset.
+- This branding change remains isolated to the preview branch until marketplace approval.
+
 ## Review rule
 
 Do not merge or deploy this redesign to the production Worker until the user explicitly approves the navigable preview.
