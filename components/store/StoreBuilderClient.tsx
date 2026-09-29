@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import MarketplaceCardEditorPreview from "./MarketplaceCardEditorPreview";
 import StoreMediaSection from "./StoreMediaSection";
 import StoreProductsSection from "./StoreProductsSection";
 import StoreScheduleSection from "./StoreScheduleSection";
@@ -357,8 +358,9 @@ export default function StoreBuilderClient() {
                 </label>
 
                 <label className="mt-4 block">
-                  <span className="mb-1 block text-sm font-semibold text-gray-700">Nota del papelito</span>
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Texto del post-it</span>
                   <textarea value={marketplaceNote} onChange={(event) => setMarketplaceNote(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={90} rows={2} placeholder="Ej. IDEAS QUE TAMBIÉN SE ANTOJAN :)" className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
+                  <span className="mt-1 block text-xs text-gray-400">Este texto aparece en el post-it que acompaña tu tarjeta en la página principal.</span>
                 </label>
 
                 <label className="mt-4 block">
@@ -377,6 +379,24 @@ export default function StoreBuilderClient() {
                   </select>
                   <span className="mt-1 block text-xs text-gray-400">Automática reparte las seis formas entre las tiendas nuevas; también puedes elegir una manualmente.</span>
                 </label>
+
+                <div className="mt-5">
+                  <MarketplaceCardEditorPreview
+                    storeId={store.id}
+                    name={name}
+                    description={description}
+                    deliveryLocation={deliveryLocation}
+                    logoUrl={previewLogo}
+                    coverUrl={previewCover}
+                    label={marketplaceLabel}
+                    note={marketplaceNote}
+                    tags={marketplaceTagsText
+                      .split(",")
+                      .map((value) => value.trim())
+                      .filter(Boolean)}
+                    variant={marketplaceVariant}
+                  />
+                </div>
               </div>
 
               <p className="mt-3 text-xs text-gray-400">Los cambios se guardan automáticamente.</p>
