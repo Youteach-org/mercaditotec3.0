@@ -107,6 +107,56 @@ Verification:
 - HTTP verification: `200`;
 - latest capture artifact: `11012385117`.
 
+## Scalable store collage and editable card content — 2026-09-29
+
+The marketplace collage is no longer limited to six hard-coded demo cards.
+
+### Reusable shapes
+
+- Six reusable persisted variants are available: `cloud-1` through `cloud-6`.
+- A store can select a shape in the store builder.
+- If no shape is selected, the application assigns a stable automatic variant from the store ID.
+- New stores therefore receive the same visual system automatically instead of falling back to a generic ecommerce card.
+
+### Editable store-card information
+
+The owner-facing store builder now persists the information used by the marketplace collage:
+
+- store name;
+- description;
+- delivery location;
+- logo;
+- cover image;
+- collage photo label (`marketplaceLabel`);
+- loose-paper note (`marketplaceNote`);
+- up to three collage tags (`marketplaceTags`);
+- visual cloud variant (`marketplaceVariant`).
+
+The public marketplace API serializes these presentation fields. Existing stores that predate the fields remain compatible: missing values fall back to the store name/category and automatic cloud assignment.
+
+### More than six stores
+
+- The first six matching stores retain the approved editorial composition.
+- Stores after the first six render in a continuation section below the canonical board.
+- The continuation section reuses the same six cloud/vector silhouettes, torn information papers, rotations, and collage treatment.
+- The variant is attached to the store data, not to its position, so a store keeps its chosen shape even when ordering changes.
+
+### Layering correction
+
+All store information papers, logos, ribbons, and loose notes are explicitly layered above the image cloud. The image cloud can overlap visually, but it can no longer cover the store information card.
+
+Implementation files:
+- `lib/store/domain.ts`
+- `lib/store/repository.ts`
+- `lib/store/http.ts`
+- `lib/store/client.ts`
+- `lib/store/publicMarketplace.ts`
+- `lib/store/publicMarketplaceRepository.ts`
+- `lib/store/marketplacePresentation.ts`
+- `components/store/StoreBuilderClient.tsx`
+- `app/marketplace/page.tsx`
+- `app/globals.css`
+
 ## Review rule
 
 Do not merge or deploy this redesign to the production Worker until the user explicitly approves the navigable preview.
