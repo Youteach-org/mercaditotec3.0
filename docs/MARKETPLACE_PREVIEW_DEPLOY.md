@@ -166,6 +166,10 @@ Implementation files:
 - Root metadata now points explicitly to `/icon.svg`, which also changes the URL used by the browser and avoids continuing to display a cached legacy favicon.
 - Removed the unused `public/vercel.svg` starter asset.
 - This branding change remains isolated to the preview branch until marketplace approval.
+- Verification: Cloudflare build-check run `36618625759` — success.
+- Preview deploy run `36618546517` — success.
+- Worker version `8cbf3236-ed73-4c3d-b003-2cef70125b25`.
+- Preview route verification: HTTP `200`.
 
 ## Review rule
 
