@@ -99,3 +99,13 @@ Production deploy verification now also checks:
 - `/admin/users` exists and returns a normal page response;
 - `/api/admin/users` exists and returns HTTP `401` when called without authentication.
 
+Verified deployment:
+
+- production deploy run: `36629372791` — success;
+- build check run: `36629372512` — success;
+- test suite: `24` files / `181` tests passed;
+- Worker version: `892fafb3-2a5d-4ca7-ba58-f68487e208bd`;
+- `/admin/users`: HTTP `200`;
+- unauthenticated `/api/admin/users`: HTTP `401`;
+- Firebase runtime secret present.
+
