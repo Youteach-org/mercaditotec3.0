@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MercaditoTec">
+  <rect width="512" height="512" rx="112" fill="#fff9ee"/>
+  <path d="M82 350V166c0-23 18-42 41-42h266c23 0 41 19 41 42v184c0 23-18 42-41 42H123c-23 0-41-19-41-42Z" fill="#1457c5"/>
+  <path d="M66 194 105 94h302l39 100H66Z" fill="#123b83"/>
+  <path d="M104 94h304l-13 38H117L104 94Z" fill="#fff9ee"/>
+  <path d="M142 94h50v100h-74l24-100Zm89 0h50v100h-50V94Zm89 0h50l24 100h-74V94Z" fill="#f47b3f"/>
+  <path d="M103 195c0 28 20 51 45 51 24 0 44-23 44-51 0 28 20 51 44 51 25 0 45-23 45-51 0 28 20 51 44 51 25 0 45-23 45-51 0 28 20 51 44 51 25 0 45-23 45-51" fill="none" stroke="#fff9ee" stroke-width="18" stroke-linecap="round"/>
+  <path d="M169 292h174v100H169V292Z" fill="#fff9ee"/>
+  <path d="M200 324h112" stroke="#f47b3f" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="403" cy="84" r="24" fill="#f47b3f"/>
+  <path d="m403 34 0-20M403 154v-20M353 84h-20M473 84h-20M368 49l-14-14M452 133l-14-14M368 119l-14 14M452 35l-14 14" stroke="#f2b51d" stroke-width="13" stroke-linecap="round"/>
+</svg>
