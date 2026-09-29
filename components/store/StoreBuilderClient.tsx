@@ -18,6 +18,7 @@ import {
   type StoreApiRecord,
 } from "@/lib/store/client";
 import { validateStoreCompleteness } from "@/lib/store/completeness";
+import { MARKETPLACE_VARIANTS, type MarketplaceVariant } from "@/lib/store/domain";
 import type { StoreProductApiRecord } from "@/lib/store/productClient";
 import type { StoreSchedule } from "@/lib/store/schedule";
 import { useSession } from "@/lib/useSession";
@@ -65,6 +66,10 @@ export default function StoreBuilderClient() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [marketplaceLabel, setMarketplaceLabel] = useState("");
+  const [marketplaceNote, setMarketplaceNote] = useState("");
+  const [marketplaceTagsText, setMarketplaceTagsText] = useState("");
+  const [marketplaceVariant, setMarketplaceVariant] = useState<MarketplaceVariant | "">("");
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
   const [previewCover, setPreviewCover] = useState<string | null>(null);
   const [previewSchedule, setPreviewSchedule] = useState<StoreSchedule | null>(null);
@@ -88,6 +93,10 @@ export default function StoreBuilderClient() {
     setName(nextStore.name);
     setDescription(nextStore.description);
     setDeliveryLocation(nextStore.deliveryLocation ?? "");
+    setMarketplaceLabel(nextStore.marketplaceLabel ?? "");
+    setMarketplaceNote(nextStore.marketplaceNote ?? "");
+    setMarketplaceTagsText((nextStore.marketplaceTags ?? []).join(", "));
+    setMarketplaceVariant(nextStore.marketplaceVariant ?? "");
     setPreviewLogo(nextStore.logoUrl);
     setPreviewCover(nextStore.coverUrl);
     setPreviewSchedule(nextStore.schedule);
@@ -167,7 +176,18 @@ export default function StoreBuilderClient() {
     try {
       const response = await storeApiFetch(firebaseUser, `/api/stores/${store.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: cleanName, description, deliveryLocation }),
+        body: JSON.stringify({
+          name: cleanName,
+          description,
+          deliveryLocation,
+          marketplaceLabel,
+          marketplaceNote,
+          marketplaceTags: marketplaceTagsText
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          marketplaceVariant: marketplaceVariant || null,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "No se pudo guardar la información.");
@@ -207,7 +227,18 @@ export default function StoreBuilderClient() {
     try {
       const infoResponse = await storeApiFetch(firebaseUser, `/api/stores/${store.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ name: name.trim(), description, deliveryLocation }),
+        body: JSON.stringify({
+          name: name.trim(),
+          description,
+          deliveryLocation,
+          marketplaceLabel,
+          marketplaceNote,
+          marketplaceTags: marketplaceTagsText
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          marketplaceVariant: marketplaceVariant || null,
+        }),
       });
       const infoData = await infoResponse.json();
       if (!infoResponse.ok) throw new Error(infoData.error ?? "Revisa la información de la tienda.");
@@ -315,7 +346,40 @@ export default function StoreBuilderClient() {
                 <textarea value={deliveryLocation} onChange={(event) => setDeliveryLocation(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={240} rows={3} className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" placeholder="Ej. Cafetería, edificio A y pasillo de laboratorios." />
                 <span className="mt-1 block text-xs text-gray-400">Indica claramente en qué lugares del Tec acostumbras entregar.</span>
               </label>
-              <p className="mt-2 text-xs text-gray-400">Los cambios se guardan automáticamente.</p>
+
+              <div className="mt-6 border-t border-gray-200 pt-5">
+                <div className="text-sm font-bold uppercase tracking-wide text-blue-600">Tarjeta del Mercadito</div>
+                <p className="mt-1 text-xs text-gray-500">Controla los textos y la forma que aparecen en tu pieza del collage.</p>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Rótulo sobre la foto</span>
+                  <input value={marketplaceLabel} onChange={(event) => setMarketplaceLabel(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={40} placeholder="Ej. SNACK LAB" className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Nota del papelito</span>
+                  <textarea value={marketplaceNote} onChange={(event) => setMarketplaceNote(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={90} rows={2} placeholder="Ej. IDEAS QUE TAMBIÉN SE ANTOJAN :)" className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Etiquetas</span>
+                  <input value={marketplaceTagsText} onChange={(event) => setMarketplaceTagsText(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} placeholder="Comida, Snacks" className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
+                  <span className="mt-1 block text-xs text-gray-400">Máximo 3 etiquetas, separadas por comas.</span>
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Forma de la tarjeta</span>
+                  <select value={marketplaceVariant} onChange={(event) => setMarketplaceVariant(event.target.value as MarketplaceVariant | "")} onBlur={() => void persistInformation(false)} disabled={!editable} className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500">
+                    <option value="">Automática</option>
+                    {MARKETPLACE_VARIANTS.map((variant, index) => (
+                      <option key={variant} value={variant}>Nube {index + 1}</option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-xs text-gray-400">Automática reparte las seis formas entre las tiendas nuevas; también puedes elegir una manualmente.</span>
+                </label>
+              </div>
+
+              <p className="mt-3 text-xs text-gray-400">Los cambios se guardan automáticamente.</p>
             </section>
 
             <div className="relative">
