@@ -349,7 +349,7 @@ export default function MarketplacePage() {
 
     let cancelled = false;
 
-    void fetch("/api/marketplace")
+    void fetch("/api/marketplace", { cache: "no-store" })
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
