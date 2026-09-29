@@ -82,6 +82,31 @@ Implementation commits for this pass:
 - `056b05dd6328e8659ecee83a6a47d9e560623212` — attempted rounded mask treatment; capture showed rectangular fallback in Chromium;
 - `7955acf999cd0bdda7a66ee55a0ef77d3e5e4d4f` — browser-stable soft asymmetric cloud silhouettes, verified by capture and deployed.
 
+## Final collage-card reconstruction — 2026-09-28
+
+User-requested corrections completed in the navigable preview:
+
+- store cover islands rebuilt with SVG object-bounding-box clip paths so each shop uses a true irregular cloud/collage silhouette rather than an oval or rounded card;
+- store labels moved outside the clipped photo so they overlap the image like independent collage paper;
+- white store information areas use torn-paper vector cuts instead of rounded rectangles;
+- the yellow "Tiendas de la comunidad" announcement uses one irregular torn-paper vector cutout;
+- the marketplace top navigation keeps an irregular paper lower edge instead of a rigid rectangular bar;
+- store scales, rotations, overlaps, and top/bottom-row placement were preserved as separate editorial pieces rather than normalized ecommerce cards.
+
+Implementation commits:
+- `0ef8ee793591b3db389ca7bb3d15239c35f51061` — vector clip definitions and collage card markup;
+- `c5111292d1befc64255e5076d7f42b091ea330de` — final cloud-card, paper-copy, header, and title styling;
+- `26b0dc747ba88b7f87c8489918417aeb70dd3f5a` — yellow title cutout refined from rounded blob to torn-paper silhouette.
+
+Verification:
+- canonical capture run: `36518201425` — success;
+- Cloudflare build check: `36518201418` — success;
+- preview deploy run: `36518201466` — success;
+- deployed Worker version: `fc750d80-c7d5-4016-b397-8de71b89f90a`;
+- preview URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`;
+- HTTP verification: `200`;
+- latest capture artifact: `11012385117`.
+
 ## Review rule
 
 Do not merge or deploy this redesign to the production Worker until the user explicitly approves the navigable preview.
