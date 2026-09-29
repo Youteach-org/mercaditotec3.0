@@ -137,3 +137,16 @@ The public marketplace header now renders on mobile even when no user is signed 
 Implementation:
 - `components/AppShell.tsx`
 
+
+## Explicit store save control — 2026-09-29
+
+The store editor keeps autosave, but now also includes a visible **Guardar cambios** button for the store-information and marketplace-card fields.
+
+- Manual save uses the same validated PATCH path as autosave.
+- The button is disabled while saving or when the store is not editable.
+- Successful manual saves display **Cambios guardados.**
+- The button is full width on mobile and compact on larger screens.
+
+Implementation:
+- `components/store/StoreBuilderClient.tsx`
+
