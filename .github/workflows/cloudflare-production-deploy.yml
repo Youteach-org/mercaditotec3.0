@@ -78,7 +78,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "$BASE" >> "$GITHUB_STEP_SUMMARY"
 
-          for path in "/" "/marketplace" "/icon.svg" "/__health"; do
+          for path in "/" "/marketplace" "/admin/users" "/icon.svg" "/__health"; do
             status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/prod-body -w '%{http_code}' "$BASE$path")"
             echo "$path -> HTTP $status"
             case "$status" in
@@ -97,6 +97,14 @@ jobs:
               }
             fi
           done
+
+          ADMIN_USERS_STATUS="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/admin-users-api -w '%{http_code}' "$BASE/api/admin/users")"
+          echo "/api/admin/users (without auth) -> HTTP $ADMIN_USERS_STATUS"
+          if [ "$ADMIN_USERS_STATUS" != "401" ]; then
+            echo "::error::Admin users API should exist and require authentication; got HTTP $ADMIN_USERS_STATUS"
+            head -c 3000 /tmp/admin-users-api || true
+            exit 1
+          fi
 
           HEALTH="$(curl -fsS "$BASE/__health")"
           printf '%s\n' "$HEALTH"
