@@ -1,0 +1,97 @@
+name: Deploy marketplace preview to Cloudflare
+
+on:
+  push:
+    branches:
+      - preview/marketplace-approved-reference
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "public/**"
+      - "scripts/cloudflare-build.mjs"
+      - "cloudflare-runtime-entry.mjs"
+      - "wrangler.preview.jsonc"
+      - ".github/workflows/cloudflare-marketplace-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-preview-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+      PREVIEW_WORKER_NAME: "mercaditotec-preview"
+
+    steps:
+      - name: Check out preview branch
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build OpenNext Worker
+        run: node scripts/cloudflare-build.mjs
+
+      - name: Verify generated Worker
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          test -x .cloudflare-tools/node_modules/.bin/wrangler
+
+      - name: Deploy isolated preview Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: .cloudflare-tools/node_modules/.bin/wrangler deploy --config wrangler.preview.jsonc
+
+      - name: Verify preview URL
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESPONSE="$(curl -fsS             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H "Content-Type: application/json")"
+
+          SUBDOMAIN="$(printf '%s' "$RESPONSE" | jq -r '.result.subdomain // empty')"
+          if [ -z "$SUBDOMAIN" ]; then
+            echo "::error::Cloudflare did not return a workers.dev subdomain"
+            printf '%s\n' "$RESPONSE"
+            exit 1
+          fi
+
+          URL="https://$PREVIEW_WORKER_NAME.$SUBDOMAIN.workers.dev"
+          REVIEW_URL="$URL/marketplace?visual=1"
+          echo "Marketplace preview: $REVIEW_URL"
+          {
+            echo "### Marketplace preview URL"
+            echo
+            echo "$REVIEW_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          STATUS="$(curl -L -sS -o /tmp/preview-body -w '%{http_code}' "$REVIEW_URL")"
+          echo "HTTP status: $STATUS"
+          echo "HTTP status: $STATUS" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 400 ]; then
+            echo "::error::Marketplace preview returned HTTP $STATUS"
+            head -c 3000 /tmp/preview-body || true
+            exit 1
+          fi
+
+          grep -q "Mercadito" /tmp/preview-body || {
+            echo "::error::Preview response did not contain the Mercadito shell"
+            exit 1
+          }
