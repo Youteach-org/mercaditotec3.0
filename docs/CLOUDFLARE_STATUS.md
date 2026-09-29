@@ -52,9 +52,12 @@ As of 2026-09-28, the review branch has its own Cloudflare Worker:
 - Worker: `mercaditotec-preview`
 - Review URL: `https://mercaditotec-preview.youteach-tk.workers.dev/marketplace?visual=1`
 - Deploy workflow: `.github/workflows/cloudflare-marketplace-preview.yml`
-- Verified deploy run: `36508518261`
-- Verified Worker version: `40919960-3a35-4fb7-83d2-7093343ed2c7`
+- Verified deploy run: `36516460751`
+- Verified Worker version: `b7d27f19-763e-4eac-8587-80ae73f522df`
 - HTTP verification: `200`
-- Source implementation commit verified visually/deployed: `69a07c8fd32c31a2e2b63fb486a57d6401dd4674`
+- Source implementation commit verified visually/deployed: `7955acf999cd0bdda7a66ee55a0ef77d3e5e4d4f`
+- Canonical capture run: `36516460712` — success
+- Capture artifact: `11011097703`
+- Latest review pass: organic torn-paper header, irregular yellow title cutout, browser-stable soft cloud store silhouettes
 
 The preview Worker is independent from `mercaditotec3-0` and must not replace production until the user explicitly approves the rendered marketplace.
