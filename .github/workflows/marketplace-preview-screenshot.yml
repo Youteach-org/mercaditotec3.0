@@ -75,6 +75,19 @@ jobs:
             "http://127.0.0.1:3000/marketplace?visual=1"
           test -s visual-output/marketplace-mobile-tall.png
 
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --hide-scrollbars \
+            --force-device-scale-factor=1 \
+            --window-size=960,1700 \
+            --virtual-time-budget=12000 \
+            --screenshot=visual-output/marketplace-tablet.png \
+            "http://127.0.0.1:3000/marketplace?visual=1"
+          test -s visual-output/marketplace-tablet.png
+
       - name: Upload visual capture
         uses: actions/upload-artifact@v4
         with:
@@ -82,5 +95,6 @@ jobs:
           path: |
             visual-output/marketplace-current.png
             visual-output/marketplace-mobile-tall.png
+            visual-output/marketplace-tablet.png
           if-no-files-found: error
           retention-days: 14
