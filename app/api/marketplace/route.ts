@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getMarketplaceContent } from "@/lib/store/marketplaceContent";
+import { getMarketplaceContent } from "@/lib/store/marketplaceContentRepository";
 import { listPublicStores } from "@/lib/store/publicMarketplaceRepository";
 
 export const runtime = "nodejs";
