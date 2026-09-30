@@ -221,3 +221,17 @@ Implementation:
 - `components/store/MarketplaceCardEditorPreview.tsx`
 - `app/globals.css`
 
+
+## Android organic cloud fidelity fix — 2026-09-30
+
+The Brave/Android store-image treatment was corrected again to preserve the canonical approved collage look instead of falling back to a stiff box-like silhouette.
+
+- The store image now uses inline SVG cloud construction made from overlapping ellipses plus a central body, matching the earlier approved cloud refinement.
+- The shape is rendered as a true organic blob/cloud, not a rectangle with clipped corners and not a simple oval.
+- The implementation uses native inline SVG clip paths, avoiding CSS `clip-path: url(...)` browser inconsistencies on Brave/Android.
+- The white outer rim and inner image follow the same organic cloud silhouette.
+- Existing collage layers remain unchanged: image cloud < information paper < logo < ribbon < post-it.
+
+Implementation:
+- `components/store/MarketplaceCloudMedia.tsx`
+
