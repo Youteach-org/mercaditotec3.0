@@ -8,6 +8,7 @@ on:
       - "app/marketplace/**"
       - "app/globals.css"
       - "components/AppShell.tsx"
+      - "components/store/MarketplaceCloudMedia.tsx"
       - "lib/store/demoMarketplace.ts"
       - ".github/workflows/marketplace-preview-screenshot.yml"
   workflow_dispatch:
@@ -61,10 +62,25 @@ jobs:
           "$CHROME"             --headless=new             --no-sandbox             --disable-gpu             --disable-dev-shm-usage             --hide-scrollbars             --force-device-scale-factor=1             --window-size=1448,1086             --virtual-time-budget=12000             --screenshot=visual-output/marketplace-current.png             "http://127.0.0.1:3000/marketplace?visual=1"
           test -s visual-output/marketplace-current.png
 
+          "$CHROME" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --hide-scrollbars \
+            --force-device-scale-factor=1 \
+            --window-size=412,915 \
+            --virtual-time-budget=12000 \
+            --screenshot=visual-output/marketplace-mobile.png \
+            "http://127.0.0.1:3000/marketplace?visual=1"
+          test -s visual-output/marketplace-mobile.png
+
       - name: Upload visual capture
         uses: actions/upload-artifact@v4
         with:
           name: marketplace-canonical-preview
-          path: visual-output/marketplace-current.png
+          path: |
+            visual-output/marketplace-current.png
+            visual-output/marketplace-mobile.png
           if-no-files-found: error
           retention-days: 14
