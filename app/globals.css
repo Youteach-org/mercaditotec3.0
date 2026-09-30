@@ -2812,7 +2812,7 @@ body {
    collapsing the marketplace into a normal centered one-column list. */
 @media (max-width: 620px) {
   .mkt-approved-canvas {
-    min-height: 2620px !important;
+    min-height: 1880px !important;
   }
 
   .mkt-category-strip {
@@ -2885,56 +2885,56 @@ body {
   }
 
   .mkt-store-slot-0 {
-    left: 1% !important;
+    left: -4% !important;
     top: 900px !important;
-    width: 91% !important;
-    height: 325px !important;
-    transform: rotate(-2.8deg) !important;
+    width: 68% !important;
+    height: 360px !important;
+    transform: rotate(-3.1deg) !important;
     z-index: 34 !important;
   }
 
   .mkt-store-slot-1 {
-    left: 17% !important;
-    top: 1175px !important;
-    width: 82% !important;
-    height: 285px !important;
-    transform: rotate(2.4deg) !important;
+    left: 49% !important;
+    top: 865px !important;
+    width: 57% !important;
+    height: 325px !important;
+    transform: rotate(2.2deg) !important;
     z-index: 33 !important;
   }
 
   .mkt-store-slot-2 {
-    left: -1% !important;
-    top: 1435px !important;
-    width: 95% !important;
-    height: 310px !important;
-    transform: rotate(-1.7deg) !important;
+    left: -3% !important;
+    top: 1210px !important;
+    width: 70% !important;
+    height: 335px !important;
+    transform: rotate(-1.8deg) !important;
     z-index: 35 !important;
   }
 
   .mkt-store-slot-3 {
-    left: 19% !important;
-    top: 1705px !important;
-    width: 84% !important;
-    height: 302px !important;
-    transform: rotate(2.2deg) !important;
+    left: 52% !important;
+    top: 1165px !important;
+    width: 57% !important;
+    height: 350px !important;
+    transform: rotate(2.5deg) !important;
     z-index: 32 !important;
   }
 
   .mkt-store-slot-4 {
-    left: 3% !important;
-    top: 1975px !important;
-    width: 79% !important;
-    height: 278px !important;
-    transform: rotate(-2.6deg) !important;
+    left: 13% !important;
+    top: 1515px !important;
+    width: 64% !important;
+    height: 305px !important;
+    transform: rotate(-2.7deg) !important;
     z-index: 36 !important;
   }
 
   .mkt-store-slot-5 {
-    left: 15% !important;
-    top: 2225px !important;
-    width: 96% !important;
-    height: 292px !important;
-    transform: rotate(1.8deg) !important;
+    left: 55% !important;
+    top: 1490px !important;
+    width: 61% !important;
+    height: 310px !important;
+    transform: rotate(1.9deg) !important;
     z-index: 31 !important;
   }
 
