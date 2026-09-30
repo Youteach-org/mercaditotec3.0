@@ -2,14 +2,66 @@
 
 import { useId } from "react";
 
-const CLOUD_PATHS = [
-  "M.08,.16 C.10,.07 .19,.045 .27,.075 C.33,.02 .43,.025 .49,.07 C.56,.02 .68,.025 .73,.075 C.82,.035 .91,.08 .92,.17 C.985,.20 .995,.30 .95,.36 C.995,.43 .995,.53 .95,.59 C.99,.68 .95,.78 .87,.80 C.86,.90 .76,.95 .68,.91 C.62,.975 .51,.985 .44,.94 C.36,.985 .25,.965 .21,.90 C.12,.94 .04,.87 .05,.79 C.00,.73 .015,.62 .065,.58 C.015,.50 .02,.40 .07,.35 C.02,.28 .025,.20 .08,.16 Z",
-  "M.055,.20 C.055,.11 .14,.055 .22,.08 C.29,.025 .39,.035 .45,.075 C.52,.02 .63,.02 .69,.07 C.78,.035 .88,.07 .90,.15 C.975,.18 .995,.28 .955,.35 C.995,.42 .995,.52 .95,.59 C.985,.69 .94,.78 .86,.80 C.83,.90 .73,.94 .65,.90 C.58,.97 .47,.98 .40,.93 C.31,.97 .21,.94 .18,.87 C.09,.90 .02,.83 .045,.75 C.00,.68 .015,.58 .06,.54 C.015,.46 .02,.35 .065,.31 C.02,.27 .02,.23 .055,.20 Z",
-  "M.045,.18 C.065,.095 .14,.055 .22,.08 C.28,.025 .39,.03 .45,.07 C.52,.025 .62,.02 .68,.065 C.76,.025 .87,.055 .90,.14 C.975,.16 .995,.26 .955,.33 C.995,.40 .995,.50 .955,.56 C.99,.65 .95,.74 .88,.77 C.86,.87 .76,.92 .68,.89 C.61,.95 .51,.965 .44,.925 C.35,.97 .25,.95 .20,.885 C.11,.92 .035,.855 .05,.78 C.005,.72 .01,.61 .055,.565 C.01,.49 .015,.39 .06,.34 C.02,.28 .015,.22 .045,.18 Z",
-  "M.065,.17 C.075,.09 .15,.055 .23,.08 C.30,.025 .40,.03 .46,.07 C.54,.02 .65,.03 .70,.075 C.79,.035 .89,.075 .91,.16 C.98,.19 .995,.29 .955,.36 C.995,.44 .99,.54 .945,.60 C.985,.69 .94,.79 .86,.81 C.83,.90 .73,.94 .65,.90 C.58,.97 .47,.98 .40,.93 C.31,.97 .22,.94 .18,.87 C.09,.91 .02,.84 .045,.76 C.00,.69 .015,.59 .06,.54 C.015,.46 .02,.36 .065,.31 C.02,.25 .025,.20 .065,.17 Z",
-  "M.045,.21 C.055,.12 .14,.07 .22,.09 C.29,.035 .38,.04 .45,.075 C.53,.025 .63,.03 .69,.07 C.78,.035 .88,.07 .91,.15 C.98,.18 .995,.28 .955,.35 C.995,.43 .99,.53 .95,.59 C.99,.68 .95,.77 .87,.80 C.85,.89 .75,.94 .67,.90 C.60,.965 .50,.97 .43,.925 C.34,.97 .24,.945 .20,.88 C.11,.91 .035,.85 .05,.77 C.005,.70 .015,.60 .06,.55 C.015,.48 .02,.38 .065,.33 C.02,.27 .02,.23 .045,.21 Z",
-  "M.04,.19 C.055,.105 .135,.06 .215,.085 C.28,.03 .38,.03 .445,.07 C.52,.02 .63,.025 .69,.07 C.78,.03 .88,.06 .91,.145 C.98,.17 .995,.27 .955,.34 C.995,.42 .99,.52 .95,.58 C.99,.67 .95,.76 .875,.79 C.85,.885 .75,.93 .67,.895 C.60,.96 .50,.97 .43,.925 C.34,.97 .24,.945 .19,.88 C.10,.915 .03,.85 .05,.775 C.005,.705 .015,.605 .06,.555 C.015,.48 .02,.38 .06,.33 C.02,.27 .015,.22 .04,.19 Z",
-] as const;
+type CloudFamily = 0 | 1 | 2;
+
+const FAMILY_BY_VARIANT: CloudFamily[] = [0, 1, 2, 0, 1, 2];
+
+function CloudShapes({ family }: { family: CloudFamily }) {
+  if (family === 0) {
+    return (
+      <>
+        <ellipse cx="100" cy="154" rx="230" ry="217" />
+        <ellipse cx="300" cy="77" rx="270" ry="189" />
+        <ellipse cx="550" cy="63" rx="290" ry="182" />
+        <ellipse cx="800" cy="105" rx="250" ry="203" />
+        <ellipse cx="940" cy="252" rx="190" ry="238" />
+        <ellipse cx="930" cy="504" rx="200" ry="217" />
+        <ellipse cx="760" cy="637" rx="270" ry="175" />
+        <ellipse cx="490" cy="658" rx="280" ry="168" />
+        <ellipse cx="230" cy="623" rx="250" ry="189" />
+        <ellipse cx="70" cy="441" rx="200" ry="224" />
+        <rect x="80" y="42" width="840" height="616" />
+        <rect x="25" y="133" width="950" height="434" />
+      </>
+    );
+  }
+
+  if (family === 1) {
+    return (
+      <>
+        <ellipse cx="80" cy="210" rx="210" ry="238" />
+        <ellipse cx="240" cy="84" rx="250" ry="196" />
+        <ellipse cx="490" cy="56" rx="290" ry="168" />
+        <ellipse cx="740" cy="91" rx="260" ry="189" />
+        <ellipse cx="940" cy="217" rx="200" ry="245" />
+        <ellipse cx="940" cy="462" rx="200" ry="238" />
+        <ellipse cx="770" cy="616" rx="260" ry="189" />
+        <ellipse cx="520" cy="658" rx="280" ry="161" />
+        <ellipse cx="270" cy="630" rx="250" ry="182" />
+        <ellipse cx="80" cy="476" rx="210" ry="238" />
+        <rect x="70" y="46" width="860" height="609" />
+        <rect x="20" y="140" width="960" height="420" />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ellipse cx="70" cy="217" rx="190" ry="266" />
+      <ellipse cx="220" cy="91" rx="230" ry="217" />
+      <ellipse cx="450" cy="56" rx="270" ry="189" />
+      <ellipse cx="680" cy="77" rx="250" ry="196" />
+      <ellipse cx="910" cy="182" rx="200" ry="259" />
+      <ellipse cx="940" cy="434" rx="190" ry="266" />
+      <ellipse cx="780" cy="602" rx="230" ry="217" />
+      <ellipse cx="550" cy="658" rx="270" ry="182" />
+      <ellipse cx="310" cy="637" rx="260" ry="189" />
+      <ellipse cx="80" cy="490" rx="200" ry="252" />
+      <rect x="60" y="49" width="880" height="602" />
+      <rect x="15" y="147" width="970" height="406" />
+    </>
+  );
+}
 
 export default function MarketplaceCloudMedia({
   variantIndex,
@@ -20,47 +72,54 @@ export default function MarketplaceCloudMedia({
   imageUrl: string | null;
   fallbackLabel?: string;
 }) {
-  const rawId = useId();
-  const clipId = `mkt-cloud-svg-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
-  const path = CLOUD_PATHS[((variantIndex % CLOUD_PATHS.length) + CLOUD_PATHS.length) % CLOUD_PATHS.length];
+  const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const outerClipId = `mkt-cloud-outer-${rawId}`;
+  const innerClipId = `mkt-cloud-inner-${rawId}`;
+  const normalizedVariant =
+    ((variantIndex % FAMILY_BY_VARIANT.length) + FAMILY_BY_VARIANT.length) %
+    FAMILY_BY_VARIANT.length;
+  const family = FAMILY_BY_VARIANT[normalizedVariant];
 
   return (
     <svg
-      className="mkt-store-photo-svg"
+      className={`mkt-store-photo-svg mkt-store-photo-svg-${normalizedVariant}`}
       viewBox="0 0 1000 700"
       preserveAspectRatio="none"
       aria-hidden="true"
       focusable="false"
     >
       <defs>
-        <clipPath id={clipId} clipPathUnits="userSpaceOnUse">
-          <path d={path} transform="scale(1000 700)" />
+        <clipPath id={outerClipId} clipPathUnits="userSpaceOnUse">
+          <CloudShapes family={family} />
+        </clipPath>
+        <clipPath id={innerClipId} clipPathUnits="userSpaceOnUse">
+          <g transform="translate(35 24.5) scale(.93)">
+            <CloudShapes family={family} />
+          </g>
         </clipPath>
       </defs>
 
-      <path
-        d={path}
-        transform="scale(1000 700)"
-        fill="#fffdf6"
-      />
+      <g clipPath={`url(#${outerClipId})`}>
+        <rect x="0" y="0" width="1000" height="700" fill="#fffdf6" />
+      </g>
 
-      <g clipPath={`url(#${clipId})`}>
+      <g clipPath={`url(#${innerClipId})`}>
         <rect x="0" y="0" width="1000" height="700" fill="#fffdf6" />
         {imageUrl ? (
           <image
             href={imageUrl}
-            x="40"
-            y="28"
-            width="920"
-            height="644"
+            x="35"
+            y="24"
+            width="930"
+            height="652"
             preserveAspectRatio="xMidYMid meet"
           />
         ) : (
           <>
-            <rect x="40" y="28" width="920" height="644" fill="#ffd54c" />
+            <rect x="35" y="24" width="930" height="652" fill="#ffd54c" />
             <text
               x="500"
-              y="365"
+              y="352"
               textAnchor="middle"
               dominantBaseline="middle"
               fill="#12346f"
