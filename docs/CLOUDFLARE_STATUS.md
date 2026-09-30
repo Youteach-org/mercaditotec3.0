@@ -266,3 +266,21 @@ Implementation:
 - `app/globals.css`
 - `.github/workflows/marketplace-preview-screenshot.yml`
 
+
+## Android card image + collage fix — 2026-09-30
+
+A real-store screenshot exposed two separate issues that were not covered by the demo capture:
+
+- The circular store logo lived inside the clipped information-paper element, so the paper clip-path physically cut the top of the logo. The logo is now a sibling layer above the paper.
+- Store logo images now use `object-fit: contain` both in the public card and the store media editor, so uploaded artwork is not cropped to fill the badge.
+- Store cover previews also use `object-fit: contain`.
+- Store cover media inside the organic SVG cloud uses a safer inner image area to keep the complete uploaded artwork visible.
+- Mobile featured stores now use a compact two-column stagger with different widths and rotations instead of the original rigid 92%-wide single-column stack.
+- The canonical mobile capture for commit `977dd7ab92e8ade1692ced93b6889f244be6b08a` passed in workflow run `36768962415`.
+
+Implementation:
+- `app/marketplace/page.tsx`
+- `components/store/StoreMediaSection.tsx`
+- `components/store/MarketplaceCloudMedia.tsx`
+- `app/globals.css`
+
