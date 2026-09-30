@@ -2876,3 +2876,124 @@ body {
     min-height: 31% !important;
   }
 }
+
+
+/* STORE LOGO LAYER FIX + MOBILE COLLAGE — 2026-09-30
+   Logo is now a sibling of the clipped info paper so it cannot be cut off.
+   Phones keep the collage feel with a compact two-column stagger instead of
+   a rigid single-column stack. */
+.mkt-store-logo {
+  position: absolute !important;
+  z-index: 45 !important;
+  left: 9%;
+  bottom: 29%;
+  margin-top: 0 !important;
+}
+
+.mkt-store-copy {
+  display: block !important;
+}
+
+@media (max-width: 620px) {
+  .mkt-approved-canvas {
+    min-height: 1840px !important;
+  }
+
+  .mkt-store-slot {
+    left: auto !important;
+    right: auto !important;
+    width: auto !important;
+    height: 300px !important;
+    transform-origin: 50% 50% !important;
+  }
+
+  .mkt-store-slot-0 {
+    left: -3% !important;
+    top: 900px !important;
+    width: 61% !important;
+    transform: rotate(-3deg) !important;
+    z-index: 34 !important;
+  }
+
+  .mkt-store-slot-1 {
+    left: 43% !important;
+    top: 870px !important;
+    width: 61% !important;
+    transform: rotate(2.3deg) !important;
+    z-index: 33 !important;
+  }
+
+  .mkt-store-slot-2 {
+    left: 2% !important;
+    top: 1182px !important;
+    width: 58% !important;
+    transform: rotate(1.2deg) !important;
+    z-index: 35 !important;
+  }
+
+  .mkt-store-slot-3 {
+    left: 46% !important;
+    top: 1150px !important;
+    width: 60% !important;
+    transform: rotate(-2.1deg) !important;
+    z-index: 32 !important;
+  }
+
+  .mkt-store-slot-4 {
+    left: -2% !important;
+    top: 1460px !important;
+    width: 63% !important;
+    transform: rotate(-2.5deg) !important;
+    z-index: 36 !important;
+  }
+
+  .mkt-store-slot-5 {
+    left: 42% !important;
+    top: 1428px !important;
+    width: 66% !important;
+    transform: rotate(2deg) !important;
+    z-index: 31 !important;
+  }
+
+  .mkt-store-photo {
+    height: 69% !important;
+  }
+
+  .mkt-store-copy,
+  .mkt-store-card-0 .mkt-store-copy,
+  .mkt-store-card-1 .mkt-store-copy,
+  .mkt-store-card-2 .mkt-store-copy,
+  .mkt-store-card-3 .mkt-store-copy,
+  .mkt-store-card-4 .mkt-store-copy,
+  .mkt-store-card-5 .mkt-store-copy {
+    left: 6% !important;
+    right: 5% !important;
+    bottom: 0 !important;
+    min-height: 33% !important;
+    padding: 5% 6% 4% !important;
+  }
+
+  .mkt-store-logo {
+    left: 8% !important;
+    bottom: 27% !important;
+    width: 44px !important;
+  }
+
+  .mkt-store-copy h3 {
+    font-size: 13px !important;
+  }
+
+  .mkt-store-copy p {
+    font-size: 9px !important;
+  }
+
+  .mkt-tag,
+  .mkt-store-location,
+  .mkt-rating {
+    font-size: 8px !important;
+  }
+
+  .mkt-hand-note {
+    font-size: 8px !important;
+  }
+}
