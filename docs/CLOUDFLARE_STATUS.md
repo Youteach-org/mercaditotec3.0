@@ -204,3 +204,20 @@ Marketplace content persistence was also split into a client-safe model and a se
 - `lib/store/marketplaceContent.ts`
 - `lib/store/marketplaceContentRepository.ts`
 
+
+## Brave on Android native SVG cloud fix — 2026-09-30
+
+The Android-specific issue in Brave/Chromium where store clouds could render as ovals has been removed at the source.
+
+- Store photo clouds are now rendered by an inline native SVG component instead of CSS/SVG `clip-path` references.
+- The same native SVG cloud is used in the live marketplace and in the store editor preview.
+- Legacy cloud masks, border radii and clip paths are explicitly disabled around the SVG cloud container.
+- This avoids Brave/Chromium Android fallback behavior that was turning organic cloud shapes into ovals.
+- Store photos continue using full-image fitting inside the cloud silhouette.
+
+Implementation:
+- `components/store/MarketplaceCloudMedia.tsx`
+- `app/marketplace/page.tsx`
+- `components/store/MarketplaceCardEditorPreview.tsx`
+- `app/globals.css`
+
