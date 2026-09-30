@@ -76,7 +76,7 @@ export default function MarketplaceCardEditorPreview({
           >
             {coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+              <img src={coverUrl} alt="" className="h-full w-full bg-[#fffdf6] object-contain" />
             ) : (
               <div className="grid h-full w-full place-items-center text-lg font-black text-white/80">FOTO DE PORTADA</div>
             )}
