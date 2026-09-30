@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getMarketplaceContent } from "@/lib/store/marketplaceContent";
 import { listPublicStores } from "@/lib/store/publicMarketplaceRepository";
 
 export const runtime = "nodejs";
@@ -10,8 +11,11 @@ const PUBLIC_CACHE_HEADERS = {
 
 export async function GET() {
   try {
-    const stores = await listPublicStores();
-    return NextResponse.json({ stores }, { headers: PUBLIC_CACHE_HEADERS });
+    const [stores, content] = await Promise.all([
+      listPublicStores(),
+      getMarketplaceContent(),
+    ]);
+    return NextResponse.json({ stores, content }, { headers: PUBLIC_CACHE_HEADERS });
   } catch {
     return NextResponse.json(
       { error: "No se pudo cargar el Mercadito." },
