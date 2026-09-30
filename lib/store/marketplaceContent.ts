@@ -97,7 +97,6 @@ export function normalizeMarketplaceContent(input: unknown): MarketplaceContent 
   };
 }
 
-const CONTENT_DOC = "site_config/marketplace";
 
 export async function getMarketplaceContent(): Promise<MarketplaceContent> {
   const snapshot = await getAdminDb().collection("site_config").doc("marketplace").get();
