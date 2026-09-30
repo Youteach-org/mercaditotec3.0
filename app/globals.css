@@ -2997,3 +2997,15 @@ body {
     font-size: 8px !important;
   }
 }
+
+
+/* STORE MEDIA FIT — 2026-09-30 */
+.mkt-store-logo {
+  background: #fffdf6 !important;
+}
+
+.mkt-store-logo img {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: #fffdf6;
+}
