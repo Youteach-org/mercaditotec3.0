@@ -47,10 +47,10 @@ export default function MarketplaceCloudMedia({
           {imageUrl ? (
             <image
               href={imageUrl}
-              x="24"
-              y="18"
-              width="952"
-              height="664"
+              x="82"
+              y="58"
+              width="836"
+              height="584"
               preserveAspectRatio="xMidYMid meet"
             />
           ) : (
