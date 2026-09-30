@@ -1,19 +1,13 @@
 "use client";
 
+import MarketplaceCloudMedia from "./MarketplaceCloudMedia";
 import {
   marketplaceVariantIndex,
   resolveMarketplaceVariant,
 } from "@/lib/store/marketplacePresentation";
 import type { MarketplaceVariant } from "@/lib/store/domain";
 
-const CLOUD_CLIPS = [
-  "polygon(8% 16%,16% 7%,27% 8%,34% 2%,49% 7%,57% 2%,73% 8%,82% 4%,92% 17%,98% 28%,95% 38%,100% 50%,95% 59%,99% 71%,87% 80%,86% 90%,68% 91%,62% 98%,44% 94%,36% 98%,21% 90%,12% 94%,5% 79%,7% 58%,2% 50%,7% 35%,2% 28%)",
-  "polygon(6% 20%,14% 7%,23% 9%,30% 3%,45% 8%,52% 2%,69% 7%,78% 4%,91% 15%,98% 26%,95% 35%,100% 50%,95% 59%,98% 70%,86% 81%,83% 91%,65% 90%,58% 98%,40% 93%,31% 97%,18% 87%,9% 91%,4% 76%,6% 54%,2% 45%,7% 31%,2% 25%)",
-  "polygon(5% 18%,14% 8%,22% 9%,30% 3%,45% 7%,52% 2%,68% 7%,77% 3%,90% 14%,98% 24%,95% 34%,100% 49%,96% 57%,98% 69%,88% 78%,86% 88%,68% 89%,61% 96%,44% 93%,35% 97%,20% 88%,11% 92%,5% 78%,6% 57%,2% 49%,7% 34%,2% 27%)",
-  "polygon(7% 17%,15% 7%,23% 9%,31% 3%,46% 7%,54% 2%,70% 8%,79% 4%,91% 16%,98% 27%,95% 36%,100% 50%,94% 60%,98% 72%,86% 81%,83% 91%,65% 90%,58% 98%,40% 93%,31% 97%,18% 87%,9% 91%,4% 76%,6% 54%,2% 45%,7% 31%,2% 25%)",
-  "polygon(5% 21%,14% 9%,22% 10%,30% 4%,45% 8%,53% 3%,69% 7%,78% 4%,91% 15%,98% 26%,95% 35%,100% 50%,95% 59%,98% 70%,87% 80%,85% 89%,67% 90%,60% 97%,43% 93%,34% 97%,20% 88%,11% 92%,5% 77%,7% 55%,2% 47%,7% 33%,2% 27%)",
-  "polygon(4% 19%,13% 7%,22% 9%,29% 3%,45% 7%,52% 2%,69% 7%,78% 3%,91% 15%,98% 25%,95% 34%,100% 49%,95% 58%,98% 69%,88% 79%,85% 89%,67% 90%,60% 97%,43% 93%,34% 97%,19% 88%,10% 92%,4% 78%,6% 56%,2% 48%,6% 34%,2% 27%)",
-] as const;
+
 
 const NOTE_STYLES = [
   "bg-[#ffd54c] text-[#103d88] -rotate-3",
@@ -66,21 +60,12 @@ export default function MarketplaceCardEditorPreview({
       </div>
 
       <div className="relative mx-auto h-[330px] w-full max-w-[390px]">
-        <div
-          className="absolute inset-x-[7%] top-[2%] h-[66%] overflow-hidden bg-white p-[6px] shadow-[0_10px_22px_rgba(13,52,121,.14)]"
-          style={{ clipPath: CLOUD_CLIPS[index] }}
-        >
-          <div
-            className="h-full w-full overflow-hidden bg-[#1457c5]"
-            style={{ clipPath: CLOUD_CLIPS[index] }}
-          >
-            {coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt="" className="h-full w-full bg-[#fffdf6] object-contain" />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-lg font-black text-white/80">FOTO DE PORTADA</div>
-            )}
-          </div>
+        <div className="absolute inset-x-[7%] top-[2%] h-[66%]">
+          <MarketplaceCloudMedia
+            variantIndex={index}
+            imageUrl={coverUrl}
+            fallbackLabel="FOTO"
+          />
         </div>
 
         <div className="absolute left-[5%] top-[9%] z-30 max-w-[68%] -rotate-3 bg-[#ffd54c] px-3 py-2 font-black text-[#103d88] shadow-sm [clip-path:polygon(0_18%,8%_7%,22%_12%,38%_3%,55%_10%,72%_4%,88%_12%,100%_7%,96%_84%,84%_79%,70%_91%,53%_82%,36%_92%,18%_83%,3%_90%)]">
