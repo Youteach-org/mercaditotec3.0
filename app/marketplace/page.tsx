@@ -9,6 +9,10 @@ import {
   type DemoMarketplaceStore,
 } from "@/lib/store/demoMarketplace";
 import {
+  DEFAULT_MARKETPLACE_CONTENT,
+  type MarketplaceContent,
+} from "@/lib/store/marketplaceContent";
+import {
   marketplaceVariantIndex,
   resolveMarketplaceVariant,
 } from "@/lib/store/marketplacePresentation";
@@ -40,8 +44,24 @@ function inferredCategory(store: PublicStoreSummary): DemoMarketplaceCategory {
   return "food";
 }
 
-function categoryLabel(category: DemoMarketplaceCategory): string {
-  return CATEGORY_ITEMS.find((item) => item.id === category)?.label ?? "Tienda";
+function categoryLabel(
+  category: DemoMarketplaceCategory,
+  labels: MarketplaceContent["categoryLabels"],
+): string {
+  return labels[category] ?? "Tienda";
+}
+
+function MultilineText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("\n").map((line, index, lines) => (
+        <span key={`${line}-${index}`}>
+          {line}
+          {index < lines.length - 1 && <br />}
+        </span>
+      ))}
+    </>
+  );
 }
 
 function SearchIcon() {
@@ -231,12 +251,14 @@ function StoreCard({
   previewMode,
   onPreview,
   gallery = false,
+  categoryLabels,
 }: {
   store: PublicStoreSummary;
   slotIndex: number;
   previewMode: boolean;
   onPreview: (store: PublicStoreSummary) => void;
   gallery?: boolean;
+  categoryLabels: MarketplaceContent["categoryLabels"];
 }) {
   const demo = "demoRating" in store ? (store as DemoMarketplaceStore) : null;
   const variant = resolveMarketplaceVariant(store.marketplaceVariant, store.id);
@@ -244,7 +266,7 @@ function StoreCard({
   const tags =
     store.marketplaceTags.length > 0
       ? store.marketplaceTags
-      : demo?.demoTags ?? [categoryLabel(inferredCategory(store))];
+      : demo?.demoTags ?? [categoryLabel(inferredCategory(store), categoryLabels)];
   const rating = demo?.demoRating ?? null;
   const reviewCount = demo?.demoReviewCount ?? null;
   const ribbonLabel = store.marketplaceLabel.trim() || store.name;
@@ -328,6 +350,9 @@ export default function MarketplacePage() {
   const [category, setCategory] = useState<CategoryId>("all");
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
   const [forceDemo, setForceDemo] = useState(false);
+  const [marketplaceContent, setMarketplaceContent] = useState<MarketplaceContent>(
+    DEFAULT_MARKETPLACE_CONTENT,
+  );
 
   useEffect(() => {
     setForceDemo(
@@ -353,7 +378,10 @@ export default function MarketplacePage() {
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
-        if (!cancelled) setLiveStores(Array.isArray(data.stores) ? data.stores : []);
+        if (!cancelled) {
+          setLiveStores(Array.isArray(data.stores) ? data.stores : []);
+          if (data.content) setMarketplaceContent(data.content as MarketplaceContent);
+        }
       })
       .catch((loadError) => {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "No se pudo cargar el Mercadito.");
@@ -372,6 +400,15 @@ export default function MarketplacePage() {
   const previewMode = forceDemo || (!loading && !error && liveStores.length === 0);
   const sourceStores: PublicStoreSummary[] = previewMode ? DEMO_MARKETPLACE_STORES : liveStores;
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
+
+  const categoryItems = useMemo(
+    () =>
+      CATEGORY_ITEMS.map((item) => ({
+        ...item,
+        label: marketplaceContent.categoryLabels[item.id],
+      })),
+    [marketplaceContent.categoryLabels],
+  );
 
   const filteredStores = useMemo(() => {
     return sourceStores.filter((store) => {
@@ -402,36 +439,36 @@ export default function MarketplacePage() {
 
         <div className="mkt-title-paper">
           <h1>
-            Tiendas de la
-            <strong>comunidad</strong>
+            {marketplaceContent.heroTitle}
+            <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
-          <p>COMIDA · BEBIDAS · ARTESANÍAS<br />PAPELERÍA · Y MUCHO MÁS</p>
+          <p><MultilineText text={marketplaceContent.heroSubtitle} /></p>
         </div>
 
-        <div className="mkt-pink-note">Apoya<br />compra<br />disfruta<br />conecta<br /><b>☺</b></div>
-        <div className="mkt-blue-note">PEQUEÑOS<br />NEGOCIOS<br /><strong>GRANDES<br />HISTORIAS</strong><br />♡</div>
-        <div className="mkt-orange-note">HECHO<br />POR<br />ESTUDIANTES<br />COMO TÚ<br />☺</div>
+        <div className="mkt-pink-note"><MultilineText text={marketplaceContent.pinkNote} /></div>
+        <div className="mkt-blue-note"><MultilineText text={marketplaceContent.blueNote} /></div>
+        <div className="mkt-orange-note"><MultilineText text={marketplaceContent.orangeNote} /></div>
 
         <Doodle className="mkt-rays-left">❯❯</Doodle>
         <Doodle className="mkt-heart-title">♡</Doodle>
         <Doodle className="mkt-rays-search">///</Doodle>
 
         <div className="mkt-campus-photo" aria-hidden="true" />
-        <div className="mkt-campus-note">UN CAMPUS<br />LLENO DE<br />TALENTO ☺</div>
+        <div className="mkt-campus-note"><MultilineText text={marketplaceContent.campusNote} /></div>
 
         <form className="mkt-search" onSubmit={(event) => event.preventDefault()}>
           <SearchIcon />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Busca comida, bebidas, papelería, artesanías..."
+            placeholder={marketplaceContent.searchPlaceholder}
             aria-label="Buscar tiendas"
           />
-          <button type="submit">Buscar</button>
+          <button type="submit">{marketplaceContent.searchButtonLabel}</button>
         </form>
 
         <div className="mkt-category-strip" aria-label="Categorías">
-          {CATEGORY_ITEMS.map((item) => (
+          {categoryItems.map((item) => (
             <button
               key={item.id}
               type="button"
@@ -446,12 +483,12 @@ export default function MarketplacePage() {
 
         <div className="mkt-students-art">
           <StudentIllustration />
-          <div className="mkt-students-note">MISMAS<br />IDEAS<br /><strong>MÁS<br />COMUNIDAD</strong></div>
+          <div className="mkt-students-note"><MultilineText text={marketplaceContent.studentsNote} /></div>
         </div>
 
         <div className="mkt-featured-heading">
           <span className="mkt-featured-brush" aria-hidden="true" />
-          <h2>Tiendas destacadas</h2>
+          <h2>{marketplaceContent.featuredHeading}</h2>
           <span className="mkt-star" aria-hidden="true">☆</span>
         </div>
 
@@ -465,7 +502,7 @@ export default function MarketplacePage() {
           <>
             <div className="mkt-bottom-blue">
               <div className="mkt-bottom-blue-photo" />
-              <div className="mkt-bottom-blue-copy">MÁS ESTUDIANTES<br />MÁS HISTORIAS</div>
+              <div className="mkt-bottom-blue-copy"><MultilineText text={marketplaceContent.bottomBlueNote} /></div>
               <span className="mkt-bottom-heart">♡</span>
             </div>
 
@@ -478,11 +515,12 @@ export default function MarketplacePage() {
                 slotIndex={index}
                 previewMode={previewMode}
                 onPreview={setPreviewStore}
+                categoryLabels={marketplaceContent.categoryLabels}
               />
             ))}
 
-            <div className="mkt-discover-note" aria-hidden="true">DESCUBRE <span>→</span></div>
-            <div className="mkt-future-note">AQUÍ<br />TAMBIÉN SE<br />CONSTRUYE<br />EL FUTURO<br />☺</div>
+            <div className="mkt-discover-note" aria-hidden="true">{marketplaceContent.discoverLabel} <span>→</span></div>
+            <div className="mkt-future-note"><MultilineText text={marketplaceContent.futureNote} /></div>
           </>
         )}
 
@@ -495,7 +533,7 @@ export default function MarketplacePage() {
       {!effectiveLoading && !effectiveError && additionalStores.length > 0 && (
         <section className="mkt-more-section" aria-label="Más tiendas de la comunidad">
           <div className="mkt-more-heading">
-            <span>Más tiendas de la comunidad</span>
+            <span>{marketplaceContent.moreStoresHeading}</span>
             <b aria-hidden="true">↘</b>
           </div>
           <div className="mkt-more-stores">
@@ -507,6 +545,7 @@ export default function MarketplacePage() {
                 gallery
                 previewMode={previewMode}
                 onPreview={setPreviewStore}
+                categoryLabels={marketplaceContent.categoryLabels}
               />
             ))}
           </div>
