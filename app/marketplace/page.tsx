@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
+
 import {
   DEMO_MARKETPLACE_STORES,
   type DemoMarketplaceCategory,
@@ -275,12 +277,11 @@ function StoreCard({
   const body = (
     <article className={`mkt-store-card mkt-store-card-${slotIndex} mkt-store-variant-${variantIndex}`}>
       <div className="mkt-store-photo">
-        {store.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={store.coverUrl} alt="" />
-        ) : (
-          <div className="mkt-store-photo-fallback">TIENDA</div>
-        )}
+        <MarketplaceCloudMedia
+          variantIndex={variantIndex}
+          imageUrl={store.coverUrl}
+          fallbackLabel="TIENDA"
+        />
       </div>
 
       {ribbonLabel && (
