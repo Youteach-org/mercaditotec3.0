@@ -181,10 +181,26 @@ Store-cover rendering was also corrected:
 
 Implementation:
 - `lib/store/marketplaceContent.ts`
+- `lib/store/marketplaceContentRepository.ts`
 - `app/api/admin/marketplace-content/route.ts`
 - `app/admin/marketplace/page.tsx`
 - `app/api/marketplace/route.ts`
 - `app/marketplace/page.tsx`
 - `components/store/MarketplaceCardEditorPreview.tsx`
 - `app/globals.css`
+
+
+## Android marketplace cloud fallback — 2026-09-30
+
+Android browsers can be inconsistent with SVG `clip-path: url(#...)` references. The marketplace now has a mobile/tablet fallback that uses explicit CSS polygon silhouettes for all six store variants.
+
+- Store cards no longer fall back to oval inherited border radii on Android.
+- Each of the six variants keeps a distinct irregular cloud silhouette.
+- Cover images remain fully visible with `object-fit: contain`.
+- The information paper, logo, ribbon and post-it remain layered above the image in the approved order.
+- The fallback applies at widths up to 980 px and includes `-webkit-clip-path` for Android Chromium compatibility.
+
+Marketplace content persistence was also split into a client-safe model and a server-only Firestore repository:
+- `lib/store/marketplaceContent.ts`
+- `lib/store/marketplaceContentRepository.ts`
 
