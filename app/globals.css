@@ -2542,3 +2542,45 @@ body {
     height: 310px !important;
   }
 }
+
+
+/* MARKETPLACE STORE MEDIA VISIBILITY — 2026-09-30
+   Keep the full uploaded cover visible while preserving the approved collage layering. */
+.mkt-store-photo {
+  z-index: 20 !important;
+  background: #fffdf6 !important;
+}
+
+.mkt-store-photo > img {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: #fffdf6;
+}
+
+.mkt-store-copy {
+  z-index: 40 !important;
+}
+
+.mkt-store-logo {
+  position: relative;
+  z-index: 45 !important;
+}
+
+.mkt-store-ribbon {
+  z-index: 50 !important;
+}
+
+.mkt-hand-note {
+  z-index: 60 !important;
+}
+
+@media (min-width: 981px) {
+  .mkt-store-photo > img {
+    transform: scale(.94) !important;
+  }
+
+  .mkt-store-photo::after {
+    z-index: 2;
+    pointer-events: none;
+  }
+}
