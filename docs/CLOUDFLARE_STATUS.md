@@ -235,3 +235,19 @@ The Brave/Android store-image treatment was corrected again to preserve the cano
 Implementation:
 - `components/store/MarketplaceCloudMedia.tsx`
 
+
+## Final Android cloud correction — 2026-09-30
+
+The Android store-card cloud was corrected after visual review.
+
+- Removed the box-like ellipse/rectangle construction.
+- Store covers now use a single smooth organic SVG path filled directly with the store image.
+- The implementation does not rely on CSS clip-path, SVG clipPath, or masks for the store cover, avoiding Brave/Chromium Android fallback failures.
+- The white rim follows the same organic path.
+- The collage layer order remains: store photo cloud, information paper, logo, ribbon, post-it.
+- Mobile visual validation was captured at 412×2200 in workflow run `36763893002`; the store covers render as irregular organic clouds rather than rectangles or ovals.
+- Production build/deploy for commit `504e70e3a9fe0e4f882b1c6a2ef0da9fc24d9d77` completed successfully in run `36763487377`.
+
+Implementation:
+- `components/store/MarketplaceCloudMedia.tsx`
+
