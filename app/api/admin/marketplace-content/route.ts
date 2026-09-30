@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import {
   getMarketplaceContent,
   saveMarketplaceContent,
-} from "@/lib/store/marketplaceContent";
+} from "@/lib/store/marketplaceContentRepository";
 import { ApiAuthError, requireAdmin } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
