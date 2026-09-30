@@ -150,3 +150,41 @@ The store editor keeps autosave, but now also includes a visible **Guardar cambi
 Implementation:
 - `components/store/StoreBuilderClient.tsx`
 
+
+## Editable marketplace decorations + store image layering — 2026-09-30
+
+Marketplace decorative text is now editable from `/admin/marketplace`.
+
+Editable content includes:
+
+- main title and highlighted word;
+- subtitle;
+- pink, blue, and orange post-its;
+- campus note and student note;
+- featured-store heading;
+- bottom blue note;
+- "DESCUBRE" label;
+- lower-right post-it;
+- search placeholder and button label;
+- category labels;
+- additional-store section heading.
+
+Configuration is persisted in Firestore at `site_config/marketplace` and returned with the public marketplace API. The approved composition/layout is unchanged.
+
+Store-cover rendering was also corrected:
+
+- cover media now sits above the collage base;
+- information paper remains in front of the image;
+- logo, ribbon, and post-it retain higher layers;
+- uploaded cover images use `object-fit: contain` so the full image is visible instead of being cropped by `cover`;
+- the store editor card preview uses the same full-image behavior.
+
+Implementation:
+- `lib/store/marketplaceContent.ts`
+- `app/api/admin/marketplace-content/route.ts`
+- `app/admin/marketplace/page.tsx`
+- `app/api/marketplace/route.ts`
+- `app/marketplace/page.tsx`
+- `components/store/MarketplaceCardEditorPreview.tsx`
+- `app/globals.css`
+
