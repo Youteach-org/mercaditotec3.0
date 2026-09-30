@@ -80,7 +80,6 @@ export default function MarketplaceCloudMedia({
         strokeWidth="24"
         strokeLinejoin="round"
         strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
       />
     </svg>
   );
