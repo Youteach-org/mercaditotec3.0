@@ -96,7 +96,7 @@ export default function StoreMediaSection({
           <div className="text-sm font-semibold text-gray-700">Portada</div>
           <div className="mt-2 flex h-32 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
             {store.coverUrl ? (
-              <img src={store.coverUrl} alt="Portada de la tienda" className="h-full w-full object-cover" />
+              <img src={store.coverUrl} alt="Portada de la tienda" className="h-full w-full bg-white object-contain" />
             ) : (
               <span className="text-sm text-gray-400">Sin portada</span>
             )}
