@@ -30,6 +30,12 @@ const cards: Array<{
     icon: "🏪",
   },
   {
+    title: "Portada Mercadito",
+    description: "Edita post-its, letreros, buscador y etiquetas visibles en la portada.",
+    href: "/admin/marketplace",
+    icon: "✏️",
+  },
+  {
     title: "Reportes",
     description: "Cola central para reportes de usuarios, tiendas y mensajes.",
     href: "/admin/reports",
