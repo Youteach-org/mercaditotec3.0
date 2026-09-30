@@ -251,3 +251,18 @@ The Android store-card cloud was corrected after visual review.
 Implementation:
 - `components/store/MarketplaceCloudMedia.tsx`
 
+
+## Android canonical collage placement — 2026-09-30
+
+The Android/mobile marketplace no longer collapses the six featured stores into a normal centered one-column list.
+
+- Category stickers remain scattered rather than a regular grid.
+- Featured stores use the same asymmetric editorial rhythm as the approved reference: different widths/heights, alternating left/right placement, rotations, overlap, and a partially cropped right-edge store.
+- Organic SVG store clouds remain unchanged.
+- The mobile composition was visually validated at 412×2200 in workflow run `36765487611`.
+- Production deploy run `36765483657` completed successfully for commit `6915ff36ae2653aa0c7be13bdc59a30186adcf04`.
+
+Implementation:
+- `app/globals.css`
+- `.github/workflows/marketplace-preview-screenshot.yml`
+
