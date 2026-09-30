@@ -69,11 +69,11 @@ jobs:
             --disable-dev-shm-usage \
             --hide-scrollbars \
             --force-device-scale-factor=1 \
-            --window-size=412,915 \
+            --window-size=412,2200 \
             --virtual-time-budget=12000 \
-            --screenshot=visual-output/marketplace-mobile.png \
+            --screenshot=visual-output/marketplace-mobile-tall.png \
             "http://127.0.0.1:3000/marketplace?visual=1"
-          test -s visual-output/marketplace-mobile.png
+          test -s visual-output/marketplace-mobile-tall.png
 
       - name: Upload visual capture
         uses: actions/upload-artifact@v4
@@ -81,6 +81,6 @@ jobs:
           name: marketplace-canonical-preview
           path: |
             visual-output/marketplace-current.png
-            visual-output/marketplace-mobile.png
+            visual-output/marketplace-mobile-tall.png
           if-no-files-found: error
           retention-days: 14
