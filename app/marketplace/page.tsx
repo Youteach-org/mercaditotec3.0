@@ -1,5 +1,7 @@
 "use client";
 
+// Marketplace page intentionally triggers deploy after cache-control changes.
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
