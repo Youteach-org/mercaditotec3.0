@@ -2749,3 +2749,59 @@ body {
     clip-path: polygon(3% 8%, 96% 2%, 100% 90%, 7% 100%, 0 17%) !important;
   }
 }
+
+
+/* BRAVE-SAFE NATIVE SVG STORE CLOUD — 2026-09-30
+   The cloud silhouette is now drawn by an inline SVG component. Disable all
+   legacy CSS clipping/masking so Brave/Chromium cannot fall back to ovals. */
+.mkt-store-photo,
+.mkt-store-card-0 .mkt-store-photo,
+.mkt-store-card-1 .mkt-store-photo,
+.mkt-store-card-2 .mkt-store-photo,
+.mkt-store-card-3 .mkt-store-photo,
+.mkt-store-card-4 .mkt-store-photo,
+.mkt-store-card-5 .mkt-store-photo,
+.mkt-store-variant-0 .mkt-store-photo,
+.mkt-store-variant-1 .mkt-store-photo,
+.mkt-store-variant-2 .mkt-store-photo,
+.mkt-store-variant-3 .mkt-store-photo,
+.mkt-store-variant-4 .mkt-store-photo,
+.mkt-store-variant-5 .mkt-store-photo {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-mask: none !important;
+  mask: none !important;
+  -webkit-clip-path: none !important;
+  clip-path: none !important;
+}
+
+.mkt-store-photo::after {
+  display: none !important;
+  content: none !important;
+}
+
+.mkt-store-photo-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 8px 8px rgba(13,52,121,.14));
+}
+
+.mkt-store-photo > .mkt-store-photo-svg {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+}
+
+@media (max-width: 980px) {
+  .mkt-store-photo-svg {
+    filter: drop-shadow(0 6px 6px rgba(13,52,121,.13));
+  }
+}
