@@ -290,15 +290,16 @@ function StoreCard({
         </div>
       )}
 
+      <div className="mkt-store-logo">
+        {store.logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={store.logoUrl} alt="" />
+        ) : (
+          <DemoLogo index={variantIndex} name={store.name} />
+        )}
+      </div>
+
       <div className="mkt-store-copy">
-        <div className="mkt-store-logo">
-          {store.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.logoUrl} alt="" />
-          ) : (
-            <DemoLogo index={variantIndex} name={store.name} />
-          )}
-        </div>
         <div className="mkt-store-copy-main">
           <h3>{store.name}</h3>
           <p>{store.description || "Conoce esta tienda y lo que ofrece."}</p>
