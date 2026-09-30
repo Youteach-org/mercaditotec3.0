@@ -2584,3 +2584,168 @@ body {
     pointer-events: none;
   }
 }
+
+
+/* ANDROID / MOBILE CLOUD FALLBACK — 2026-09-30
+   Android browsers can fail on SVG url() clip paths. Use explicit polygon
+   silhouettes on mobile/tablet so the six marketplace clouds never collapse
+   into inherited oval border radii. */
+@media (max-width: 980px) {
+  .mkt-store-card,
+  .mkt-store-card-0,
+  .mkt-store-card-1,
+  .mkt-store-card-2,
+  .mkt-store-card-3,
+  .mkt-store-card-4,
+  .mkt-store-card-5 {
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .mkt-store-photo {
+    z-index: 20 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fffdf6 !important;
+    filter: drop-shadow(0 7px 7px rgba(13,52,121,.14));
+  }
+
+  .mkt-store-variant-0 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      7% 12%, 15% 5%, 27% 8%, 38% 2%, 50% 7%, 63% 2%, 76% 8%, 89% 4%,
+      98% 15%, 94% 27%, 100% 39%, 95% 51%, 99% 64%, 94% 77%, 99% 89%,
+      87% 97%, 74% 92%, 61% 99%, 47% 94%, 34% 99%, 21% 93%, 9% 98%,
+      2% 86%, 6% 72%, 1% 59%, 6% 46%, 1% 34%, 5% 21%
+    ) !important;
+    clip-path: polygon(
+      7% 12%, 15% 5%, 27% 8%, 38% 2%, 50% 7%, 63% 2%, 76% 8%, 89% 4%,
+      98% 15%, 94% 27%, 100% 39%, 95% 51%, 99% 64%, 94% 77%, 99% 89%,
+      87% 97%, 74% 92%, 61% 99%, 47% 94%, 34% 99%, 21% 93%, 9% 98%,
+      2% 86%, 6% 72%, 1% 59%, 6% 46%, 1% 34%, 5% 21%
+    ) !important;
+  }
+
+  .mkt-store-variant-1 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      4% 19%, 12% 7%, 24% 10%, 35% 2%, 48% 8%, 60% 1%, 73% 8%, 86% 4%,
+      97% 13%, 92% 25%, 100% 36%, 95% 48%, 99% 61%, 94% 74%, 98% 86%,
+      87% 96%, 74% 91%, 62% 99%, 49% 93%, 36% 98%, 24% 91%, 11% 96%,
+      2% 84%, 7% 70%, 1% 56%, 6% 43%, 1% 31%
+    ) !important;
+    clip-path: polygon(
+      4% 19%, 12% 7%, 24% 10%, 35% 2%, 48% 8%, 60% 1%, 73% 8%, 86% 4%,
+      97% 13%, 92% 25%, 100% 36%, 95% 48%, 99% 61%, 94% 74%, 98% 86%,
+      87% 96%, 74% 91%, 62% 99%, 49% 93%, 36% 98%, 24% 91%, 11% 96%,
+      2% 84%, 7% 70%, 1% 56%, 6% 43%, 1% 31%
+    ) !important;
+  }
+
+  .mkt-store-variant-2 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      3% 14%, 12% 5%, 23% 9%, 34% 2%, 46% 6%, 58% 1%, 70% 7%, 82% 3%,
+      95% 11%, 91% 22%, 99% 33%, 95% 45%, 100% 57%, 94% 69%, 98% 82%,
+      89% 94%, 77% 90%, 65% 98%, 52% 92%, 40% 99%, 28% 92%, 16% 97%,
+      4% 88%, 8% 75%, 2% 62%, 7% 49%, 2% 36%, 6% 24%
+    ) !important;
+    clip-path: polygon(
+      3% 14%, 12% 5%, 23% 9%, 34% 2%, 46% 6%, 58% 1%, 70% 7%, 82% 3%,
+      95% 11%, 91% 22%, 99% 33%, 95% 45%, 100% 57%, 94% 69%, 98% 82%,
+      89% 94%, 77% 90%, 65% 98%, 52% 92%, 40% 99%, 28% 92%, 16% 97%,
+      4% 88%, 8% 75%, 2% 62%, 7% 49%, 2% 36%, 6% 24%
+    ) !important;
+  }
+
+  .mkt-store-variant-3 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      6% 11%, 17% 4%, 28% 8%, 40% 2%, 52% 6%, 64% 1%, 76% 7%, 88% 3%,
+      98% 14%, 93% 26%, 100% 38%, 94% 50%, 99% 63%, 93% 76%, 98% 88%,
+      86% 97%, 73% 92%, 60% 99%, 47% 93%, 34% 98%, 21% 92%, 9% 97%,
+      2% 85%, 6% 72%, 1% 59%, 6% 46%, 1% 33%, 5% 20%
+    ) !important;
+    clip-path: polygon(
+      6% 11%, 17% 4%, 28% 8%, 40% 2%, 52% 6%, 64% 1%, 76% 7%, 88% 3%,
+      98% 14%, 93% 26%, 100% 38%, 94% 50%, 99% 63%, 93% 76%, 98% 88%,
+      86% 97%, 73% 92%, 60% 99%, 47% 93%, 34% 98%, 21% 92%, 9% 97%,
+      2% 85%, 6% 72%, 1% 59%, 6% 46%, 1% 33%, 5% 20%
+    ) !important;
+  }
+
+  .mkt-store-variant-4 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      4% 15%, 14% 5%, 25% 10%, 37% 2%, 49% 7%, 61% 1%, 73% 8%, 86% 4%,
+      97% 13%, 92% 25%, 99% 37%, 94% 49%, 100% 62%, 94% 74%, 98% 86%,
+      88% 96%, 76% 91%, 63% 99%, 50% 93%, 37% 98%, 24% 91%, 12% 96%,
+      2% 85%, 7% 72%, 1% 58%, 6% 45%, 1% 31%
+    ) !important;
+    clip-path: polygon(
+      4% 15%, 14% 5%, 25% 10%, 37% 2%, 49% 7%, 61% 1%, 73% 8%, 86% 4%,
+      97% 13%, 92% 25%, 99% 37%, 94% 49%, 100% 62%, 94% 74%, 98% 86%,
+      88% 96%, 76% 91%, 63% 99%, 50% 93%, 37% 98%, 24% 91%, 12% 96%,
+      2% 85%, 7% 72%, 1% 58%, 6% 45%, 1% 31%
+    ) !important;
+  }
+
+  .mkt-store-variant-5 .mkt-store-photo {
+    -webkit-clip-path: polygon(
+      3% 13%, 12% 4%, 24% 9%, 36% 2%, 48% 7%, 60% 1%, 72% 8%, 85% 3%,
+      97% 12%, 92% 24%, 99% 36%, 94% 48%, 100% 61%, 94% 73%, 98% 85%,
+      89% 95%, 77% 90%, 64% 98%, 51% 92%, 39% 99%, 27% 92%, 14% 97%,
+      3% 87%, 8% 74%, 2% 61%, 7% 48%, 2% 35%, 6% 23%
+    ) !important;
+    clip-path: polygon(
+      3% 13%, 12% 4%, 24% 9%, 36% 2%, 48% 7%, 60% 1%, 72% 8%, 85% 3%,
+      97% 12%, 92% 24%, 99% 36%, 94% 48%, 100% 61%, 94% 73%, 98% 85%,
+      89% 95%, 77% 90%, 64% 98%, 51% 92%, 39% 99%, 27% 92%, 14% 97%,
+      3% 87%, 8% 74%, 2% 61%, 7% 48%, 2% 35%, 6% 23%
+    ) !important;
+  }
+
+  .mkt-store-photo > img,
+  .mkt-store-photo > .mkt-store-photo-fallback {
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    -webkit-clip-path: inherit !important;
+    clip-path: inherit !important;
+  }
+
+  .mkt-store-photo > img {
+    object-fit: contain !important;
+    object-position: center center !important;
+    transform: scale(.94) !important;
+  }
+
+  .mkt-store-copy {
+    z-index: 40 !important;
+    border-radius: 0 !important;
+    -webkit-clip-path: polygon(
+      2% 14%, 10% 5%, 22% 9%, 34% 2%, 47% 7%, 60% 1%, 73% 8%, 87% 4%,
+      99% 13%, 96% 29%, 100% 44%, 96% 60%, 99% 76%, 91% 91%, 78% 86%,
+      64% 96%, 50% 90%, 36% 97%, 22% 89%, 9% 95%, 1% 83%, 5% 66%, 1% 49%,
+      5% 31%
+    ) !important;
+    clip-path: polygon(
+      2% 14%, 10% 5%, 22% 9%, 34% 2%, 47% 7%, 60% 1%, 73% 8%, 87% 4%,
+      99% 13%, 96% 29%, 100% 44%, 96% 60%, 99% 76%, 91% 91%, 78% 86%,
+      64% 96%, 50% 90%, 36% 97%, 22% 89%, 9% 95%, 1% 83%, 5% 66%, 1% 49%,
+      5% 31%
+    ) !important;
+    filter: drop-shadow(0 5px 5px rgba(13,52,121,.08));
+  }
+
+  .mkt-store-ribbon {
+    z-index: 50 !important;
+  }
+
+  .mkt-hand-note {
+    z-index: 60 !important;
+    border-radius: 0 !important;
+    -webkit-clip-path: polygon(3% 8%, 96% 2%, 100% 90%, 7% 100%, 0 17%) !important;
+    clip-path: polygon(3% 8%, 96% 2%, 100% 90%, 7% 100%, 0 17%) !important;
+  }
+}
