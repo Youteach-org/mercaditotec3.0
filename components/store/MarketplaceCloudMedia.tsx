@@ -72,14 +72,6 @@ export default function MarketplaceCloudMedia({
             </text>
           </>
         )}
-        <rect
-          x="0"
-          y="0"
-          width="1000"
-          height="700"
-          fill="url(#none)"
-          opacity="0"
-        />
       </g>
     </svg>
   );
