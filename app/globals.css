@@ -2805,3 +2805,74 @@ body {
     filter: drop-shadow(0 6px 6px rgba(13,52,121,.13));
   }
 }
+
+
+/* ANDROID STORE COLLAGE TUNING — 2026-09-30
+   Keep the original mobile canvas and decorative elements intact.
+   Only loosen the store cards so they do not read as a rigid 92%-wide list. */
+@media (max-width: 620px) {
+  .mkt-store-slot {
+    height: 315px !important;
+    transform-origin: 50% 50% !important;
+  }
+
+  .mkt-store-slot-0 {
+    left: -1% !important;
+    width: 84% !important;
+    top: 905px !important;
+    transform: rotate(-2.2deg) !important;
+  }
+
+  .mkt-store-slot-1 {
+    left: 15% !important;
+    width: 83% !important;
+    top: 1218px !important;
+    transform: rotate(1.8deg) !important;
+  }
+
+  .mkt-store-slot-2 {
+    left: 1% !important;
+    width: 88% !important;
+    top: 1538px !important;
+    transform: rotate(-1.5deg) !important;
+  }
+
+  .mkt-store-slot-3 {
+    left: 13% !important;
+    width: 86% !important;
+    top: 1855px !important;
+    transform: rotate(2deg) !important;
+  }
+
+  .mkt-store-slot-4 {
+    left: 3% !important;
+    width: 80% !important;
+    top: 2178px !important;
+    transform: rotate(-2deg) !important;
+  }
+
+  .mkt-store-slot-5 {
+    left: 10% !important;
+    width: 90% !important;
+    top: 2492px !important;
+    transform: rotate(1.5deg) !important;
+  }
+
+  .mkt-store-photo {
+    height: 70% !important;
+  }
+
+  .mkt-store-copy {
+    bottom: 0 !important;
+    min-height: 31% !important;
+  }
+
+  .mkt-store-card-0 .mkt-store-copy,
+  .mkt-store-card-1 .mkt-store-copy,
+  .mkt-store-card-2 .mkt-store-copy,
+  .mkt-store-card-3 .mkt-store-copy,
+  .mkt-store-card-4 .mkt-store-copy,
+  .mkt-store-card-5 .mkt-store-copy {
+    min-height: 31% !important;
+  }
+}
