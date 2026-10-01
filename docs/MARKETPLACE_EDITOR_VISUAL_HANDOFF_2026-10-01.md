@@ -110,3 +110,12 @@ Removed the **Hacer Subadmin** action from every regular student/user card in `/
 Existing subadmins still expose **Quitar Subadmin** to Superadmin, so current administrative accounts can still be demoted from their card. This change only removes promotion from ordinary student cards; backend role APIs and permission rules were not changed.
 
 A regression test in `app/admin/users/page.test.ts` verifies that the promotion label/call are absent while the existing-subadmin removal action remains present.
+
+
+## Admin users — reveal promotion on card selection
+
+The **Hacer Subadmin** action is hidden by default on ordinary user/student cards in `/admin/users`.
+
+For Superadmin only, pressing/clicking an eligible ordinary user card selects that card and reveals **Hacer Subadmin** inside it. Pressing the same card again hides the action. Promotion still requires a separate explicit button press; selecting the card alone never changes the user's role.
+
+Existing subadmins continue to expose **Quitar Subadmin**. The selected card receives a visible focus/ring state, and keyboard Enter/Space can also toggle selection for eligible cards.
