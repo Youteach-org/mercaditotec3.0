@@ -3081,3 +3081,420 @@ body {
     bottom: 26% !important;
   }
 }
+
+
+/* MARKETPLACE CONTINUOUS COLLAGE + STORE EDITOR SKIN — 2026-10-01
+   Keep the scrapbook language beyond the hero/featured area and make the
+   store editor visually consistent with the public Marketplace. */
+
+/* Additional stores should continue the editorial collage instead of falling
+   back to a regular ecommerce grid. */
+.mkt-more-section {
+  isolation: isolate;
+}
+
+.mkt-more-section::after {
+  content: "✦   ♡   ∿";
+  position: absolute;
+  z-index: 0;
+  right: 4%;
+  top: 20px;
+  color: #f15b32;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: clamp(24px, 3vw, 46px);
+  font-weight: 1000;
+  letter-spacing: .55em;
+  transform: rotate(4deg);
+  opacity: .9;
+  pointer-events: none;
+}
+
+.mkt-more-stores {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(28px, 3.4vw, 54px) clamp(18px, 2.7vw, 42px) !important;
+  padding: 12px 1.5% 24px;
+}
+
+.mkt-more-store {
+  flex: 0 0 auto;
+  width: 30% !important;
+  min-width: 250px;
+  height: clamp(300px, 25vw, 370px) !important;
+  margin: 0 !important;
+}
+
+.mkt-more-store:nth-child(6n + 1) {
+  width: 31% !important;
+  margin-top: 2px !important;
+  transform: rotate(-2.6deg) !important;
+}
+.mkt-more-store:nth-child(6n + 2) {
+  width: 25% !important;
+  margin-top: 46px !important;
+  transform: rotate(2.3deg) !important;
+}
+.mkt-more-store:nth-child(6n + 3) {
+  width: 34% !important;
+  margin-top: 14px !important;
+  transform: rotate(-1.4deg) !important;
+}
+.mkt-more-store:nth-child(6n + 4) {
+  width: 27% !important;
+  margin-top: -12px !important;
+  transform: rotate(2.8deg) !important;
+}
+.mkt-more-store:nth-child(6n + 5) {
+  width: 33% !important;
+  margin-top: 38px !important;
+  transform: rotate(-2.1deg) !important;
+}
+.mkt-more-store:nth-child(6n) {
+  width: 26% !important;
+  margin-top: 8px !important;
+  transform: rotate(1.7deg) !important;
+}
+
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-more-stores {
+    justify-content: space-between;
+    gap: 28px 3% !important;
+  }
+
+  .mkt-more-store {
+    min-width: 0;
+    height: 330px !important;
+  }
+
+  .mkt-more-store:nth-child(6n + 1) { width: 55% !important; margin-top: 0 !important; }
+  .mkt-more-store:nth-child(6n + 2) { width: 39% !important; margin-top: 74px !important; }
+  .mkt-more-store:nth-child(6n + 3) { width: 44% !important; margin-top: -8px !important; }
+  .mkt-more-store:nth-child(6n + 4) { width: 51% !important; margin-top: 48px !important; }
+  .mkt-more-store:nth-child(6n + 5) { width: 38% !important; margin-top: -2px !important; }
+  .mkt-more-store:nth-child(6n) { width: 56% !important; margin-top: 40px !important; }
+}
+
+@media (max-width: 620px) {
+  .mkt-more-stores {
+    display: flex !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 28px !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .mkt-more-store {
+    min-width: 0;
+    height: 320px !important;
+  }
+
+  .mkt-more-store:nth-child(6n + 1) { width: 94% !important; margin-left: -2% !important; margin-right: auto !important; margin-top: 0 !important; }
+  .mkt-more-store:nth-child(6n + 2) { width: 82% !important; margin-left: auto !important; margin-right: -1% !important; margin-top: -4px !important; }
+  .mkt-more-store:nth-child(6n + 3) { width: 89% !important; margin-left: 3% !important; margin-right: auto !important; margin-top: 2px !important; }
+  .mkt-more-store:nth-child(6n + 4) { width: 96% !important; margin-left: 7% !important; margin-right: -3% !important; margin-top: -8px !important; }
+  .mkt-more-store:nth-child(6n + 5) { width: 80% !important; margin-left: -1% !important; margin-right: auto !important; margin-top: 4px !important; }
+  .mkt-more-store:nth-child(6n) { width: 91% !important; margin-left: auto !important; margin-right: -2% !important; margin-top: -2px !important; }
+}
+
+/* Store editor: same paper, cutout, sticker and handwritten language as the
+   Marketplace while preserving the existing editing workflow. */
+.store-builder-page {
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 18% 32%, rgba(255,214,78,.12) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 76% 42%, rgba(40,93,196,.08) 0 1.6px, transparent 2px),
+    #fff9ee !important;
+  background-size: 34px 34px, 39px 39px;
+  color: #103d88;
+}
+
+.store-builder-shell {
+  position: relative;
+}
+
+.store-builder-shell::before {
+  content: "///";
+  position: absolute;
+  z-index: 0;
+  right: 2%;
+  top: -12px;
+  color: #f3a300;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 42px;
+  font-weight: 1000;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.store-builder-hero {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+  border-radius: 0 !important;
+  background: #ffd54c !important;
+  color: #103d88;
+  clip-path: polygon(1% 12%, 7% 4%, 18% 7%, 29% 2%, 43% 6%, 57% 1%, 72% 6%, 87% 3%, 99% 10%, 97% 28%, 100% 45%, 97% 62%, 99% 82%, 91% 96%, 75% 93%, 60% 99%, 45% 95%, 29% 99%, 14% 94%, 3% 98%, 0 82%, 3% 65%, 0 47%, 2% 29%);
+  box-shadow: none !important;
+  filter: drop-shadow(0 12px 16px rgba(17,49,113,.13));
+  transform: rotate(-.5deg);
+}
+
+.store-builder-hero h1 {
+  color: #103d88 !important;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-weight: 1000 !important;
+  letter-spacing: -.035em;
+}
+
+.store-builder-hero > div > span {
+  transform: rotate(2deg);
+  box-shadow: 4px 5px 0 rgba(16,61,136,.10);
+}
+
+.store-builder-layout {
+  position: relative;
+  z-index: 1;
+}
+
+.store-builder-panel,
+.store-builder-step > .pt-5 > section,
+.store-builder-preview > div + div,
+.store-builder-finish {
+  border-radius: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.store-builder-panel,
+.store-builder-step > .pt-5 > section {
+  position: relative;
+  background: #fffdf7 !important;
+  clip-path: polygon(1% 3%, 12% 1%, 24% 3%, 37% 0, 50% 3%, 64% 1%, 77% 3%, 90% 1%, 99% 4%, 98% 19%, 100% 35%, 98% 52%, 100% 69%, 98% 86%, 92% 99%, 78% 97%, 64% 100%, 50% 97%, 36% 100%, 22% 97%, 8% 99%, 1% 95%, 2% 78%, 0 61%, 2% 44%, 0 27%);
+  filter: drop-shadow(0 9px 13px rgba(13,52,121,.10));
+}
+
+.store-builder-panel-info {
+  transform: rotate(.25deg);
+}
+
+.store-builder-step:nth-of-type(even) > .pt-5 > section {
+  transform: rotate(-.35deg);
+}
+
+.store-builder-step:nth-of-type(odd) > .pt-5 > section {
+  transform: rotate(.35deg);
+}
+
+.store-builder-form input,
+.store-builder-form textarea,
+.store-builder-form select {
+  border: 2px solid rgba(16,61,136,.14) !important;
+  border-radius: 12px 9px 14px 10px !important;
+  background: rgba(255,255,255,.88) !important;
+  box-shadow: 0 3px 0 rgba(16,61,136,.05);
+}
+
+.store-builder-form input:focus,
+.store-builder-form textarea:focus,
+.store-builder-form select:focus {
+  border-color: #1457c5 !important;
+  box-shadow: 0 0 0 3px rgba(20,87,197,.10);
+}
+
+.store-builder-card-kicker {
+  display: inline-block;
+  padding: 6px 10px;
+  background: #ffc1d0;
+  color: #6b163e !important;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  letter-spacing: .02em !important;
+  transform: rotate(-2deg);
+  box-shadow: 4px 4px 0 rgba(16,61,136,.08);
+}
+
+.store-builder-finish {
+  position: relative;
+  overflow: visible;
+  background: #bfe9ff !important;
+  color: #103d88 !important;
+  clip-path: polygon(1% 6%, 12% 2%, 25% 5%, 39% 1%, 53% 5%, 66% 2%, 81% 5%, 98% 2%, 99% 87%, 90% 98%, 75% 94%, 61% 99%, 47% 95%, 31% 99%, 16% 95%, 2% 98%);
+  filter: drop-shadow(0 10px 14px rgba(13,52,121,.11));
+}
+
+.store-builder-preview > div:first-child {
+  position: relative;
+  padding: 12px 14px;
+  background: #ff9a63;
+  clip-path: polygon(2% 8%, 96% 2%, 100% 88%, 7% 100%, 0 17%);
+  transform: rotate(1deg);
+}
+
+.store-builder-preview > div:first-child h2,
+.store-builder-preview > div:first-child span {
+  color: #103d88 !important;
+}
+
+.store-builder-preview > div:first-child > div:last-child {
+  border: 0 !important;
+  background: #fffdf7 !important;
+}
+
+/* Marketplace-card editor preview uses the exact public card primitives. */
+.mkt-editor-card-preview {
+  position: relative;
+  overflow: visible;
+  margin-top: 4px;
+  padding: 18px 16px 20px;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255,213,76,.18) 0 2px, transparent 2.5px),
+    #fff9ee;
+  background-size: 28px 28px;
+  clip-path: polygon(1% 5%, 10% 1%, 21% 4%, 33% 1%, 46% 4%, 59% 1%, 72% 4%, 86% 1%, 99% 5%, 98% 23%, 100% 43%, 98% 63%, 100% 84%, 94% 98%, 80% 95%, 66% 99%, 52% 96%, 38% 99%, 23% 96%, 9% 99%, 1% 94%, 2% 74%, 0 53%, 2% 32%);
+  filter: drop-shadow(0 8px 11px rgba(13,52,121,.11));
+}
+
+.mkt-editor-card-preview-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 10px;
+}
+
+.mkt-editor-card-preview-head p {
+  margin: 4px 0 0;
+  color: #677187;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.mkt-editor-card-preview-head > span {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  background: white;
+  color: #103d88;
+  font-size: 10px;
+  font-weight: 900;
+  transform: rotate(2deg);
+  box-shadow: 3px 3px 0 rgba(16,61,136,.08);
+}
+
+.mkt-editor-card-preview-kicker {
+  display: inline-block;
+  color: #1457c5;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 14px;
+  font-weight: 1000;
+  transform: rotate(-1deg);
+}
+
+.mkt-editor-card-stage {
+  position: relative;
+  width: min(100%, 400px);
+  height: 350px;
+  margin: 0 auto;
+}
+
+.mkt-editor-card-stage > .mkt-store-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.mkt-editor-card-stage .mkt-store-photo {
+  left: 2% !important;
+  right: 2% !important;
+  top: 0 !important;
+  height: 69% !important;
+}
+
+.mkt-editor-card-stage .mkt-store-copy {
+  left: 7% !important;
+  right: 6% !important;
+  bottom: 0 !important;
+  min-height: 35% !important;
+  padding: 4.5% 5% 3.5% !important;
+}
+
+.mkt-editor-card-stage .mkt-store-logo {
+  left: 9% !important;
+  bottom: 29% !important;
+  width: 46px !important;
+}
+
+.mkt-editor-card-stage .mkt-store-ribbon {
+  left: 4% !important;
+  top: 7% !important;
+  max-width: 58%;
+}
+
+.mkt-editor-card-stage .mkt-hand-note {
+  right: -1% !important;
+  bottom: 5% !important;
+  width: 31% !important;
+  font-size: 10px !important;
+}
+
+.mkt-editor-card-stage .mkt-store-copy h3 {
+  font-size: 16px !important;
+}
+
+.mkt-editor-card-stage .mkt-store-copy p {
+  font-size: 10px !important;
+}
+
+.mkt-editor-card-stage .mkt-tag,
+.mkt-editor-card-stage .mkt-store-location {
+  font-size: 8px !important;
+}
+
+.mkt-editor-visible-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.mkt-editor-visible-fields span {
+  padding: 4px 8px;
+  background: #fffdf7;
+  color: #1457c5;
+  font-size: 10px;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 rgba(16,61,136,.07);
+}
+
+.mkt-editor-visible-fields span:nth-child(3n + 1) { transform: rotate(-2deg); }
+.mkt-editor-visible-fields span:nth-child(3n + 2) { transform: rotate(1.5deg); background: #fff0ca; }
+.mkt-editor-visible-fields span:nth-child(3n) { transform: rotate(-1deg); background: #ffdce5; }
+
+@media (max-width: 620px) {
+  .store-builder-page {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .store-builder-hero {
+    transform: none;
+  }
+
+  .store-builder-panel,
+  .store-builder-step > .pt-5 > section {
+    clip-path: polygon(1% 2%, 16% 0, 31% 2%, 48% 0, 64% 2%, 81% 0, 99% 2%, 98% 98%, 82% 96%, 66% 99%, 49% 96%, 32% 99%, 16% 96%, 1% 98%);
+  }
+
+  .mkt-editor-card-stage {
+    height: 330px;
+  }
+}
