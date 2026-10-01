@@ -1,0 +1,302 @@
+/* Mercadito application-wide visual language
+   Extends the approved Marketplace collage system to every non-admin surface. */
+
+.mercadito-app-shell {
+  --merc-blue: #123d82;
+  --merc-blue-2: #174db4;
+  --merc-orange: #f15b32;
+  --merc-yellow: #ffd54c;
+  --merc-cream: #fff9ee;
+  --merc-pink: #ffc1d0;
+  --merc-sky: #bfe9ff;
+  --merc-paper: #fffdf7;
+  background: var(--merc-cream);
+  color: var(--merc-blue);
+}
+
+.mercadito-global-header {
+  border-bottom: 0 !important;
+  box-shadow: 0 8px 18px rgba(18, 61, 130, .08);
+  overflow: visible;
+}
+
+.mercadito-global-header::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 13px;
+  background: #fffaf0;
+  clip-path: polygon(0 0, 4% 45%, 9% 12%, 14% 54%, 20% 10%, 26% 48%, 32% 16%, 38% 56%, 45% 13%, 51% 46%, 58% 10%, 65% 52%, 72% 16%, 79% 48%, 86% 9%, 93% 52%, 100% 15%, 100% 0);
+  pointer-events: none;
+}
+
+.mercadito-shell-bell {
+  transform: rotate(2deg);
+  box-shadow: 4px 4px 0 rgba(18, 61, 130, .12) !important;
+}
+
+.mercadito-app-content {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100vh - 70px);
+  background:
+    radial-gradient(circle at 14% 20%, rgba(255, 213, 76, .12) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 78% 32%, rgba(23, 77, 180, .07) 0 1.7px, transparent 2.2px),
+    linear-gradient(180deg, #fffaf0 0%, #fff7e9 100%);
+  background-size: 35px 35px, 42px 42px, auto;
+}
+
+.mercadito-app-content > main:not(.mkt-page) {
+  position: relative;
+  overflow-x: hidden;
+  background: transparent !important;
+  color: var(--merc-blue);
+}
+
+.mercadito-app-content > main:not(.mkt-page)::before,
+.mercadito-app-content > main:not(.mkt-page)::after {
+  position: fixed;
+  z-index: -1;
+  pointer-events: none;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-weight: 700;
+  opacity: .9;
+}
+
+.mercadito-app-content > main:not(.mkt-page)::before {
+  content: "///";
+  top: 120px;
+  right: 4vw;
+  color: #f3a500;
+  font-size: clamp(32px, 4vw, 58px);
+  transform: rotate(10deg);
+}
+
+.mercadito-app-content > main:not(.mkt-page)::after {
+  content: "♡  ✦";
+  bottom: 6vh;
+  left: 3vw;
+  color: var(--merc-orange);
+  font-size: clamp(24px, 3vw, 44px);
+  transform: rotate(-8deg);
+}
+
+/* Main page containers */
+.mercadito-app-content > main:not(.mkt-page) > div {
+  position: relative;
+  z-index: 1;
+}
+
+/* Page heroes that were previously dashboard-black/white cards */
+.mercadito-app-content main:not(.mkt-page) header[class*="bg-slate-950"],
+.mercadito-app-content main:not(.mkt-page) > div > section:first-child[class*="bg-white"] {
+  position: relative;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--merc-yellow) !important;
+  color: var(--merc-blue) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 11px 15px rgba(18, 61, 130, .11));
+  clip-path: polygon(1% 10%, 8% 4%, 17% 7%, 28% 2%, 40% 7%, 53% 1%, 66% 6%, 79% 2%, 91% 7%, 99% 4%, 98% 25%, 100% 48%, 98% 70%, 100% 92%, 90% 97%, 77% 94%, 63% 99%, 49% 95%, 35% 99%, 21% 95%, 8% 98%, 1% 91%, 2% 69%, 0 47%, 2% 28%);
+  transform: rotate(-.35deg);
+}
+
+.mercadito-app-content main:not(.mkt-page) header[class*="bg-slate-950"] *,
+.mercadito-app-content main:not(.mkt-page) > div > section:first-child[class*="bg-white"] h1,
+.mercadito-app-content main:not(.mkt-page) > div > section:first-child[class*="bg-white"] h2 {
+  color: var(--merc-blue) !important;
+}
+
+.mercadito-app-content main:not(.mkt-page) header[class*="bg-slate-950"] h1,
+.mercadito-app-content main:not(.mkt-page) > div > section:first-child[class*="bg-white"] h1 {
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
+  letter-spacing: -.025em;
+}
+
+.mercadito-app-content main:not(.mkt-page) header[class*="bg-slate-950"] p[class*="uppercase"] {
+  display: inline-block;
+  padding: 5px 10px;
+  background: var(--merc-pink);
+  color: #6b163e !important;
+  font-family: var(--font-market-hand), cursive;
+  letter-spacing: .04em !important;
+  transform: rotate(-2deg);
+}
+
+/* Paper cards used across orders, stores, notifications, profile and public storefront */
+.mercadito-app-content main:not(.mkt-page):not(.store-builder-page)
+:is(article, aside, section)[class*="bg-white"] {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: rgba(255, 253, 247, .97) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 8px 11px rgba(18, 61, 130, .09));
+  clip-path: polygon(1% 4%, 10% 1%, 22% 4%, 34% 1%, 47% 4%, 60% 1%, 73% 4%, 87% 1%, 99% 4%, 98% 23%, 100% 43%, 98% 63%, 100% 84%, 94% 98%, 80% 95%, 66% 99%, 52% 96%, 38% 99%, 23% 96%, 9% 99%, 1% 94%, 2% 74%, 0 53%, 2% 32%);
+}
+
+.mercadito-app-content main:not(.mkt-page):not(.store-builder-page)
+:is(article, aside, section)[class*="bg-white"]:nth-of-type(even) {
+  transform: rotate(.22deg);
+}
+
+.mercadito-app-content main:not(.mkt-page):not(.store-builder-page)
+:is(article, aside, section)[class*="bg-white"]:nth-of-type(odd) {
+  transform: rotate(-.18deg);
+}
+
+/* Public storefront hero: keep the actual cover but make it part of the collage */
+.mercadito-app-content main:not(.mkt-page) header[class*="overflow-hidden"][class*="bg-white"] {
+  overflow: visible !important;
+  border-radius: 0 !important;
+  background: var(--merc-paper) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 12px 16px rgba(18, 61, 130, .13));
+  clip-path: polygon(1% 3%, 12% 1%, 24% 3%, 37% 0, 50% 3%, 64% 1%, 77% 3%, 90% 1%, 99% 4%, 98% 20%, 100% 40%, 98% 61%, 100% 82%, 94% 98%, 79% 95%, 64% 99%, 49% 96%, 34% 99%, 19% 96%, 5% 99%, 1% 94%, 2% 72%, 0 51%, 2% 29%);
+}
+
+.mercadito-app-content main:not(.mkt-page) header[class*="overflow-hidden"][class*="bg-white"] > div:first-child {
+  clip-path: polygon(3% 7%, 16% 2%, 31% 5%, 47% 1%, 63% 5%, 78% 2%, 97% 6%, 99% 87%, 90% 98%, 74% 94%, 59% 99%, 44% 95%, 28% 99%, 12% 95%, 2% 98%);
+}
+
+.mercadito-app-content main:not(.mkt-page) header[class*="overflow-hidden"][class*="bg-white"] h1 {
+  color: var(--merc-blue) !important;
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
+}
+
+/* Product and order imagery becomes sticker-like instead of generic rounded boxes */
+.mercadito-app-content main:not(.mkt-page) article > div[class*="overflow-hidden"],
+.mercadito-app-content main:not(.mkt-page) article > div[class*="bg-slate-100"]:first-child {
+  border-radius: 0 !important;
+  clip-path: polygon(3% 8%, 13% 3%, 26% 7%, 38% 2%, 52% 6%, 65% 1%, 80% 6%, 96% 3%, 99% 88%, 90% 97%, 74% 94%, 60% 99%, 44% 95%, 28% 99%, 10% 95%, 2% 99%);
+}
+
+/* Status pills remain readable, but look like labels stuck onto paper */
+.mercadito-app-content main:not(.mkt-page) span[class*="rounded-full"] {
+  border-radius: 8px 5px 9px 6px !important;
+  box-shadow: 2px 3px 0 rgba(18, 61, 130, .08);
+  transform: rotate(.5deg);
+}
+
+/* Buttons / action links as collage stickers */
+.mercadito-app-content main:not(.mkt-page)
+:is(button, a)[class*="rounded-xl"]:not([class*="border-red"]) {
+  border-radius: 10px 7px 12px 8px !important;
+}
+
+.mercadito-app-content main:not(.mkt-page)
+:is(button, a)[class*="bg-slate-900"],
+.mercadito-app-content main:not(.mkt-page)
+:is(button, a)[class*="bg-blue-600"],
+.mercadito-app-content main:not(.mkt-page)
+:is(button, a)[class*="bg-emerald-600"] {
+  background: var(--merc-blue-2) !important;
+  color: white !important;
+  box-shadow: 4px 4px 0 rgba(18, 61, 130, .13) !important;
+  transform: rotate(-.35deg);
+}
+
+.mercadito-app-content main:not(.mkt-page)
+:is(button, a)[class*="bg-white"][class*="rounded-xl"] {
+  border: 2px solid rgba(18, 61, 130, .16) !important;
+  background: var(--merc-paper) !important;
+  color: var(--merc-blue) !important;
+  box-shadow: 3px 3px 0 rgba(18, 61, 130, .08);
+}
+
+/* Inputs and controls */
+.mercadito-app-content main:not(.mkt-page)
+:is(input, textarea, select) {
+  border-width: 2px !important;
+  border-color: rgba(18, 61, 130, .16) !important;
+  border-radius: 12px 8px 14px 10px !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 3px 0 rgba(18, 61, 130, .05);
+}
+
+.mercadito-app-content main:not(.mkt-page)
+:is(input, textarea, select):focus {
+  border-color: var(--merc-blue-2) !important;
+  box-shadow: 0 0 0 3px rgba(23, 77, 180, .10) !important;
+}
+
+/* Headings and links inherit the Marketplace voice */
+.mercadito-app-content main:not(.mkt-page) h1,
+.mercadito-app-content main:not(.mkt-page) h2 {
+  color: var(--merc-blue);
+}
+
+.mercadito-app-content main:not(.mkt-page) h1 {
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
+}
+
+.mercadito-app-content main:not(.mkt-page) a[class*="text-blue"],
+.mercadito-app-content main:not(.mkt-page) a[class*="text-emerald"] {
+  color: var(--merc-blue-2) !important;
+}
+
+/* Error and warning surfaces keep semantic colors while becoming paper notes */
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-red-50"],
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-amber-50"],
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-orange-50"],
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-emerald-50"] {
+  border-radius: 0 !important;
+  clip-path: polygon(2% 8%, 97% 2%, 100% 89%, 7% 100%, 0 18%);
+  box-shadow: 3px 4px 0 rgba(18, 61, 130, .06);
+}
+
+/* Notification cards and list buttons */
+.mercadito-app-content main:not(.mkt-page) button[class*="w-full"][class*="rounded-3xl"] {
+  border-radius: 0 !important;
+  clip-path: polygon(1% 6%, 12% 2%, 25% 5%, 39% 1%, 53% 5%, 66% 2%, 81% 5%, 98% 2%, 99% 88%, 90% 98%, 75% 94%, 61% 99%, 47% 95%, 31% 99%, 16% 95%, 2% 98%);
+  filter: drop-shadow(0 7px 9px rgba(18, 61, 130, .08));
+}
+
+/* Chat keeps its interaction geometry, but gets the Mercadito palette and paper background. */
+.mercadito-app-content main [class*="bg-gray-100"],
+.mercadito-app-content main [class*="bg-slate-100"] {
+  --tw-bg-opacity: 1;
+}
+
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-white"][class*="rounded-2xl"],
+.mercadito-app-content main:not(.mkt-page) div[class*="bg-white"][class*="rounded-3xl"] {
+  border-color: rgba(18, 61, 130, .10) !important;
+  box-shadow: 0 6px 16px rgba(18, 61, 130, .07);
+}
+
+/* Mobile: reduce rotations but retain paper/sticker character. */
+@media (max-width: 720px) {
+  .mercadito-global-header::after {
+    bottom: -7px;
+    height: 10px;
+  }
+
+  .mercadito-app-content > main:not(.mkt-page)::before {
+    top: 105px;
+    right: 2vw;
+    font-size: 30px;
+  }
+
+  .mercadito-app-content > main:not(.mkt-page)::after {
+    display: none;
+  }
+
+  .mercadito-app-content main:not(.mkt-page) header[class*="bg-slate-950"],
+  .mercadito-app-content main:not(.mkt-page) > div > section:first-child[class*="bg-white"],
+  .mercadito-app-content main:not(.mkt-page):not(.store-builder-page)
+  :is(article, aside, section)[class*="bg-white"] {
+    transform: none;
+  }
+
+  .mercadito-app-content main:not(.mkt-page)
+  :is(button, a)[class*="bg-slate-900"],
+  .mercadito-app-content main:not(.mkt-page)
+  :is(button, a)[class*="bg-blue-600"],
+  .mercadito-app-content main:not(.mkt-page)
+  :is(button, a)[class*="bg-emerald-600"] {
+    transform: none;
+  }
+}
