@@ -79,3 +79,25 @@ The shared language includes warm paper backgrounds, torn/cut paper heroes, coll
 ### Behavioral constraint
 
 This pass changes presentation only. Existing data flow, routes, API calls, store editing fields, order actions, chat behavior, authentication and moderation logic remain unchanged.
+
+
+## Admin visual integration
+
+Admin is now part of the same Mercadito visual system, including all current subpages:
+
+- `/admin`
+- `/admin/users`
+- `/admin/stores`
+- `/admin/stores/[storeId]`
+- `/admin/marketplace`
+- `/admin/categories`
+- `/admin/reports`
+- `/admin/reports/[reportId]`
+- `/admin/audit`
+- `/admin/chat`
+
+`components/AppShell.tsx` no longer excludes `/admin` from the Mercadito shell. Admin routes receive the same branded header/navigation and are explicitly marked with `data-admin-surface="true"` / `.mercadito-admin-shell`.
+
+`app/mercadito-theme.css` contains an Admin-specific layer that applies the paper/collage language to mastheads, navigation cards, controls, action buttons and status surfaces while deliberately keeping dense administrative tables, filter bars, moderation context, audit data and ID/code blocks rectangular and highly legible.
+
+No administrative permissions, API calls, moderation behavior, routing, store actions, user actions, or data logic were changed in this pass.
