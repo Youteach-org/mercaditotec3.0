@@ -136,3 +136,50 @@ export function studentControlEligibility(
     entryYear,
   };
 }
+
+
+export type StudentAccessEligibility =
+  | {
+      allowed: true;
+      adminBypass?: boolean;
+      controlNumber?: string;
+      entryYear?: number;
+    }
+  | { allowed: false; reason: string };
+
+export function studentAccessEligibility(input: {
+  email: string;
+  emailVerified: boolean;
+  profile?: unknown;
+  now?: Date;
+}): StudentAccessEligibility {
+  if (!input.emailVerified) {
+    return {
+      allowed: false,
+      reason: "Debes verificar tu correo institucional antes de entrar.",
+    };
+  }
+
+  if (isAdminRole(input.profile)) {
+    return { allowed: true, adminBypass: true };
+  }
+
+  const email = input.email.trim().toLowerCase();
+  const institutionalDomain = "@morelia.tecnm.mx";
+  if (!email.endsWith(institutionalDomain) || email === institutionalDomain) {
+    return {
+      allowed: false,
+      reason: "Debes usar un correo institucional @morelia.tecnm.mx.",
+    };
+  }
+
+  const localPart = email.slice(0, -institutionalDomain.length);
+  const control = studentControlEligibility(localPart, input.now ?? new Date());
+  if (!control.allowed) return control;
+
+  return {
+    allowed: true,
+    controlNumber: control.controlNumber,
+    entryYear: control.entryYear,
+  };
+}
