@@ -284,3 +284,17 @@ Implementation:
 - `components/store/MarketplaceCloudMedia.tsx`
 - `app/globals.css`
 
+
+## Temporary example stores for layout review — 2026-09-30
+
+To make the marketplace composition easier to review while production only has a small number of active stores, the public marketplace temporarily fills the featured area up to six stores with demo entries.
+
+- Real active stores always stay first.
+- Demo stores are added only to fill empty featured slots.
+- Demo entries are UI-only; they are not written to Firestore and do not affect store/admin data.
+- Clicking a demo store opens the existing preview modal instead of navigating to a nonexistent store route.
+- Removal is intentionally simple: disable `SHOW_TEMPORARY_EXAMPLE_STORES` in `app/marketplace/page.tsx` once enough real stores exist or after visual review is complete.
+
+Implementation:
+- `app/marketplace/page.tsx`
+
