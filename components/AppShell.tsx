@@ -84,11 +84,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
   const showAdmin = isAdminRole(appUser);
   const marketplaceHome = pathname === "/marketplace";
-  const scrapbookShell = !pathname.startsWith("/admin");
+  const adminSurface = pathname.startsWith("/admin");
+  const scrapbookShell = true;
   const showShell = !loading && (marketplaceHome || Boolean(firebaseUser) || visualPreview);
 
   return (
-    <div className={scrapbookShell ? "mercadito-app-shell min-h-screen flex flex-col" : "min-h-screen flex flex-col"} data-mercadito-skin={scrapbookShell ? "true" : "false"}>
+    <div className={scrapbookShell ? `mercadito-app-shell ${adminSurface ? "mercadito-admin-shell" : ""} min-h-screen flex flex-col` : "min-h-screen flex flex-col"} data-mercadito-skin={scrapbookShell ? "true" : "false"} data-admin-surface={adminSurface ? "true" : "false"}>
       {showShell && (
         <header className={scrapbookShell
           ? "mkt-shell-header mercadito-global-header sticky top-0 z-50 bg-[#fffaf0]/98"
@@ -147,8 +148,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         href="/admin"
                         className={
                           pathname.startsWith("/admin")
-                            ? "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
-                            : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                            ? scrapbookShell
+                              ? "relative flex items-center gap-2 px-3 py-2 text-sm font-black text-[#174db4] after:absolute after:inset-x-2 after:-bottom-1 after:h-1 after:rounded-full after:bg-[#f15b32]"
+                              : "rounded-xl bg-slate-900 px-3 py-2 text-sm font-black text-white"
+                            : scrapbookShell
+                              ? "relative flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-[#102f6d] hover:bg-[#fff0cf]"
+                              : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                         }
                       >
                         Admin
@@ -229,8 +234,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       href="/admin"
                       className={
                         pathname.startsWith("/admin")
-                          ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
-                          : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
+                          ? scrapbookShell
+                            ? "shrink-0 rounded-full bg-[#174db4] px-3 py-2 text-xs font-black text-white"
+                            : "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
+                          : scrapbookShell
+                            ? "shrink-0 rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-bold text-[#102f6d]"
+                            : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
                       }
                     >
                       Admin
