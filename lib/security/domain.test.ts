@@ -138,3 +138,59 @@ describe("student control number eligibility", () => {
     expect(validate("alumno22", new Date("2026-10-01T12:00:00Z")).allowed).toBe(false);
   });
 });
+
+
+describe("student application access eligibility", () => {
+  function accessValidator() {
+    const candidate = (securityDomain as Record<string, unknown>).studentAccessEligibility;
+    expect(candidate).toBeTypeOf("function");
+    return candidate as (input: {
+      email: string;
+      emailVerified: boolean;
+      profile?: unknown;
+      now?: Date;
+    }) => { allowed: boolean; reason?: string; adminBypass?: boolean };
+  }
+
+  it("allows an ordinary verified institutional student inside the control-year window", () => {
+    const validate = accessValidator();
+    expect(validate({
+      email: "a22121079@morelia.tecnm.mx",
+      emailVerified: true,
+      profile: { role: "user" },
+      now: new Date("2026-10-01T12:00:00Z"),
+    }).allowed).toBe(true);
+  });
+
+  it("rejects ordinary users whose control year is too old", () => {
+    const validate = accessValidator();
+    const result = validate({
+      email: "a20123456@morelia.tecnm.mx",
+      emailVerified: true,
+      profile: { role: "user" },
+      now: new Date("2026-10-01T12:00:00Z"),
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("últimos 5 años");
+  });
+
+  it("keeps email verification as a required condition", () => {
+    const validate = accessValidator();
+    expect(validate({
+      email: "a22121079@morelia.tecnm.mx",
+      emailVerified: false,
+      profile: { role: "user" },
+      now: new Date("2026-10-01T12:00:00Z"),
+    }).allowed).toBe(false);
+  });
+
+  it("lets an existing admin account bypass only the student control-number rule", () => {
+    const validate = accessValidator();
+    expect(validate({
+      email: "administracion@morelia.tecnm.mx",
+      emailVerified: true,
+      profile: { role: "superadmin" },
+      now: new Date("2026-10-01T12:00:00Z"),
+    })).toEqual({ allowed: true, adminBypass: true });
+  });
+});
