@@ -57,9 +57,9 @@ export default function StoreMediaSection({
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
-      <h2 className="text-xl font-bold text-gray-900">Imagen de tienda</h2>
+      <h2 className="text-xl font-bold text-gray-900">Imágenes visibles en Mercadito</h2>
       <p className="mt-1 text-sm text-gray-600">
-        Selecciona un logo y una portada. La vista previa se actualiza desde el momento en que eliges el archivo.
+        Selecciona el logo circular y la portada que se recorta dentro de la nube. Son exactamente las dos imágenes que aparecen en tu tarjeta del Marketplace.
       </p>
 
       {error && (
@@ -70,7 +70,7 @@ export default function StoreMediaSection({
 
       <div className="mt-5 grid gap-5 md:grid-cols-[160px_1fr]">
         <div>
-          <div className="text-sm font-semibold text-gray-700">Logo</div>
+          <div className="text-sm font-semibold text-gray-700">Logo circular</div>
           <div className="mt-2 flex h-32 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
             {store.logoUrl ? (
               <img src={store.logoUrl} alt="Logo de la tienda" className="h-full w-full bg-white object-contain" />
@@ -93,7 +93,7 @@ export default function StoreMediaSection({
         </div>
 
         <div>
-          <div className="text-sm font-semibold text-gray-700">Portada</div>
+          <div className="text-sm font-semibold text-gray-700">Portada dentro de la nube</div>
           <div className="mt-2 flex h-32 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
             {store.coverUrl ? (
               <img src={store.coverUrl} alt="Portada de la tienda" className="h-full w-full bg-white object-contain" />
