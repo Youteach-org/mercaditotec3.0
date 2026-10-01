@@ -1,5 +1,6 @@
 /* Mercadito application-wide visual language
-   Extends the approved Marketplace collage system to every non-admin surface. */
+   Extends the approved Marketplace collage system across the full application,
+   including Admin and all Admin subpages. */
 
 .mercadito-app-shell {
   --merc-blue: #123d82;
@@ -298,5 +299,209 @@
   .mercadito-app-content main:not(.mkt-page)
   :is(button, a)[class*="bg-emerald-600"] {
     transform: none;
+  }
+}
+
+
+/* ADMIN + ALL ADMIN SUBPAGES
+   Same Mercadito language, with restrained geometry where dense admin data
+   needs straight edges for scanning, tables, filters and moderation work. */
+
+.mercadito-admin-shell .mercadito-global-header {
+  background:
+    radial-gradient(circle at 18% 40%, rgba(255, 213, 76, .18) 0 2px, transparent 2.5px),
+    #fffaf0 !important;
+  background-size: 30px 30px;
+}
+
+.mercadito-admin-shell .mercadito-app-content::before {
+  content: "ADMIN  ✦";
+  position: fixed;
+  z-index: 0;
+  right: 2.5vw;
+  top: 102px;
+  padding: 5px 10px;
+  background: var(--merc-pink);
+  color: #6b163e;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 12px;
+  font-weight: 1000;
+  letter-spacing: .08em;
+  transform: rotate(3deg);
+  box-shadow: 3px 4px 0 rgba(18, 61, 130, .07);
+  pointer-events: none;
+}
+
+.mercadito-admin-shell .mercadito-app-content > main {
+  padding-top: 24px;
+}
+
+/* Admin page mastheads: visually connected to Marketplace, but broad enough
+   for search/filter actions and role badges. */
+.mercadito-admin-shell .mercadito-app-content main
+:is(header, section)[class*="bg-slate-950"],
+.mercadito-admin-shell .mercadito-app-content main > div > section:first-child[class*="bg-white"] {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.12), transparent 45%),
+    var(--merc-yellow) !important;
+  color: var(--merc-blue) !important;
+  clip-path: polygon(1% 8%, 8% 3%, 18% 6%, 30% 2%, 42% 6%, 55% 1%, 68% 6%, 81% 2%, 92% 6%, 99% 3%, 98% 28%, 100% 52%, 98% 77%, 100% 94%, 90% 98%, 77% 95%, 63% 99%, 49% 96%, 35% 99%, 21% 95%, 8% 98%, 1% 93%, 2% 70%, 0 47%, 2% 26%);
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+:is(header, section)[class*="bg-slate-950"] h1,
+.mercadito-admin-shell .mercadito-app-content main > div > section:first-child[class*="bg-white"] h1 {
+  font-family: var(--font-market-marker), var(--font-market-hand), cursive;
+  color: var(--merc-blue) !important;
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+:is(header, section)[class*="bg-slate-950"] :is(p, div, span, a) {
+  color: var(--merc-blue) !important;
+}
+
+/* Home/admin navigation cards become scrapbook tiles. */
+.mercadito-admin-shell .mercadito-app-content main
+a[class*="rounded-2xl"][class*="bg-white"],
+.mercadito-admin-shell .mercadito-app-content main
+article[class*="rounded-2xl"][class*="bg-white"] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--merc-paper) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 8px 10px rgba(18, 61, 130, .09));
+  clip-path: polygon(2% 5%, 12% 1%, 24% 4%, 38% 1%, 52% 4%, 66% 1%, 81% 4%, 98% 2%, 99% 88%, 90% 98%, 75% 94%, 61% 99%, 47% 95%, 31% 99%, 16% 95%, 2% 98%);
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+a[class*="rounded-2xl"][class*="bg-white"]:nth-of-type(3n + 1) {
+  transform: rotate(-.35deg);
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+a[class*="rounded-2xl"][class*="bg-white"]:nth-of-type(3n + 2) {
+  transform: rotate(.4deg);
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+a[class*="rounded-2xl"][class*="bg-white"]:nth-of-type(3n) {
+  transform: rotate(-.15deg);
+}
+
+/* Dense admin surfaces stay straight: tables, queues, filter bars and audit
+   timelines keep rectangular edges while adopting paper/card styling. */
+.mercadito-admin-shell .mercadito-app-content main
+:is(section, div)[class*="overflow-hidden"][class*="bg-white"],
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="grid"][class*="bg-white"],
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="sm:grid-cols"][class*="bg-white"] {
+  clip-path: none !important;
+  transform: none !important;
+  border: 2px solid rgba(18, 61, 130, .08) !important;
+  border-radius: 18px 13px 20px 14px !important;
+  background: rgba(255, 253, 247, .98) !important;
+  box-shadow: 4px 5px 0 rgba(18, 61, 130, .05) !important;
+  filter: none !important;
+}
+
+.mercadito-admin-shell .mercadito-app-content main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.mercadito-admin-shell .mercadito-app-content main thead {
+  background: #fff0ca;
+  color: var(--merc-blue);
+}
+
+.mercadito-admin-shell .mercadito-app-content main th {
+  color: var(--merc-blue) !important;
+  font-weight: 900 !important;
+}
+
+.mercadito-admin-shell .mercadito-app-content main tbody tr:nth-child(even) {
+  background: rgba(191, 233, 255, .12);
+}
+
+.mercadito-admin-shell .mercadito-app-content main tbody tr:hover {
+  background: rgba(255, 213, 76, .14);
+}
+
+/* Filter controls remain aligned and compact. */
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="grid"] :is(input, textarea, select),
+.mercadito-admin-shell .mercadito-app-content main
+div[class*="grid"] :is(input, textarea, select) {
+  transform: none;
+  min-height: 40px;
+}
+
+/* Admin primary actions use the Marketplace blue; warning/destructive actions
+   keep their semantic colors. */
+.mercadito-admin-shell .mercadito-app-content main
+:is(button, a)[class*="bg-slate-950"],
+.mercadito-admin-shell .mercadito-app-content main
+:is(button, a)[class*="bg-slate-900"],
+.mercadito-admin-shell .mercadito-app-content main
+:is(button, a)[class*="bg-blue-600"] {
+  background: var(--merc-blue-2) !important;
+  color: white !important;
+  box-shadow: 4px 4px 0 rgba(18, 61, 130, .12) !important;
+}
+
+/* Moderation/report context boxes: preserve red semantics and readable edges. */
+.mercadito-admin-shell .mercadito-app-content main
+div[class*="border-red"][class*="bg-red-50"],
+.mercadito-admin-shell .mercadito-app-content main
+div[class*="border-slate"][class*="bg-slate-50"] {
+  clip-path: none !important;
+  border-radius: 12px 9px 14px 10px !important;
+}
+
+/* IDs, audit data and code-like details remain monospace/rectangular. */
+.mercadito-admin-shell .mercadito-app-content main
+:is(pre, code, [class*="font-mono"]) {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace !important;
+}
+
+.mercadito-admin-shell .mercadito-app-content main details {
+  border-radius: 12px 9px 14px 10px !important;
+  background: #fffdf7 !important;
+  border-color: rgba(18, 61, 130, .12) !important;
+}
+
+/* Small admin metric cards can keep a little scrapbook movement. */
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="grid-cols-2"] > button[class*="bg-white"] {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--merc-paper) !important;
+  clip-path: polygon(2% 7%, 15% 2%, 31% 6%, 48% 1%, 66% 6%, 83% 2%, 98% 7%, 99% 91%, 83% 97%, 66% 94%, 49% 99%, 31% 95%, 14% 98%, 2% 93%);
+  box-shadow: none !important;
+  filter: drop-shadow(0 6px 8px rgba(18, 61, 130, .08));
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="grid-cols-2"] > button[class*="bg-white"]:nth-child(even) {
+  transform: rotate(.45deg);
+}
+
+.mercadito-admin-shell .mercadito-app-content main
+section[class*="grid-cols-2"] > button[class*="bg-white"]:nth-child(odd) {
+  transform: rotate(-.35deg);
+}
+
+@media (max-width: 720px) {
+  .mercadito-admin-shell .mercadito-app-content::before {
+    display: none;
+  }
+
+  .mercadito-admin-shell .mercadito-app-content main
+  a[class*="rounded-2xl"][class*="bg-white"],
+  .mercadito-admin-shell .mercadito-app-content main
+  section[class*="grid-cols-2"] > button[class*="bg-white"] {
+    transform: none !important;
   }
 }
