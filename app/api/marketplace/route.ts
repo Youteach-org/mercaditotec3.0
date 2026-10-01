@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { DEMO_MARKETPLACE_STORES } from "@/lib/store/demoMarketplace";
 import { getMarketplaceContent } from "@/lib/store/marketplaceContentRepository";
 import { listPublicStores } from "@/lib/store/publicMarketplaceRepository";
 
@@ -11,11 +12,27 @@ const PUBLIC_CACHE_HEADERS = {
 
 export async function GET() {
   try {
-    const [stores, content] = await Promise.all([
+    const [liveStores, content] = await Promise.all([
       listPublicStores(),
       getMarketplaceContent(),
     ]);
-    return NextResponse.json({ stores, content }, { headers: PUBLIC_CACHE_HEADERS });
+
+    const temporaryExamples = DEMO_MARKETPLACE_STORES
+      .filter((demoStore) => !liveStores.some((liveStore) => liveStore.id === demoStore.id))
+      .slice(0, Math.max(0, 6 - liveStores.length));
+
+    const stores = [...liveStores, ...temporaryExamples];
+
+    return NextResponse.json(
+      {
+        stores,
+        content,
+        temporaryExamplesEnabled: true,
+        realStoreCount: liveStores.length,
+        exampleStoreCount: temporaryExamples.length,
+      },
+      { headers: PUBLIC_CACHE_HEADERS },
+    );
   } catch {
     return NextResponse.json(
       { error: "No se pudo cargar el Mercadito." },
