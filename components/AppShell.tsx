@@ -84,22 +84,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
   const showAdmin = isAdminRole(appUser);
   const marketplaceHome = pathname === "/marketplace";
+  const scrapbookShell = !pathname.startsWith("/admin");
   const showShell = !loading && (marketplaceHome || Boolean(firebaseUser) || visualPreview);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={scrapbookShell ? "mercadito-app-shell min-h-screen flex flex-col" : "min-h-screen flex flex-col"} data-mercadito-skin={scrapbookShell ? "true" : "false"}>
       {showShell && (
-        <header className={marketplaceHome
-          ? "mkt-shell-header sticky top-0 z-50 bg-[#fffaf0]/98"
+        <header className={scrapbookShell
+          ? "mkt-shell-header mercadito-global-header sticky top-0 z-50 bg-[#fffaf0]/98"
           : "sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur"
         }>
-          <div className={marketplaceHome ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
-            <div className={marketplaceHome ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
-              <Link href="/marketplace" className={marketplaceHome
+          <div className={scrapbookShell ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
+            <div className={scrapbookShell ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
+              <Link href="/marketplace" className={scrapbookShell
                 ? "w-auto max-w-[270px] shrink-0 leading-none sm:w-[300px]"
                 : "shrink-0 font-black tracking-tight text-slate-950"
               }>
-                {marketplaceHome ? (
+                {scrapbookShell ? (
                   <span className="block">
                     <span className="block text-[31px] font-black tracking-[-0.06em]">
                       <span className="text-[#123d82]">Mercadito</span><span className="text-[#f15b32]">Tec</span>
@@ -114,7 +115,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 ) : "MercaditoTec"}
               </Link>
 
-              <nav className={marketplaceHome ? "ml-auto hidden min-w-0 items-center gap-1 md:flex" : "hidden min-w-0 items-center gap-1 md:flex"} aria-label="Navegación principal">
+              <nav className={scrapbookShell ? "ml-auto hidden min-w-0 items-center gap-1 md:flex" : "hidden min-w-0 items-center gap-1 md:flex"} aria-label="Navegación principal">
                 {firebaseUser ? (
                   <>
                     {NAV_ITEMS.map((item) => {
@@ -124,7 +125,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                           key={item.href}
                           href={item.href}
                           className={
-                            marketplaceHome
+                            scrapbookShell
                               ? active
                                 ? "relative flex items-center gap-2 px-3 py-2 text-sm font-black text-[#174db4] after:absolute after:inset-x-2 after:-bottom-1 after:h-1 after:rounded-full after:bg-[#f15b32]"
                                 : "relative flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold text-[#102f6d] hover:bg-[#fff0cf]"
@@ -133,9 +134,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                                 : "rounded-xl px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950"
                           }
                         >
-                          {marketplaceHome && <NavIcon icon={item.icon} />}
+                          {scrapbookShell && <NavIcon icon={item.icon} />}
                           <span>{item.label}</span>
-                          {marketplaceHome && item.href === "/chat" && (
+                          {scrapbookShell && item.href === "/chat" && (
                             <span className="absolute right-0 top-1 h-2.5 w-2.5 rounded-full bg-[#f15b32]" aria-hidden="true" />
                           )}
                         </Link>
@@ -158,7 +159,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   <>
                     <Link
                       href="/login"
-                      className={marketplaceHome
+                      className={scrapbookShell
                         ? "rounded-full border-2 border-[#174db4] bg-white px-4 py-2 text-sm font-black text-[#174db4]"
                         : "rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-800"
                       }
@@ -167,7 +168,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </Link>
                     <Link
                       href="/register"
-                      className={marketplaceHome
+                      className={scrapbookShell
                         ? "rounded-full bg-[#174db4] px-4 py-2 text-sm font-black text-white"
                         : "rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white"
                       }
@@ -182,7 +183,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   href="/notifications"
                   aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
-                  className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"
+                  className={scrapbookShell ? "mercadito-shell-bell relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#174db4] bg-[#ffd54c] text-xl shadow-sm" : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"}
                 >
                   <span aria-hidden="true">🔔</span>
                   {unreadCount > 0 && (
@@ -195,7 +196,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <nav
-              className={marketplaceHome
+              className={scrapbookShell
                 ? "-mx-3 flex gap-2 overflow-x-auto px-3 pb-2 pt-0 md:hidden"
                 : "-mx-3 flex gap-2 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden"
               }
@@ -210,7 +211,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         key={item.href}
                         href={item.href}
                         className={
-                          marketplaceHome
+                          scrapbookShell
                             ? active
                               ? "shrink-0 rounded-full bg-[#174db4] px-3 py-2 text-xs font-black text-white"
                               : "shrink-0 rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-bold text-[#102f6d]"
@@ -262,7 +263,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
       )}
-      <div className="flex-1">{children}</div>
+      <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}>{children}</div>
     </div>
   );
 }
