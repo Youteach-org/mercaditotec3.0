@@ -46,3 +46,36 @@ Cloudflare production deploys from `feature/student-stores`. At the time of this
 - Runtime smoke confirms the Worker, Marketplace API, browser JS/CSS assets, and hydrated Marketplace page are reachable.
 - `/marketplace` renders the continuous collage layout.
 - Store Editing exposes and previews the public Marketplace card fields listed above.
+
+
+## Scope correction — full Mercadito visual system
+
+The earlier integration was too narrow: it extended the collage treatment mainly to Store Editing and the `mkt-more-*` section, which only appears after the first six Marketplace stores. With six active stores, that Marketplace change was not visible at all.
+
+The corrected implementation applies the approved Marketplace visual language across the whole non-admin Mercadito application.
+
+### Global shell
+
+`components/AppShell.tsx` now uses the Marketplace-style MercaditoTec header and navigation on every non-admin route instead of switching back to a separate white dashboard header.
+
+Admin routes intentionally keep their existing utility-oriented shell.
+
+### Application-wide theme
+
+`app/mercadito-theme.css` is loaded after `globals.css` from `app/layout.tsx` and scopes the visual system under `.mercadito-app-shell` / `.mercadito-app-content`.
+
+It extends the Marketplace language to user-facing surfaces including:
+
+- Marketplace and public store pages
+- My Stores / Store Editing
+- Orders
+- Notifications
+- Profile
+- Chat
+- Other non-admin authenticated Mercadito screens
+
+The shared language includes warm paper backgrounds, torn/cut paper heroes, collage cards, sticker-like actions, handwritten/marker heading treatment, irregular labels, organic image masks, subtle rotations, and Marketplace blue/orange/yellow/pink/sky palette.
+
+### Behavioral constraint
+
+This pass changes presentation only. Existing data flow, routes, API calls, store editing fields, order actions, chat behavior, authentication and moderation logic remain unchanged.
