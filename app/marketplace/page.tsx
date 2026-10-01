@@ -25,6 +25,8 @@ import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 
 type CategoryId = "all" | DemoMarketplaceCategory;
 
+const SHOW_TEMPORARY_EXAMPLE_STORES = true;
+
 const CATEGORY_ITEMS: Array<{ id: CategoryId; label: string }> = [
   { id: "food", label: "Comida" },
   { id: "drinks", label: "Bebidas" },
@@ -331,7 +333,7 @@ function StoreCard({
     `mkt-store-variant-${variantIndex}`,
   ].join(" ");
 
-  if (previewMode) {
+  if (previewMode || demo) {
     return (
       <button type="button" className={className} onClick={() => onPreview(store)} aria-label={`Previsualizar ${store.name}`}>
         {body}
@@ -402,7 +404,16 @@ export default function MarketplacePage() {
   const effectiveLoading = forceDemo ? false : loading;
   const effectiveError = forceDemo ? "" : error;
   const previewMode = forceDemo || (!loading && !error && liveStores.length === 0);
-  const sourceStores: PublicStoreSummary[] = previewMode ? DEMO_MARKETPLACE_STORES : liveStores;
+  const temporaryExamples = useMemo(() => {
+    if (!SHOW_TEMPORARY_EXAMPLE_STORES || previewMode) return [];
+    const needed = Math.max(0, 6 - liveStores.length);
+    return DEMO_MARKETPLACE_STORES
+      .filter((demoStore) => !liveStores.some((liveStore) => liveStore.id === demoStore.id))
+      .slice(0, needed);
+  }, [liveStores, previewMode]);
+  const sourceStores: PublicStoreSummary[] = previewMode
+    ? DEMO_MARKETPLACE_STORES
+    : [...liveStores, ...temporaryExamples];
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
 
   const categoryItems = useMemo(
