@@ -279,26 +279,15 @@ export default function AdminUsersPage() {
                       </span>
                     )}
 
-                    {isSuperadmin && !isSelf && user.adminRole !== "superadmin" && (
-                      user.adminRole === "subadmin" ? (
-                        <button
-                          type="button"
-                          disabled={working}
-                          onClick={() => void updateRole(user, "user")}
-                          className="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50"
-                        >
-                          Quitar Subadmin
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={working}
-                          onClick={() => void updateRole(user, "subadmin")}
-                          className="rounded-xl bg-slate-900 px-3.5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                        >
-                          Hacer Subadmin
-                        </button>
-                      )
+                    {isSuperadmin && !isSelf && user.adminRole === "subadmin" && (
+                      <button
+                        type="button"
+                        disabled={working}
+                        onClick={() => void updateRole(user, "user")}
+                        className="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50"
+                      >
+                        Quitar Subadmin
+                      </button>
                     )}
                   </div>
 
