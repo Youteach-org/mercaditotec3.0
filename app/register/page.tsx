@@ -9,6 +9,7 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { studentControlEligibility } from "@/lib/security/domain";
 
 const DOMAIN = "@morelia.tecnm.mx";
 
@@ -55,6 +56,12 @@ export default function RegisterPage() {
 
     if (!/^[a-z0-9._-]+$/.test(cleanLocalPart)) {
       setError("Solo usa letras, números, punto, guion o guion bajo.");
+      return;
+    }
+
+    const controlEligibility = studentControlEligibility(cleanLocalPart);
+    if (!controlEligibility.allowed) {
+      setError(controlEligibility.reason);
       return;
     }
 
@@ -138,7 +145,7 @@ export default function RegisterPage() {
           <div className="flex rounded-xl border border-gray-300 overflow-hidden">
             <input
               type="text"
-              placeholder="ejemplo: a12345678"
+              placeholder="ejemplo: a22121079"
               value={localPart}
               onChange={(e) => setLocalPart(e.target.value)}
               className="flex-1 min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
