@@ -7,9 +7,12 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const pageSource = readFileSync(join(currentDirectory, "page.tsx"), "utf8");
 
 describe("Admin users card role actions", () => {
-  it("does not offer promoting a student to subadmin from the user card", () => {
-    expect(pageSource).not.toContain("Hacer Subadmin");
-    expect(pageSource).not.toContain('updateRole(user, "subadmin")');
+  it("reveals subadmin promotion only after selecting an ordinary user card", () => {
+    expect(pageSource).toContain("selectedUserUid");
+    expect(pageSource).toContain("setSelectedUserUid");
+    expect(pageSource).toContain("Hacer Subadmin");
+    expect(pageSource).toContain('updateRole(user, "subadmin")');
+    expect(pageSource).toContain("selectedUserUid === user.uid");
   });
 
   it("keeps the action for removing an existing subadmin", () => {
