@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as securityDomain from "./domain";
 
 import {
   canEndorseStudent,
@@ -89,5 +90,51 @@ describe("student endorsements", () => {
       allowed: false,
       reason: "Esta cuenta requiere revisión administrativa antes de poder confirmarse.",
     });
+  });
+});
+
+
+describe("student control number eligibility", () => {
+  function validator() {
+    const candidate = (securityDomain as Record<string, unknown>).studentControlEligibility;
+    expect(candidate).toBeTypeOf("function");
+    return candidate as (value: string, now?: Date) => {
+      allowed: boolean;
+      controlNumber?: string;
+      entryYear?: number;
+      reason?: string;
+    };
+  }
+
+  it("accepts a letter plus an 8-digit control number from the current five-year window", () => {
+    const validate = validator();
+    expect(validate("a22121079", new Date("2026-10-01T12:00:00Z"))).toEqual({
+      allowed: true,
+      controlNumber: "22121079",
+      entryYear: 2022,
+    });
+  });
+
+  it("includes the five-year boundary", () => {
+    const validate = validator();
+    expect(validate("x21123456", new Date("2026-10-01T12:00:00Z")).allowed).toBe(true);
+  });
+
+  it("rejects control numbers older than five years", () => {
+    const validate = validator();
+    const result = validate("a20123456", new Date("2026-10-01T12:00:00Z"));
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toContain("últimos 5 años");
+  });
+
+  it("rejects future entry years", () => {
+    const validate = validator();
+    expect(validate("a27123456", new Date("2026-10-01T12:00:00Z")).allowed).toBe(false);
+  });
+
+  it("rejects identifiers that are not letters followed by exactly eight digits", () => {
+    const validate = validator();
+    expect(validate("22121079", new Date("2026-10-01T12:00:00Z")).allowed).toBe(false);
+    expect(validate("alumno22", new Date("2026-10-01T12:00:00Z")).allowed).toBe(false);
   });
 });
