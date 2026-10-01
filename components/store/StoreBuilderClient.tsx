@@ -295,12 +295,12 @@ export default function StoreBuilderClient() {
   const scheduleForPreview = previewSchedule ?? store.schedule;
 
   return (
-    <main className="min-h-screen bg-gray-100 p-3 sm:p-4">
+    <main className="store-builder-page min-h-screen p-3 sm:p-4">
       <ErrorModal message={validationMessage} onClose={() => setValidationMessage("")} />
       <ApprovalInfoModal open={approvalInfoOpen} onClose={() => setApprovalInfoOpen(false)} />
 
-      <div className="mx-auto max-w-[1500px] space-y-4">
-        <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
+      <div className="store-builder-shell mx-auto max-w-[1500px] space-y-4">
+        <section className="store-builder-hero rounded-2xl bg-white p-5 shadow-md sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <Link href="/mystore" className="text-sm font-semibold text-blue-700 hover:underline">← Mis tiendas</Link>
@@ -327,9 +327,9 @@ export default function StoreBuilderClient() {
 
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(360px,0.7fr)_minmax(0,1.3fr)] xl:items-start">
-          <div className="order-2 space-y-5 xl:order-1">
-            <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
+        <div className="store-builder-layout grid gap-5 xl:grid-cols-[minmax(360px,0.7fr)_minmax(0,1.3fr)] xl:items-start">
+          <div className="store-builder-form order-2 space-y-5 xl:order-1">
+            <section className="store-builder-panel store-builder-panel-info rounded-2xl bg-white p-5 shadow-md sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-bold uppercase tracking-wide text-blue-600">1. Información</div>
@@ -355,11 +355,11 @@ export default function StoreBuilderClient() {
               </label>
 
               <div className="mt-6 border-t border-gray-200 pt-5">
-                <div className="text-sm font-bold uppercase tracking-wide text-blue-600">Tarjeta del Mercadito</div>
-                <p className="mt-1 text-xs text-gray-500">Controla los textos y la forma que aparecen en tu pieza del collage.</p>
+                <div className="store-builder-card-kicker text-sm font-bold uppercase tracking-wide text-blue-600">Lo que aparece en Mercadito</div>
+                <p className="mt-1 text-xs text-gray-500">Estos controles corresponden directamente a elementos visibles de tu tarjeta pública. La vista previa usa la misma estructura del Marketplace.</p>
 
                 <label className="mt-4 block">
-                  <span className="mb-1 block text-sm font-semibold text-gray-700">Rótulo sobre la foto</span>
+                  <span className="mb-1 block text-sm font-semibold text-gray-700">Rótulo sobre la portada</span>
                   <input value={marketplaceLabel} onChange={(event) => setMarketplaceLabel(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} maxLength={40} placeholder="Ej. SNACK LAB" className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
                 </label>
 
@@ -372,7 +372,7 @@ export default function StoreBuilderClient() {
                 <label className="mt-4 block">
                   <span className="mb-1 block text-sm font-semibold text-gray-700">Etiquetas</span>
                   <input value={marketplaceTagsText} onChange={(event) => setMarketplaceTagsText(event.target.value)} onBlur={() => void persistInformation(false)} disabled={!editable} placeholder="Comida, Snacks" className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500" />
-                  <span className="mt-1 block text-xs text-gray-400">Máximo 3 etiquetas, separadas por comas.</span>
+                  <span className="mt-1 block text-xs text-gray-400">Máximo 3 etiquetas, separadas por comas. Son las cápsulas que se ven debajo de la descripción.</span>
                 </label>
 
                 <label className="mt-4 block">
@@ -383,7 +383,7 @@ export default function StoreBuilderClient() {
                       <option key={variant} value={variant}>Nube {index + 1}</option>
                     ))}
                   </select>
-                  <span className="mt-1 block text-xs text-gray-400">Automática reparte las seis formas entre las tiendas nuevas; también puedes elegir una manualmente.</span>
+                  <span className="mt-1 block text-xs text-gray-400">Esta es la forma orgánica que recorta tu portada en el Marketplace.</span>
                 </label>
 
                 <div className="mt-5">
@@ -423,23 +423,23 @@ export default function StoreBuilderClient() {
               </div>
             </section>
 
-            <div className="relative">
-              <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">2. Imagen</div>
+            <div className="store-builder-step relative">
+              <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">2. Imágenes visibles</div>
               <div className="pt-5"><StoreMediaSection user={firebaseUser} store={store} editable={editable} onStoreChanged={acceptStoreChange} onPreviewMedia={acceptPreviewMedia} /></div>
             </div>
 
-            <div className="relative">
+            <div className="store-builder-step relative">
               <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">3. Horario</div>
               <div className="pt-5"><StoreScheduleSection user={firebaseUser} store={store} editable={editable} onStoreChanged={acceptStoreChange} onScheduleChanged={acceptSchedule} /></div>
             </div>
 
-            <div className="relative">
+            <div className="store-builder-step relative">
               <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">4. Producto inicial</div>
               <div className="pt-5"><StoreProductsSection user={firebaseUser} storeId={store.id} storeStatus={store.status} editable={editable} onProductsChanged={acceptProducts} /></div>
             </div>
 
             {canSubmit && (
-              <section className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-md">
+              <section className="store-builder-finish rounded-2xl border-2 border-blue-200 bg-blue-50 p-6 shadow-md">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Terminar tienda</h2>
@@ -475,7 +475,7 @@ export default function StoreBuilderClient() {
             )}
           </div>
 
-          <aside className="order-1 xl:order-2 xl:sticky xl:top-4">
+          <aside className="store-builder-preview order-1 xl:order-2 xl:sticky xl:top-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
               <div>
                 <h2 className="text-lg font-black text-gray-950">Vista previa de tu página!</h2>
