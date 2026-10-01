@@ -101,3 +101,12 @@ Admin is now part of the same Mercadito visual system, including all current sub
 `app/mercadito-theme.css` contains an Admin-specific layer that applies the paper/collage language to mastheads, navigation cards, controls, action buttons and status surfaces while deliberately keeping dense administrative tables, filter bars, moderation context, audit data and ID/code blocks rectangular and highly legible.
 
 No administrative permissions, API calls, moderation behavior, routing, store actions, user actions, or data logic were changed in this pass.
+
+
+## Admin users — student card role action correction
+
+Removed the **Hacer Subadmin** action from every regular student/user card in `/admin/users`.
+
+Existing subadmins still expose **Quitar Subadmin** to Superadmin, so current administrative accounts can still be demoted from their card. This change only removes promotion from ordinary student cards; backend role APIs and permission rules were not changed.
+
+A regression test in `app/admin/users/page.test.ts` verifies that the promotion label/call are absent while the existing-subadmin removal action remains present.
