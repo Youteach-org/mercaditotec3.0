@@ -4,6 +4,7 @@ import {
   effectiveAdminRole,
   isAdminRole,
   isSuperadminRole,
+  studentAccessEligibility,
 } from "../security/domain";
 import { isAdministrativeBlockActive } from "../moderation/domain";
 import { getAdminAuth } from "../firebaseAdmin";
@@ -48,6 +49,32 @@ export function assertUserMayMutate(
   }
 }
 
+export function assertStudentMayEnter(
+  profile: Record<string, unknown> | undefined,
+  claims: Record<string, unknown>,
+  now = new Date(),
+): void {
+  const email =
+    typeof claims.email === "string"
+      ? claims.email
+      : typeof profile?.email === "string"
+        ? String(profile.email)
+        : "";
+  const emailVerified =
+    claims.email_verified === true || profile?.emailVerified === true;
+
+  const eligibility = studentAccessEligibility({
+    email,
+    emailVerified,
+    profile: profile ?? claims,
+    now,
+  });
+
+  if (!eligibility.allowed) {
+    throw new ApiAuthError(403, eligibility.reason);
+  }
+}
+
 export async function requireFirebaseUser(
   request: Request,
 ): Promise<AuthenticatedUser> {
@@ -65,8 +92,14 @@ export async function requireFirebaseUser(
 
   try {
     const claims = await getAdminAuth().verifyIdToken(token, true);
+    const profile = await loadProfile(claims.uid);
+    assertStudentMayEnter(
+      profile,
+      claims as unknown as Record<string, unknown>,
+    );
     return { uid: claims.uid, claims };
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiAuthError) throw error;
     throw new ApiAuthError(
       401,
       "La sesión no es válida o ha expirado.",
