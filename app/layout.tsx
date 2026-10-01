@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Kalam, Permanent_Marker } from "next/font/google";
 
 import ClientAppShell from "@/components/ClientAppShell";
 import "./globals.css";
+import "./mercadito-theme.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
