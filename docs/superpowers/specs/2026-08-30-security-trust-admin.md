@@ -44,3 +44,22 @@ This phase implements the security foundation and the user/administrator/audit s
 
 ## Privacy
 Store only the minimum data needed to establish trust, moderation history and administrative accountability. Do not expose endorsement relationships publicly.
+
+## Student control-number access gate — 2026-10-01
+
+This is an **additional** student-access signal. It does not replace institutional email verification or the existing two-endorsement trust system.
+
+For ordinary student/user accounts:
+
+- The account must use the institutional `@morelia.tecnm.mx` domain.
+- Firebase email verification remains required.
+- The institutional local part must use letters followed by an 8-digit control number, for example `a22121079`.
+- The first two digits of the control number are interpreted as the entry year: `22` -> 2022.
+- The entry year must be between the current year minus 5 and the current year, inclusive.
+- In 2026, accepted entry years are therefore 2021 through 2026.
+- Older years and future years are rejected.
+- After access, the existing `pending -> verified` student trust flow still requires two independent endorsements.
+
+The rule is enforced at registration, at login, and again in server-side authenticated API access so it cannot be bypassed merely by avoiding the UI.
+
+Existing administrative accounts are exempt from the student control-number format/window, but they still require a verified institutional email. Administrative-role authorization remains unchanged: only Superadmin may assign or remove Subadmins.
