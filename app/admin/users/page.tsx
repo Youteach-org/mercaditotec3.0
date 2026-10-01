@@ -50,6 +50,7 @@ export default function AdminUsersPage() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -137,6 +138,7 @@ export default function AdminUsersPage() {
         current.map((item) => (item.uid === user.uid ? (data.user as AdminUserSummary) : item)),
       );
       setMessage(role === "subadmin" ? "Subadmin asignado." : "Permiso de subadmin retirado.");
+      if (role === "subadmin") setSelectedUserUid(null);
     } catch (actionError) {
       setError(
         actionError instanceof Error ? actionError.message : "No se pudo actualizar el administrador.",
@@ -215,8 +217,24 @@ export default function AdminUsersPage() {
             {visibleUsers.map((user) => {
               const working = workingUid === user.uid;
               const isSelf = user.uid === firebaseUser.uid;
+              const canPromote = isSuperadmin && !isSelf && !user.adminRole;
+              const selected = selectedUserUid === user.uid;
               return (
-                <article key={user.uid} className="rounded-2xl bg-white p-5 shadow-md">
+                <article
+                  key={user.uid}
+                  onClick={() => {
+                    if (canPromote) {
+                      setSelectedUserUid((current) => current === user.uid ? null : user.uid);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (!canPromote || (event.key !== "Enter" && event.key !== " ")) return;
+                    event.preventDefault();
+                    setSelectedUserUid((current) => current === user.uid ? null : user.uid);
+                  }}
+                  tabIndex={canPromote ? 0 : undefined}
+                  className={`rounded-2xl bg-white p-5 shadow-md transition ${canPromote ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-[#174db4] ring-offset-2 ring-offset-[#fff9ee]" : ""}`}
+                >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <h3 className="truncate text-lg font-black text-gray-900">
@@ -257,7 +275,10 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                  <div
+                    className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     {user.studentStatus === "pending" && (
                       <span className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800">
                         Se confirmará automáticamente al llegar a 2/2 avales.
@@ -277,6 +298,17 @@ export default function AdminUsersPage() {
                       <span className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-bold text-red-800">
                         Confirmación revocada por administración.
                       </span>
+                    )}
+
+                    {canPromote && selected && (
+                      <button
+                        type="button"
+                        disabled={working}
+                        onClick={() => void updateRole(user, "subadmin")}
+                        className="rounded-xl bg-slate-900 px-3.5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                      >
+                        Hacer Subadmin
+                      </button>
                     )}
 
                     {isSuperadmin && !isSelf && user.adminRole === "subadmin" && (
