@@ -14,7 +14,7 @@ describe("student access wiring", () => {
   it("validates the control number before registration creates a Firebase account", () => {
     const register = source("app/register/page.tsx");
     const validation = register.indexOf("studentControlEligibility(cleanLocalPart");
-    const creation = register.indexOf("createUserWithEmailAndPassword");
+    const creation = register.indexOf("const result = await createUserWithEmailAndPassword");
     expect(validation).toBeGreaterThan(-1);
     expect(creation).toBeGreaterThan(validation);
   });
@@ -30,6 +30,6 @@ describe("student access wiring", () => {
     const auth = source("lib/store/auth.ts");
     expect(auth).toContain("assertStudentMayEnter");
     expect(auth).toContain("studentAccessEligibility");
-    expect(auth).toContain("assertStudentMayEnter(profile");
+    expect(auth).toMatch(/assertStudentMayEnter\(\s*profile,/);
   });
 });
