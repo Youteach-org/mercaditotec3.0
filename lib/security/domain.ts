@@ -98,3 +98,41 @@ export function canEndorseStudent(
 
   return { allowed: true };
 }
+
+
+export type StudentControlEligibility =
+  | { allowed: true; controlNumber: string; entryYear: number }
+  | { allowed: false; reason: string };
+
+export function studentControlEligibility(
+  value: string,
+  now: Date = new Date(),
+): StudentControlEligibility {
+  const localPart = value.trim().toLowerCase().split("@", 1)[0];
+  const match = localPart.match(/^[a-z]+(\d{8})$/);
+
+  if (!match) {
+    return {
+      allowed: false,
+      reason: "El usuario institucional debe incluir una letra seguida de un número de control de 8 dígitos.",
+    };
+  }
+
+  const controlNumber = match[1];
+  const entryYear = 2000 + Number(controlNumber.slice(0, 2));
+  const currentYear = now.getUTCFullYear();
+  const earliestYear = currentYear - 5;
+
+  if (entryYear < earliestYear || entryYear > currentYear) {
+    return {
+      allowed: false,
+      reason: `El número de control debe corresponder a un ingreso dentro de los últimos 5 años (${earliestYear}-${currentYear}).`,
+    };
+  }
+
+  return {
+    allowed: true,
+    controlNumber,
+    entryYear,
+  };
+}
