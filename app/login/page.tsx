@@ -12,6 +12,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+import { studentAccessEligibility } from "@/lib/security/domain";
 
 const DOMAIN = "@morelia.tecnm.mx";
 
@@ -115,6 +116,21 @@ export default function LoginPage() {
         return;
       }
 
+      const profileSnapshot = await getDoc(doc(db, "users", result.user.uid));
+      const profileData = profileSnapshot.exists() ? profileSnapshot.data() : undefined;
+      const tokenResult = await result.user.getIdTokenResult();
+      const accessEligibility = studentAccessEligibility({
+        email: result.user.email ?? fullEmail,
+        emailVerified: result.user.emailVerified,
+        profile: profileData ?? tokenResult.claims,
+      });
+
+      if (!accessEligibility.allowed) {
+        await signOut(auth);
+        setError(accessEligibility.reason);
+        return;
+      }
+
       await ensureUserDocument(result.user.uid, result.user.email, true);
 
       router.replace("/marketplace");
@@ -199,7 +215,7 @@ export default function LoginPage() {
             <div className="flex rounded-xl border border-gray-300 overflow-hidden">
               <input
                 type="text"
-                placeholder="ejemplo: a12345678"
+                placeholder="ejemplo: a22121079"
                 value={localPart}
                 onChange={(e) => setLocalPart(e.target.value)}
                 autoCapitalize="none"
