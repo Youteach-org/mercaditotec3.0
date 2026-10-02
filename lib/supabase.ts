@@ -1,15 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+export const SUPABASE_STORAGE_URL =
+  "https://wfmokinfcypfpdisussw.supabase.co";
 
-import { auth } from "@/lib/firebase";
+export const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_-EhpFuhIJnz_9RktadwHug_7RvZQv6G";
 
-const SUPABASE_URL = "https://wfmokinfcypfpdisussw.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_-EhpFuhIJnz_9RktadwHug_7RvZQv6G";
+export const SUPABASE_IMAGE_BUCKET =
+  "chat-images";
 
-export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
-  {
-    accessToken: async () =>
-      (await auth.currentUser?.getIdToken(false)) ?? null,
-  },
-);
+export const SUPABASE_IMAGE_UPLOAD_ENDPOINT =
+  `${SUPABASE_STORAGE_URL}/functions/v1/upload-image`;
