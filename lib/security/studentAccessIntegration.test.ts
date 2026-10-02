@@ -31,5 +31,19 @@ describe("student access wiring", () => {
     expect(auth).toContain("assertStudentMayEnter");
     expect(auth).toContain("studentAccessEligibility");
     expect(auth).toMatch(/assertStudentMayEnter\(\s*profile,/);
+    expect(auth).toContain("claims.email_verified === true");
+    expect(auth).not.toContain("profile?.emailVerified === true");
+  });
+
+  it("does not write privileged user fields directly from registration, login or profile UI", () => {
+    for (const path of ["app/register/page.tsx", "app/login/page.tsx", "app/profile/page.tsx"]) {
+      const code = source(path);
+      expect(code).not.toMatch(/setDoc\(\s*doc\(db,\s*["']users["']/);
+      expect(code).not.toMatch(/updateDoc\(\s*doc\(db,\s*["']users["']/);
+    }
+
+    expect(source("app/register/page.tsx")).toContain("/api/account/bootstrap");
+    expect(source("app/login/page.tsx")).toContain("/api/account/sync");
+    expect(source("app/profile/page.tsx")).toContain("/api/profile");
   });
 });
