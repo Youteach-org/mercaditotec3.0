@@ -17,6 +17,11 @@ import {
 import imageCompression from "browser-image-compression";
 import { db } from "@/lib/firebase";
 import { uploadImageFile } from "@/lib/imageStorage";
+import {
+  findSharedImageByHash,
+  loadSharedImageLibrary,
+  saveSharedImageMetadata,
+} from "@/lib/chat/imageLibraryClient";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
@@ -162,25 +167,9 @@ async function uploadToSupabase(
   }
 
   if (shareInLibrary) {
-    const existingSnapshot = await getDocs(
-      query(
-        collection(db, "chat_image_library"),
-        where("sha256", "==", sha256),
-        limit(1),
-      ),
-    );
+    const existing = await findSharedImageByHash(sha256);
 
-    const existingDocument = existingSnapshot.docs[0];
-    const existing = existingDocument?.data() as
-      | {
-          url?: string;
-          ownerUid?: string;
-          sha256?: string;
-          shared?: boolean;
-        }
-      | undefined;
-
-    if (existing?.shared === true && existing.url) {
+    if (existing?.url) {
       return {
         url: existing.url,
         sha256,
@@ -234,19 +223,10 @@ async function uploadToSupabase(
   });
 
   if (shareInLibrary) {
-    await setDoc(
-      doc(db, "chat_image_library", sha256),
-      {
-        url,
-        storagePath: filePath,
-        ownerUid: userId,
-        sha256,
-        source: "chat",
-        shared: true,
-        createdAt: Date.now(),
-      },
-      { merge: false },
-    );
+    await saveSharedImageMetadata({
+      url,
+      sha256,
+    });
   }
 
   return {
@@ -720,30 +700,9 @@ function ChatContent() {
 
     async function loadSharedImages() {
       try {
-        const snapshot = await getDocs(
-          query(
-            collection(db, "chat_image_library"),
-            orderBy("createdAt", "desc"),
-            limit(250),
-          ),
-        );
-
+        const images = await loadSharedImageLibrary();
         if (cancelled) return;
-
-        setSharedImages(
-          snapshot.docs
-            .map((item) => {
-              const data = item.data();
-              return {
-                id: item.id,
-                url: typeof data.url === "string" ? data.url : "",
-                ownerUid: typeof data.ownerUid === "string" ? data.ownerUid : "",
-                sha256: typeof data.sha256 === "string" ? data.sha256 : item.id,
-                createdAt: Number(data.createdAt ?? 0),
-              };
-            })
-            .filter((item) => Boolean(item.url))
-        );
+        setSharedImages(images);
       } catch (error) {
         console.error("SHARED_IMAGE_LIBRARY_ERROR", error);
       }
