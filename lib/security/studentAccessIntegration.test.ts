@@ -19,11 +19,13 @@ describe("student access wiring", () => {
     expect(creation).toBeGreaterThan(validation);
   });
 
-  it("checks additive student access after Firebase login", () => {
+  it("checks student access through the authenticated server sync after Firebase login", () => {
     const login = source("app/login/page.tsx");
-    expect(login).toContain("studentAccessEligibility");
-    expect(login).toContain("profileData");
+    expect(login).toContain("/api/account/sync");
+    expect(login).toContain("getIdToken(true)");
     expect(login).toContain("await signOut(auth)");
+    expect(login).not.toContain("studentAccessEligibility");
+    expect(login).not.toContain("profileData");
   });
 
   it("enforces the same rule in server authentication", () => {
