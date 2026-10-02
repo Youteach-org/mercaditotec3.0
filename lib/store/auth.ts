@@ -60,8 +60,8 @@ export function assertStudentMayEnter(
       : typeof profile?.email === "string"
         ? String(profile.email)
         : "";
-  const emailVerified =
-    claims.email_verified === true || profile?.emailVerified === true;
+  // Authorization trusts Firebase Authentication, never a mutable Firestore mirror.
+  const emailVerified = claims.email_verified === true;
 
   const eligibility = studentAccessEligibility({
     email,
