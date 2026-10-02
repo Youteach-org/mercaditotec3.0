@@ -46,6 +46,7 @@ export async function setStoreMedia(
   if (url) {
     validateStoreMediaUrl(
       url,
+      ownerUid,
       storeId,
       kind,
     );
