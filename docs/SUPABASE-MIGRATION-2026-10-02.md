@@ -1,87 +1,107 @@
-# MercaditoTec3 — Supabase migration status
+# MercaditoTec3 — Firebase data + Supabase images
 
 Date: 2026-10-02
 
-## Destination project
+## Correct architecture
 
-Supabase project ref: `wfmokinfcypfpdisussw`
+Mercadito keeps application data and identity in Firebase.
 
-Project URL: `https://wfmokinfcypfpdisussw.supabase.co`
+### Firebase
 
-The project was restored and verified as `ACTIVE_HEALTHY`.
+Firebase remains the source of truth for:
 
-## What is already migrated
-
-The destination database schema is now created with RLS enabled for all application tables.
-
-Created tables:
-
-- `users`
-- `store_categories`
-- `stores`
-- `products`
-- `orders`
-- `notifications`
-- `messages`
-- `reports`
-- `admin_audit_logs`
-- `student_endorsements`
-- `trust_counters`
-- `site_config`
-
-The default marketplace categories were seeded and the marketplace site-config row was created.
-
-Private tables were explicitly removed from anonymous grants. Public anonymous access remains only on the marketplace surfaces that need it: active stores, published products, active categories and public marketplace configuration, all still constrained by RLS.
-
-Foreign-key support indexes identified by the Supabase performance advisor were added.
-
-## Authentication strategy
-
-Firebase Auth remains the authentication provider during the database migration.
-
-The application Supabase client is now configured for the destination project and obtains the current Firebase ID token through the Supabase `accessToken` callback.
-
-Supabase documentation supports Firebase Auth as a third-party authentication provider. The Supabase dashboard integration for Firebase project `mercadito3-1ff3e` still needs to be enabled before authenticated Data API calls can be cut over.
-
-## What is NOT migrated yet
-
-Production Firestore records have not yet been copied into Postgres.
-
-This includes existing:
-
-- user profiles and admin roles
-- stores and products
-- orders and notifications
-- chat messages
-- reports and audit history
-- student endorsements and trust counters
+- Firebase Authentication
+- user profiles
+- admin / subadmin roles
+- student verification and endorsements
+- stores
+- products
+- orders
+- notifications
+- chat messages and reactions
+- reports and moderation
+- audit records
 - marketplace configuration
+- shared-image metadata and user image references
 
-No Firestore data has been deleted or modified as part of this preparation.
+Firestore remains the application database.
 
-## Cutover rule
+### Supabase
 
-Do not switch repository implementations from Firestore to Supabase until:
+Supabase is used only for image file storage.
 
-1. Firebase third-party authentication is enabled in the destination Supabase project.
-2. Existing Firestore production data is copied and row counts / key relationships are verified.
-3. Read-only parity checks pass for users, marketplace, stores, products and orders.
-4. Write-path tests pass for trust, stores, orders, moderation and notifications.
-5. The Cloudflare production build and health checks pass.
+Project ref:
 
-Firebase remains the current source of truth until those checks are complete.
+`wfmokinfcypfpdisussw`
 
+Storage bucket:
 
-## RLS hardening verification
+`chat-images`
 
-A follow-up RLS correction separated anonymous marketplace policies from authenticated/admin policies. This prevents anonymous requests from evaluating private admin helper functions.
+The bucket is public for image delivery and restricts files to:
 
-Verified with the database role set to `anon`:
+- JPEG
+- PNG
+- WebP
+- GIF
+- maximum 1 MB
 
-- `store_categories`: public active rows are readable.
-- `stores`: public active rows are readable.
-- `products`: public published rows belonging to active stores are readable.
-- `site_config`: the public marketplace configuration is readable.
-- `users`, `orders`, `notifications`, `messages`, `reports`, `admin_audit_logs`, `student_endorsements` and `trust_counters`: direct anonymous SELECT is denied.
+No Mercadito application tables remain in the Supabase `public` schema.
 
-Supabase security-advisor warnings that remain for anonymous access are limited to the four intentionally public marketplace tables. Authenticated-table discoverability warnings remain because authenticated access is governed by RLS and is required for the planned Firebase third-party-authenticated Data API path.
+## Secure upload flow
+
+Browser uploads do not write directly to Supabase Storage.
+
+Uploads go to the Supabase Edge Function:
+
+`upload-image`
+
+The function:
+
+1. receives the Firebase ID token from the current user;
+2. validates that token against Firebase Authentication;
+3. extracts the Firebase UID;
+4. verifies that the requested Storage path belongs to that UID;
+5. validates MIME type and 1 MB size limit;
+6. uploads the file to the `chat-images` bucket with server-side Supabase credentials;
+7. returns the public Storage URL.
+
+Direct client INSERT policies on `storage.objects` are not enabled.
+
+## Storage paths
+
+Chat images:
+
+`chat/<firebase-uid>/<shared-or-product>/<yyyy-mm>/<filename>`
+
+Store logo and cover images:
+
+`stores/<firebase-uid>/<store-id>/<logo-or-cover>/<filename>`
+
+Product images:
+
+`stores/<firebase-uid>/<store-id>/products/<product-id>/<filename>`
+
+This prevents one Firebase user from uploading into another user's image namespace.
+
+## Shared chat image metadata
+
+The former Supabase-table approach for `chat_image_library` was removed.
+
+Shared image metadata is stored in Firestore under the top-level collection:
+
+`chat_image_library`
+
+The browser accesses that metadata through the Firebase-authenticated server API:
+
+`/api/chat/image-library`
+
+The actual image bytes remain in Supabase Storage.
+
+## Correction of earlier migration work
+
+An earlier implementation in this session created Mercadito application tables in Supabase. That was based on a misunderstanding of the intended architecture.
+
+Those application tables and helper database objects were removed. The destination Supabase project is now used only for Storage and the image-upload Edge Function.
+
+Firebase remains the data/authentication platform; Supabase is the image file store.
