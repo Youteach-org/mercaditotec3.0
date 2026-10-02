@@ -10,7 +10,7 @@ export type StoreMediaKind =
   | "product";
 
 const SUPABASE_MEDIA_ORIGIN =
-  "https://syvfxcqceyijofkgxviu.supabase.co";
+  "https://wfmokinfcypfpdisussw.supabase.co";
 
 const ALLOWED_MIME_TYPES =
   new Set([
@@ -79,6 +79,7 @@ function assertSafeId(
 
 export function buildStoreMediaPath(
   input: {
+    ownerUid: string;
     storeId: string;
     kind: StoreMediaKind;
     nonce: string;
@@ -86,6 +87,7 @@ export function buildStoreMediaPath(
     productId?: string;
   },
 ): string {
+  assertSafeId(input.ownerUid);
   assertSafeId(input.storeId);
   assertSafeId(input.nonce);
 
@@ -115,6 +117,7 @@ export function buildStoreMediaPath(
 
     return [
       "stores",
+      input.ownerUid,
       input.storeId,
       "products",
       input.productId,
@@ -124,6 +127,7 @@ export function buildStoreMediaPath(
 
   return [
     "stores",
+    input.ownerUid,
     input.storeId,
     input.kind,
     `${input.nonce}.${extension}`,
@@ -174,6 +178,7 @@ function mediaPathFromUrl(
 
 export function validateStoreMediaUrl(
   value: string,
+  ownerUid: string,
   storeId: string,
   kind: "logo" | "cover",
 ): void {
@@ -181,7 +186,7 @@ export function validateStoreMediaUrl(
     mediaPathFromUrl(value);
 
   const expectedPrefix =
-    `stores/${storeId}/${kind}/`;
+    `stores/${ownerUid}/${storeId}/${kind}/`;
 
   if (
     !path.startsWith(
@@ -196,11 +201,12 @@ export function validateStoreMediaUrl(
 
 export function assertProductImageUrlsForStore(
   urls: string[],
+  ownerUid: string,
   storeId: string,
   productId: string,
 ): void {
   const expectedPrefix =
-    `stores/${storeId}/products/${productId}/`;
+    `stores/${ownerUid}/${storeId}/products/${productId}/`;
 
   for (const value of urls) {
     const path =
