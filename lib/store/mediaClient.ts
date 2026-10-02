@@ -13,6 +13,7 @@ import {
 
 export async function uploadStoreMedia(
   input: {
+    ownerUid: string;
     storeId: string;
     kind: StoreMediaKind;
     file: File;
@@ -32,6 +33,9 @@ export async function uploadStoreMedia(
 
   const path =
     buildStoreMediaPath({
+      ownerUid:
+        input.ownerUid,
+
       storeId:
         input.storeId,
 
