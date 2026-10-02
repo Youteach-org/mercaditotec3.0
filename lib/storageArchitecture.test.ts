@@ -15,7 +15,8 @@ describe("Firebase data and Supabase image-only architecture", () => {
     const repository = source("lib/chat/imageLibraryRepository.ts");
     expect(repository).toContain('getAdminDb()');
     expect(repository).toContain('"chat_image_library"');
-    expect(repository).not.toContain("supabase");
+    expect(repository).not.toContain("createClient");
+    expect(repository).not.toMatch(/\.from\s*\(/);
   });
 
   it("uses the secure image upload function instead of Supabase database calls", () => {
