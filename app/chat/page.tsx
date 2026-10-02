@@ -16,7 +16,7 @@ import {
 } from "firebase/firestore";
 import imageCompression from "browser-image-compression";
 import { db } from "@/lib/firebase";
-import { supabase } from "@/lib/supabase";
+import { uploadImageFile } from "@/lib/imageStorage";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
@@ -227,20 +227,11 @@ async function uploadToSupabase(
   const filePath =
     `chat/${safeUserId}/${privacyFolder}/${monthFolder}/${fileName}`;
 
-  const uploaded = await supabase.storage
-    .from("chat-images")
-    .upload(filePath, compressed, {
-      upsert: false,
-      contentType: mimeType,
-      cacheControl: "31536000",
-    });
-
-  if (uploaded.error) throw uploaded.error;
-
-  const url = supabase.storage
-    .from("chat-images")
-    .getPublicUrl(filePath)
-    .data.publicUrl;
+  const url = await uploadImageFile({
+    path: filePath,
+    file: compressed,
+    filename: fileName,
+  });
 
   if (shareInLibrary) {
     await setDoc(
