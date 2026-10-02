@@ -6,16 +6,31 @@ import { describe, expect, it } from "vitest";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
 
+function source(path: string) {
+  return readFileSync(join(root, path), "utf8");
+}
+
 describe("Firebase data and Supabase image-only architecture", () => {
-  it("keeps chat metadata in Firestore instead of Supabase tables", () => {
-    const chat = readFileSync(join(root, "app/chat/page.tsx"), "utf8");
-    expect(chat).not.toContain('.from("chat_image_library")');
-    expect(chat).toContain('collection(db, "chat_image_library")');
+  it("keeps shared image metadata in Firestore", () => {
+    const repository = source("lib/chat/imageLibraryRepository.ts");
+    expect(repository).toContain('getAdminDb()');
+    expect(repository).toContain('"chat_image_library"');
+    expect(repository).not.toContain("supabase");
   });
 
-  it("uses Supabase only through Storage in the chat page", () => {
-    const chat = readFileSync(join(root, "app/chat/page.tsx"), "utf8");
-    expect(chat).toContain("supabase.storage");
+  it("uses the secure image upload function instead of Supabase database calls", () => {
+    const chat = source("app/chat/page.tsx");
+    const media = source("lib/store/mediaClient.ts");
+
+    expect(chat).toContain("uploadImageFile");
+    expect(media).toContain("uploadImageFile");
     expect(chat).not.toMatch(/supabase\s*\.\s*from\s*\(/);
+    expect(media).not.toMatch(/supabase\s*\.\s*from\s*\(/);
+  });
+
+  it("keeps Firebase as the application data and authentication layer", () => {
+    const firebase = source("lib/firebase.ts");
+    expect(firebase).toContain("getAuth");
+    expect(firebase).toContain("getFirestore");
   });
 });
