@@ -166,7 +166,7 @@ export default function StoreProductsSection({
 
     const uploaded = [...currentUrls];
     for (const file of newFiles) {
-      uploaded.push(await uploadStoreMedia({ storeId, kind: "product", productId, file }));
+      uploaded.push(await uploadStoreMedia({ ownerUid: user.uid, storeId, kind: "product", productId, file }));
     }
     return uploaded;
   }
