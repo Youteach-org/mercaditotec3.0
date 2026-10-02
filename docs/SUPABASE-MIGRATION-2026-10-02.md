@@ -70,3 +70,18 @@ Do not switch repository implementations from Firestore to Supabase until:
 5. The Cloudflare production build and health checks pass.
 
 Firebase remains the current source of truth until those checks are complete.
+
+
+## RLS hardening verification
+
+A follow-up RLS correction separated anonymous marketplace policies from authenticated/admin policies. This prevents anonymous requests from evaluating private admin helper functions.
+
+Verified with the database role set to `anon`:
+
+- `store_categories`: public active rows are readable.
+- `stores`: public active rows are readable.
+- `products`: public published rows belonging to active stores are readable.
+- `site_config`: the public marketplace configuration is readable.
+- `users`, `orders`, `notifications`, `messages`, `reports`, `admin_audit_logs`, `student_endorsements` and `trust_counters`: direct anonymous SELECT is denied.
+
+Supabase security-advisor warnings that remain for anonymous access are limited to the four intentionally public marketplace tables. Authenticated-table discoverability warnings remain because authenticated access is governed by RLS and is required for the planned Firebase third-party-authenticated Data API path.
