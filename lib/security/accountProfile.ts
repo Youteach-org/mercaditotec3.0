@@ -120,3 +120,77 @@ export async function syncVerifiedAccountProfile(
     updatedAt: Timestamp.fromDate(now),
   });
 }
+
+const PROFILE_IMAGE_HOST = "firebasestorage.googleapis.com";
+const PROFILE_IMAGE_BUCKET = "mercadito3-1ff3e.firebasestorage.app";
+
+function validateProfileImageUrl(uid: string, value: string): string {
+  let url: URL;
+
+  try {
+    url = new URL(value);
+  } catch {
+    throw new AccountProfileError(400, "La URL de la foto no es válida.");
+  }
+
+  if (url.protocol !== "https:" || url.hostname !== PROFILE_IMAGE_HOST) {
+    throw new AccountProfileError(400, "La foto no pertenece al almacenamiento permitido.");
+  }
+
+  const expectedPrefix = `/v0/b/${PROFILE_IMAGE_BUCKET}/o/`;
+  if (!url.pathname.startsWith(expectedPrefix)) {
+    throw new AccountProfileError(400, "La foto no pertenece al almacenamiento permitido.");
+  }
+
+  let objectPath = "";
+  try {
+    objectPath = decodeURIComponent(url.pathname.slice(expectedPrefix.length));
+  } catch {
+    throw new AccountProfileError(400, "La URL de la foto no es válida.");
+  }
+
+  if (!objectPath.startsWith(`profile-images/${uid}/`)) {
+    throw new AccountProfileError(403, "La foto no pertenece a tu cuenta.");
+  }
+
+  return url.toString();
+}
+
+export async function updateOwnProfile(uid: string, input: unknown): Promise<void> {
+  if (!input || typeof input !== "object") {
+    throw new AccountProfileError(400, "Datos de perfil inválidos.");
+  }
+
+  const body = input as Record<string, unknown>;
+  const update: Record<string, unknown> = {
+    updatedAt: Timestamp.now(),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(body, "displayName")) {
+    const displayName = String(body.displayName ?? "").trim();
+    if (displayName.length < 1 || displayName.length > 60) {
+      throw new AccountProfileError(
+        400,
+        "El nombre visible debe tener entre 1 y 60 caracteres.",
+      );
+    }
+    update.displayName = displayName;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "photoURL")) {
+    const photoURL = String(body.photoURL ?? "").trim();
+    update.photoURL = photoURL ? validateProfileImageUrl(uid, photoURL) : "";
+  }
+
+  if (!("displayName" in update) && !("photoURL" in update)) {
+    throw new AccountProfileError(400, "No hay cambios de perfil permitidos.");
+  }
+
+  const reference = getAdminDb().collection("users").doc(uid);
+  const snapshot = await reference.get();
+  if (!snapshot.exists) {
+    throw new AccountProfileError(404, "Tu perfil de usuario no está disponible.");
+  }
+
+  await reference.update(update);
+}
