@@ -1,18 +1,16 @@
-﻿"use client";
+"use client";
 
-import {
-  supabase,
-} from "@/lib/supabase";
+import { uploadImageFile } from "@/lib/imageStorage";
 
 import {
   buildStoreMediaPath,
-  STORE_MEDIA_BUCKET,
   validateMediaFileMeta,
   type StoreMediaKind,
 } from "./media";
 
 export async function uploadStoreMedia(
   input: {
+    ownerUid: string;
     storeId: string;
     kind: StoreMediaKind;
     file: File;
@@ -32,6 +30,9 @@ export async function uploadStoreMedia(
 
   const path =
     buildStoreMediaPath({
+      ownerUid:
+        input.ownerUid,
+
       storeId:
         input.storeId,
 
@@ -47,34 +48,9 @@ export async function uploadStoreMedia(
         input.file.type,
     });
 
-  const {
-    error,
-  } = await supabase
-    .storage
-    .from(STORE_MEDIA_BUCKET)
-    .upload(
-      path,
-      input.file,
-      {
-        cacheControl: "3600",
-        upsert: false,
-        contentType:
-          input.file.type,
-      },
-    );
-
-  if (error) {
-    throw new Error(
-      `No se pudo subir la imagen: ${error.message}`,
-    );
-  }
-
-  const {
-    data,
-  } = supabase
-    .storage
-    .from(STORE_MEDIA_BUCKET)
-    .getPublicUrl(path);
-
-  return data.publicUrl;
+  return uploadImageFile({
+    path,
+    file: input.file,
+    filename: input.file.name,
+  });
 }

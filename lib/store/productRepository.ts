@@ -143,7 +143,7 @@ export async function createProduct(
   const reference = db.collection("products").doc();
   const base = buildNewProductRecord(ownerUid, storeId, reference.id, input);
 
-  assertProductImageUrlsForStore(base.imageUrls, storeId, reference.id);
+  assertProductImageUrlsForStore(base.imageUrls, ownerUid, storeId, reference.id);
   if (base.visibility === "published" && base.categoryId) {
     await requireActiveCategory(base.categoryId);
   }
@@ -194,7 +194,7 @@ export async function updateProduct(
   const validated = validateProductInput(input);
   const suggestedCategoryName = validated.suggestedCategoryName ?? null;
 
-  assertProductImageUrlsForStore(validated.imageUrls, storeId, productId);
+  assertProductImageUrlsForStore(validated.imageUrls, ownerUid, storeId, productId);
   if (validated.visibility === "published" && validated.categoryId) {
     await requireActiveCategory(validated.categoryId);
   }

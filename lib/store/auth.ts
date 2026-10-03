@@ -9,6 +9,7 @@ import {
 import { isAdministrativeBlockActive } from "../moderation/domain";
 import { getAdminAuth } from "../firebaseAdmin";
 import { getAdminDb } from "../firestoreRest";
+import { consumeMutationBudget, MutationLimitError } from "../security/rateLimit";
 
 export class ApiAuthError extends Error {
   constructor(
@@ -41,6 +42,9 @@ export function assertUserMayMutate(
   profile: Record<string, unknown> | undefined,
   now = new Date(),
 ): void {
+  if (profile?.isActive === false) {
+    throw new ApiAuthError(403, "Tu cuenta está desactivada.");
+  }
   if (profile && isAdministrativeBlockActive(profile, now)) {
     throw new ApiAuthError(
       403,
@@ -57,9 +61,7 @@ export function assertStudentMayEnter(
   const email =
     typeof claims.email === "string"
       ? claims.email
-      : typeof profile?.email === "string"
-        ? String(profile.email)
-        : "";
+      : "";
   // Authorization trusts Firebase Authentication, never a mutable Firestore mirror.
   const emailVerified = claims.email_verified === true;
 
@@ -93,12 +95,20 @@ export async function requireFirebaseUser(
   try {
     const claims = await getAdminAuth().verifyIdToken(token, true);
     const profile = await loadProfile(claims.uid);
+    if (profile?.isActive === false) {
+      throw new ApiAuthError(403, "Tu cuenta está desactivada.");
+    }
     assertStudentMayEnter(
       profile,
       claims as unknown as Record<string, unknown>,
     );
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+      assertUserMayMutate(profile);
+      await consumeMutationBudget(claims.uid);
+    }
     return { uid: claims.uid, claims };
   } catch (error) {
+    if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
     if (error instanceof ApiAuthError) throw error;
     throw new ApiAuthError(
       401,
@@ -120,6 +130,7 @@ export async function requireAdmin(
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
   const profile = await loadProfile(user.uid);
+  assertUserMayMutate(profile);
 
   if (profile) {
     if (!isAdminRole(profile)) {
@@ -140,6 +151,7 @@ export async function requireSuperadmin(
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
   const profile = await loadProfile(user.uid);
+  assertUserMayMutate(profile);
 
   if (profile) {
     if (!isSuperadminRole(profile)) {

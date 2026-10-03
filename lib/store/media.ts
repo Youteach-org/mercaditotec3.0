@@ -1,4 +1,4 @@
-﻿export const STORE_MEDIA_BUCKET =
+export const STORE_MEDIA_BUCKET =
   "chat-images";
 
 export const STORE_MEDIA_MAX_BYTES =
@@ -10,7 +10,7 @@ export type StoreMediaKind =
   | "product";
 
 const SUPABASE_MEDIA_ORIGIN =
-  "https://syvfxcqceyijofkgxviu.supabase.co";
+  "https://wfmokinfcypfpdisussw.supabase.co";
 
 const ALLOWED_MIME_TYPES =
   new Set([
@@ -77,8 +77,37 @@ function assertSafeId(
   }
 }
 
+export function parseImageUploadPath(path: string, ownerUid: string): {
+  path: string; storeId?: string; productId?: string;
+} {
+  assertSafeId(ownerUid);
+  const parts = path.split("/");
+  if (path.length > 600 || parts.some((part) => !part || part === "." || part === ".." || /[%\\?#]/.test(part))) {
+    throw new Error("Ruta de imagen inválida.");
+  }
+  if (parts[1] !== ownerUid || !/^[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp|gif)$/.test(parts.at(-1) ?? "")) {
+    throw new Error("La ruta de imagen no pertenece al usuario.");
+  }
+  if (parts[0] === "chat" && parts.length === 5 &&
+      ["shared", "product"].includes(parts[2]) && /^\d{4}-(0[1-9]|1[0-2])$/.test(parts[3])) {
+    return { path };
+  }
+  if (parts[0] === "stores") {
+    assertSafeId(parts[2] ?? "");
+    if (parts.length === 5 && ["logo", "cover"].includes(parts[3])) {
+      return { path, storeId: parts[2] };
+    }
+    if (parts.length === 6 && parts[3] === "products") {
+      assertSafeId(parts[4]);
+      return { path, storeId: parts[2], productId: parts[4] };
+    }
+  }
+  throw new Error("Ruta de imagen inválida.");
+}
+
 export function buildStoreMediaPath(
   input: {
+    ownerUid: string;
     storeId: string;
     kind: StoreMediaKind;
     nonce: string;
@@ -86,6 +115,7 @@ export function buildStoreMediaPath(
     productId?: string;
   },
 ): string {
+  assertSafeId(input.ownerUid);
   assertSafeId(input.storeId);
   assertSafeId(input.nonce);
 
@@ -115,6 +145,7 @@ export function buildStoreMediaPath(
 
     return [
       "stores",
+      input.ownerUid,
       input.storeId,
       "products",
       input.productId,
@@ -124,6 +155,7 @@ export function buildStoreMediaPath(
 
   return [
     "stores",
+    input.ownerUid,
     input.storeId,
     input.kind,
     `${input.nonce}.${extension}`,
@@ -174,6 +206,7 @@ function mediaPathFromUrl(
 
 export function validateStoreMediaUrl(
   value: string,
+  ownerUid: string,
   storeId: string,
   kind: "logo" | "cover",
 ): void {
@@ -181,7 +214,7 @@ export function validateStoreMediaUrl(
     mediaPathFromUrl(value);
 
   const expectedPrefix =
-    `stores/${storeId}/${kind}/`;
+    `stores/${ownerUid}/${storeId}/${kind}/`;
 
   if (
     !path.startsWith(
@@ -196,11 +229,12 @@ export function validateStoreMediaUrl(
 
 export function assertProductImageUrlsForStore(
   urls: string[],
+  ownerUid: string,
   storeId: string,
   productId: string,
 ): void {
   const expectedPrefix =
-    `stores/${storeId}/products/${productId}/`;
+    `stores/${ownerUid}/${storeId}/products/${productId}/`;
 
   for (const value of urls) {
     const path =

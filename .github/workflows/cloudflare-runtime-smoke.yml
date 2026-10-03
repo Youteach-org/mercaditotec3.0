@@ -59,7 +59,8 @@ jobs:
           fi
 
           probe "/__health" /tmp/health.txt
-          probe "/__probe" /tmp/probe.txt
+          diagnostic_status="$(curl -sS --max-time 30 -o /tmp/probe.txt -w '%{http_code}' "$BASE/__probe")"
+          [ "$diagnostic_status" = "404" ] || { echo "::error::Public diagnostics must be disabled"; exit 1; }
           probe "/" /tmp/root.html
           probe "/marketplace" /tmp/marketplace.html
           probe "/api/marketplace" /tmp/marketplace.json
@@ -70,18 +71,8 @@ jobs:
             exit 1
           }
 
-          grep -q '"firebaseSecretPresent": true' /tmp/health.txt || {
-            echo "::error::Cloudflare runtime does not expose FIREBASE_SERVICE_ACCOUNT_JSON"
-            exit 1
-          }
-
-          grep -q '"pathname": "/marketplace"' /tmp/probe.txt || {
-            echo "::error::OpenNext probe did not exercise /marketplace"
-            exit 1
-          }
-
-          grep -q '"status": 200' /tmp/probe.txt || {
-            echo "::error::OpenNext probe did not report HTTP 200"
+          jq -e '.ok == true' /tmp/health.txt >/dev/null || {
+            echo "::error::Cloudflare runtime health check failed"
             exit 1
           }
 

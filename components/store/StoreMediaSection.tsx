@@ -33,7 +33,7 @@ export default function StoreMediaSection({
     setError("");
 
     try {
-      const url = await uploadStoreMedia({ storeId: store.id, kind, file });
+      const url = await uploadStoreMedia({ ownerUid: user.uid, storeId: store.id, kind, file });
       const response = await storeApiFetch(user, `/api/stores/${store.id}/media`, {
         method: "PATCH",
         body: JSON.stringify({ kind, url }),

@@ -196,7 +196,7 @@ export function isAdministrativeBlockActive(
 ): boolean {
   if (profile.blocked !== true) return false;
   const until = dateMilliseconds(profile.blockedUntil);
-  return until !== null && until > now.getTime();
+  return until === null || until > now.getTime();
 }
 
 export function selectGeneralChatContext<T extends { id: string; createdAt: number }>(

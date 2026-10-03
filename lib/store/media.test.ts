@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   assertProductImageUrlsForStore,
@@ -51,32 +51,35 @@ describe("buildStoreMediaPath", () => {
   it("crea ruta de logo", () => {
     expect(
       buildStoreMediaPath({
+        ownerUid: "user-1",
         storeId: "store-1",
         kind: "logo",
         nonce: "abc123",
         mimeType: "image/png",
       }),
     ).toBe(
-      "stores/store-1/logo/abc123.png",
+      "stores/user-1/store-1/logo/abc123.png",
     );
   });
 
   it("crea ruta de portada", () => {
     expect(
       buildStoreMediaPath({
+        ownerUid: "user-1",
         storeId: "store-1",
         kind: "cover",
         nonce: "abc123",
         mimeType: "image/jpeg",
       }),
     ).toBe(
-      "stores/store-1/cover/abc123.jpg",
+      "stores/user-1/store-1/cover/abc123.jpg",
     );
   });
 
   it("exige productId para imagen de producto", () => {
     expect(() =>
       buildStoreMediaPath({
+        ownerUid: "user-1",
         storeId: "store-1",
         kind: "product",
         nonce: "abc123",
@@ -90,12 +93,13 @@ describe("buildStoreMediaPath", () => {
 
 describe("validateStoreMediaUrl", () => {
   const logo =
-    "https://syvfxcqceyijofkgxviu.supabase.co/storage/v1/object/public/chat-images/stores/store-1/logo/a.png";
+    "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/stores/user-1/store-1/logo/a.png";
 
   it("acepta un logo de la tienda correcta", () => {
     expect(() =>
       validateStoreMediaUrl(
         logo,
+        "user-1",
         "store-1",
         "logo",
       ),
@@ -106,6 +110,7 @@ describe("validateStoreMediaUrl", () => {
     expect(() =>
       validateStoreMediaUrl(
         logo,
+        "user-1",
         "store-2",
         "logo",
       ),
@@ -120,8 +125,9 @@ describe("assertProductImageUrlsForStore", () => {
     expect(() =>
       assertProductImageUrlsForStore(
         [
-          "https://syvfxcqceyijofkgxviu.supabase.co/storage/v1/object/public/chat-images/stores/store-1/products/product-1/a.webp",
+          "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/stores/user-1/store-1/products/product-1/a.webp",
         ],
+        "user-1",
         "store-1",
         "product-1",
       ),
@@ -132,8 +138,9 @@ describe("assertProductImageUrlsForStore", () => {
     expect(() =>
       assertProductImageUrlsForStore(
         [
-          "https://syvfxcqceyijofkgxviu.supabase.co/storage/v1/object/public/chat-images/stores/store-1/products/product-X/a.webp",
+          "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/stores/user-1/store-1/products/product-X/a.webp",
         ],
+        "user-1",
         "store-1",
         "product-1",
       ),

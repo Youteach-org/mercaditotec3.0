@@ -1,4 +1,4 @@
-﻿import {
+import {
   Timestamp,
 } from "../firestoreRest";
 
@@ -46,6 +46,7 @@ export async function setStoreMedia(
   if (url) {
     validateStoreMediaUrl(
       url,
+      ownerUid,
       storeId,
       kind,
     );

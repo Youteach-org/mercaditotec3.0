@@ -1,46 +1,28 @@
 # Mercadito security hardening — 2026-10-02
 
-Branch: `security/hardening-2026-10-02`
+## Changes
 
-## Implemented in this branch
+Firebase token claims are the only email verification source. Account creation, roles, trust, and moderation are server-owned. Institutional verification, student eligibility, account activity and administrative blocks are enforced at API and direct Firebase boundaries. Profile edits accept only safe fields and owned image URLs. Administrators still need institutional verification.
 
-- Firebase Authentication's `email_verified` claim is the only source of truth for verified email during server authorization.
-- The browser no longer creates or updates privileged `users/{uid}` account fields during registration, login or profile editing.
-- Account bootstrap and verified-login synchronization now run server-side from the authenticated Firebase token.
-- New accounts receive only safe server-defined defaults: ordinary user role, pending student trust, zero endorsements and no administrative privileges.
-- Profile edits are server-restricted to `displayName` and an owned Firebase Storage profile-image URL.
-- Administrators may bypass only the student control-number format/window. They still need a verified `@morelia.tecnm.mx` address.
-- The two-independent-endorsement verification model is unchanged.
-- Production `/__probe` now returns 404. Runtime responses no longer expose stack traces, body samples, console captures or whether a Firebase secret is configured.
-- `/__health` now returns only `{"ok":true}`.
-- Baseline anti-framing, MIME-sniffing, referrer, permissions and CSP headers are configured.
-- Production Cloudflare deployment is manual (`workflow_dispatch`) instead of deploying every push.
+Supabase upload-image now calls the application authorization endpoint before using its service role. It checks store/product ownership, canonical paths, actual multipart size, image signatures and a 1 MB file limit. Authorization failure denies upload. The function is versioned under supabase/functions/upload-image; Firebase bearer tokens require verify_jwt=false.
 
-## Versioned Firebase rules
+Cloudflare API requests are bounded to 64 KiB. Server API mutations share a transactional budget of 60 actions per account per minute. REST resource segments reject traversal/query injection. Sensitive runtime diagnostics are removed; health returns only {"ok":true}. Browser security headers are configured and production deployment is manual.
 
-`firestore.rules`, `storage.rules`, and `firebase.json` are now part of the repository.
+Next.js, Firebase and Supabase dependencies are updated. Cloudflare packaging retains the locked application Next.js version instead of downgrading it.
 
-The proposed Firestore rules make `users/{uid}` client read-only. Server code using the Firebase service account owns role, verification, trust and moderation writes. Direct client writes are limited to the user's image-reference subcollection and their own chat reactions.
+## Validation and limitations
 
-The proposed Storage rules limit Firebase Storage writes to the signed-in user's own profile-image path, approved image MIME types and 2 MB.
+260 Vitest tests passed. Next.js compilation passed. Firebase authorization emulator tests and OpenNext packaging must also pass before deployment; GitHub Actions now runs both. Production npm dependencies have zero reported vulnerabilities; five high advisories remain in the development-only ESLint dependency chain (braces has no patched version reported by npm).
 
-**Important:** committing Firebase rules does not deploy them. They must be deployed through an authorized Firebase/Google account and tested before this boundary is considered closed in production.
+The API budget does not cover direct Firebase chat reactions, image metadata or profile Storage traffic. These retain ownership/eligibility/block rules but require additional abuse controls. Anonymous authentication traffic needs edge rate limits. Public image URLs remain public by design. No claim of complete protection against attacks is made.
 
-## Residual risk / next phase
+## Activation order
 
-Supabase is still a separate security boundary. Store/chat media use a public Supabase client and depend on live Storage/RLS policies that are not versioned here. Those policies need a live audit or the uploads need migration behind an authenticated server boundary.
+1. Review and merge the PR into feature/student-stores after CI passes.
+2. Deploy the application authorization endpoint and verify anonymous requests return 401.
+3. Deploy upload-image to Supabase project wfmokinfcypfpdisussw. The endpoint must be live first or uploads fail closed.
+4. Deploy firestore.rules and storage.rules to Firebase project mercadito3-1ff3e using an authorized Google/Firebase account. Cross-service Storage rules require permission to read Firestore during deployment.
+5. Verify student registration/login, profile photo, chat reactions, two-endorsement trust, store/product uploads and blocked-account denial in production.
+6. Enable GitHub branch protection and edge abuse limits through their respective infrastructure settings.
 
-GitHub branch protection/rulesets are repository settings, not application code. This branch removes automatic production deployment, but an owner should still enable protection for `feature/student-stores`.
-
-Rate limiting and abuse controls remain a follow-up layer after the privilege boundary is merged and Firebase rules are deployed.
-
-## Production verification
-
-1. Full Vitest + Next/OpenNext build passes.
-2. Unauthenticated `/api/admin/users` remains HTTP 401.
-3. Firebase Firestore + Storage rules from this branch are deployed.
-4. A normal authenticated student cannot directly write `role`, `emailVerified`, `studentStatus`, `studentEndorsementCount`, `blocked`, `isAdmin`, or `admin`.
-5. Registration, verification email, login, profile name/photo and the 2-endorsement flow are retested.
-6. `/__probe` returns 404.
-7. `/__health` returns only `{"ok":true}`.
-8. Cloudflare production deploy is manually dispatched only after the checks above.
+Code changes and local tests do not activate production rules or the Supabase function. Until these deployments are verified, production retains its previous boundaries.

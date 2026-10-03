@@ -16,7 +16,12 @@ import {
 } from "firebase/firestore";
 import imageCompression from "browser-image-compression";
 import { db } from "@/lib/firebase";
-import { supabase } from "@/lib/supabase";
+import { uploadImageFile } from "@/lib/imageStorage";
+import {
+  findSharedImageByHash,
+  loadSharedImageLibrary,
+  saveSharedImageMetadata,
+} from "@/lib/chat/imageLibraryClient";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
@@ -73,7 +78,7 @@ type SharedImage = {
   url: string;
   ownerUid: string;
   sha256: string;
-  createdAt: string;
+  createdAt: number;
 };
 
 type ReactionRecord = {
@@ -162,20 +167,13 @@ async function uploadToSupabase(
   }
 
   if (shareInLibrary) {
-    const existing = await supabase
-      .from("chat_image_library")
-      .select("url, owner_uid, sha256")
-      .eq("sha256", sha256)
-      .eq("shared", true)
-      .maybeSingle();
+    const existing = await findSharedImageByHash(sha256);
 
-    if (existing.error) throw existing.error;
-
-    if (existing.data?.url) {
+    if (existing?.url) {
       return {
-        url: existing.data.url,
+        url: existing.url,
         sha256,
-        ownerUid: existing.data.owner_uid,
+        ownerUid: existing.ownerUid || userId,
         shared: true,
         reused: true,
       };
@@ -218,54 +216,17 @@ async function uploadToSupabase(
   const filePath =
     `chat/${safeUserId}/${privacyFolder}/${monthFolder}/${fileName}`;
 
-  const uploaded = await supabase.storage
-    .from("chat-images")
-    .upload(filePath, compressed, {
-      upsert: false,
-      contentType: mimeType,
-      cacheControl: "31536000",
-    });
-
-  if (uploaded.error) throw uploaded.error;
-
-  const url = supabase.storage
-    .from("chat-images")
-    .getPublicUrl(filePath)
-    .data.publicUrl;
+  const url = await uploadImageFile({
+    path: filePath,
+    file: compressed,
+    filename: fileName,
+  });
 
   if (shareInLibrary) {
-    const inserted = await supabase
-      .from("chat_image_library")
-      .insert({
-        url,
-        storage_path: filePath,
-        owner_uid: userId,
-        sha256,
-        source: "chat",
-        shared: true,
-      });
-
-    if (inserted.error) {
-      if (inserted.error.code === "23505") {
-        const existing = await supabase
-          .from("chat_image_library")
-          .select("url, owner_uid, sha256")
-          .eq("sha256", sha256)
-          .maybeSingle();
-
-        if (existing.data?.url) {
-          return {
-            url: existing.data.url,
-            sha256,
-            ownerUid: existing.data.owner_uid,
-            shared: true,
-            reused: true,
-          };
-        }
-      }
-
-      throw inserted.error;
-    }
+    await saveSharedImageMetadata({
+      url,
+      sha256,
+    });
   }
 
   return {
@@ -738,29 +699,13 @@ function ChatContent() {
     let cancelled = false;
 
     async function loadSharedImages() {
-      const result = await supabase
-        .from("chat_image_library")
-        .select("id, url, owner_uid, sha256, created_at")
-        .eq("shared", true)
-        .order("created_at", { ascending: false })
-        .limit(250);
-
-      if (result.error) {
-        console.error("SHARED_IMAGE_LIBRARY_ERROR", result.error);
-        return;
+      try {
+        const images = await loadSharedImageLibrary();
+        if (cancelled) return;
+        setSharedImages(images);
+      } catch (error) {
+        console.error("SHARED_IMAGE_LIBRARY_ERROR", error);
       }
-
-      if (cancelled) return;
-
-      setSharedImages(
-        (result.data ?? []).map((item) => ({
-          id: item.id,
-          url: item.url,
-          ownerUid: item.owner_uid,
-          sha256: item.sha256,
-          createdAt: item.created_at,
-        }))
-      );
     }
 
     void loadSharedImages();
