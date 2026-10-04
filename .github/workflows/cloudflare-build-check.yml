@@ -1,6 +1,10 @@
 name: Cloudflare build check
 
 on:
+  pull_request:
+    branches:
+      - main
+      - feature/student-stores
   push:
     branches:
       - feature/student-stores
