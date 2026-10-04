@@ -1,0 +1,112 @@
+name: Activate verified security hardening
+
+on:
+  push:
+    branches:
+      - deploy/security-hardening-2026-10-03
+permissions:
+  contents: read
+
+concurrency:
+  group: mercaditotec-production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+      PRODUCTION_WORKER_NAME: "mercaditotec3-0"
+
+    steps:
+      - name: Check out production branch
+        uses: actions/checkout@v4
+        with:
+          ref: 697b6d0301cda51d82186ee4a9fcfdd843c6e359
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test and build OpenNext Worker
+        run: node scripts/cloudflare-build.mjs
+
+      - name: Verify generated Worker
+        run: |
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          test -x .cloudflare-tools/node_modules/.bin/wrangler
+
+      - name: Deploy production Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: .cloudflare-tools/node_modules/.bin/wrangler deploy --config wrangler.jsonc
+
+      - name: Verify production application
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RESPONSE="$(curl -fsS             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain"             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             -H "Content-Type: application/json")"
+
+          SUBDOMAIN="$(printf '%s' "$RESPONSE" | jq -r '.result.subdomain // empty')"
+          if [ -z "$SUBDOMAIN" ]; then
+            echo "::error::Cloudflare did not return a workers.dev subdomain"
+            exit 1
+          fi
+
+          BASE="https://$PRODUCTION_WORKER_NAME.$SUBDOMAIN.workers.dev"
+          echo "Production URL: $BASE"
+          echo "### Mercadito production" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "$BASE" >> "$GITHUB_STEP_SUMMARY"
+
+          for path in "/" "/marketplace" "/admin/users" "/icon.svg" "/__health"; do
+            status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/prod-body -w '%{http_code}' "$BASE$path")"
+            echo "$path -> HTTP $status"
+            case "$status" in
+              2*|3*) ;;
+              *)
+                echo "::error::$path returned HTTP $status"
+                head -c 3000 /tmp/prod-body || true
+                exit 1
+                ;;
+            esac
+
+            if [ "$path" = "/icon.svg" ]; then
+              grep -q "MercaditoTec" /tmp/prod-body || {
+                echo "::error::Production icon is not the MercaditoTec icon"
+                exit 1
+              }
+            fi
+          done
+
+          ADMIN_USERS_STATUS="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/admin-users-api -w '%{http_code}' "$BASE/api/admin/users")"
+          echo "/api/admin/users (without auth) -> HTTP $ADMIN_USERS_STATUS"
+          if [ "$ADMIN_USERS_STATUS" != "401" ]; then
+            echo "::error::Admin users API should exist and require authentication; got HTTP $ADMIN_USERS_STATUS"
+            head -c 3000 /tmp/admin-users-api || true
+            exit 1
+          fi
+
+          MARKETPLACE_JSON="$(curl -fsS -H 'Cache-Control: no-cache' "$BASE/api/marketplace?verify=$(date +%s)")"
+          STORE_COUNT="$(printf '%s' "$MARKETPLACE_JSON" | jq '.stores | length')"
+          echo "Public marketplace active stores: $STORE_COUNT"
+          echo "Public store names:"
+          printf '%s' "$MARKETPLACE_JSON" | jq -r '.stores[]? | " - \(.name) [\(.slug)]"'
+
+          HEALTH="$(curl -fsS "$BASE/__health")"
+          printf '%s\n' "$HEALTH"
+          printf '%s' "$HEALTH" | grep -q '"ok":true' || {
+            echo "::error::Production health endpoint did not return ok=true"
+            exit 1
+          }
+
