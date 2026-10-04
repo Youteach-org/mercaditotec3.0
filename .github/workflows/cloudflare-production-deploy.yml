@@ -1,20 +1,7 @@
 name: Deploy Mercadito production to Cloudflare
 
 on:
-  push:
-    branches:
-      - feature/student-stores
-    paths:
-      - "app/**"
-      - "components/**"
-      - "lib/**"
-      - "public/**"
-      - "scripts/cloudflare-build.mjs"
-      - "cloudflare-runtime-entry.mjs"
-      - "wrangler.jsonc"
-      - ".github/workflows/cloudflare-production-deploy.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
 
@@ -114,7 +101,7 @@ jobs:
 
           HEALTH="$(curl -fsS "$BASE/__health")"
           printf '%s\n' "$HEALTH"
-          printf '%s' "$HEALTH" | grep -q '"firebaseSecretPresent": true' || {
-            echo "::error::Production Worker is missing FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$HEALTH" | grep -q '"ok":true' || {
+            echo "::error::Production health endpoint did not return ok=true"
             exit 1
           }

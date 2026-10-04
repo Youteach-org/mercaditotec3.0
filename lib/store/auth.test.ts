@@ -79,4 +79,22 @@ describe("student entry authorization", () => {
       new Date("2026-10-01T12:00:00Z"),
     )).not.toThrow();
   });
+
+  it("does not accept a mutable Firestore emailVerified mirror", () => {
+    const assertMayEnter = assertEntry();
+    expect(() => assertMayEnter(
+      { role: "user", emailVerified: true },
+      { email: "a22121079@morelia.tecnm.mx", email_verified: false },
+      new Date("2026-10-01T12:00:00Z"),
+    )).toThrow("verificar tu correo");
+  });
+
+  it("does not let an admin bypass the institutional domain", () => {
+    const assertMayEnter = assertEntry();
+    expect(() => assertMayEnter(
+      { role: "superadmin" },
+      { email: "admin@example.com", email_verified: true },
+      new Date("2026-10-01T12:00:00Z"),
+    )).toThrow("@morelia.tecnm.mx");
+  });
 });

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { endorseStudent, TrustRepositoryError } from "@/lib/security/trustRepository";
-import { ApiAuthError, requireFirebaseUser } from "@/lib/store/auth";
+import { ApiAuthError, requireUnblockedUser } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const user = await requireFirebaseUser(request);
+    const user = await requireUnblockedUser(request);
     const body = await request.json().catch(() => ({}));
     const email =
       body && typeof body === "object" && typeof (body as Record<string, unknown>).email === "string"

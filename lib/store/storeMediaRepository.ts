@@ -1,4 +1,4 @@
-﻿import {
+import {
   Timestamp,
 } from "../firestoreRest";
 

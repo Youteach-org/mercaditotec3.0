@@ -7,7 +7,7 @@ import type {
   DocumentSnapshot,
 } from "@/lib/firestoreRest";
 
-import { getAdminAuth } from "@/lib/firebaseAdmin";
+import { ApiAuthError, requireFirebaseUser, requireUnblockedUser } from "@/lib/store/auth";
 import { getAdminDb } from "@/lib/firestoreRest";
 
 export const runtime = "nodejs";
@@ -109,31 +109,10 @@ async function authenticate(
   request: Request
 ) {
 
-  const authorization =
-    request.headers.get(
-      "authorization"
-    ) || "";
-
-  if (
-    !authorization
-      .startsWith("Bearer ")
-  ) {
-    throw new Error(
-      "UNAUTHENTICATED"
-    );
-  }
-
-  const token =
-    authorization.slice(7);
-
-  const decoded =
-    await getAdminAuth()
-      .verifyIdToken(
-        token,
-        true
-      );
-
-  return decoded;
+  const user = request.method === "GET"
+    ? await requireFirebaseUser(request)
+    : await requireUnblockedUser(request);
+  return user.claims;
 }
 
 
@@ -189,6 +168,10 @@ export async function GET(
     });
 
   } catch (error) {
+
+    if (error instanceof ApiAuthError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    }
 
     console.error(
       "GET_NICKNAME_ERROR",
@@ -461,6 +444,10 @@ export async function POST(
     });
 
   } catch (error) {
+
+    if (error instanceof ApiAuthError) {
+      return NextResponse.json({ ok: false, error: error.message }, { status: error.status });
+    }
 
 
     if (

@@ -11,8 +11,7 @@ import {
 import { dirname, resolve } from "node:path";
 
 const toolDir = resolve(".cloudflare-tools");
-const adapterVersion = "1.14.7";
-const cloudflareNextVersion = "16.1.7";
+const adapterVersion = "1.20.8";
 const wranglerVersion = "4.132.0";
 const npmCommand =
   process.platform === "win32"
@@ -22,7 +21,7 @@ const npmCommand =
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     stdio: "inherit",
-    shell: false,
+    shell: process.platform === "win32" && command.endsWith(".cmd"),
     ...options,
   });
 
@@ -41,16 +40,7 @@ function run(command, args, options = {}) {
 console.log("[cloudflare] Running existing test suite...");
 run(npmCommand, ["test"]);
 
-console.log(
-  `[cloudflare] Pinning Next.js ${cloudflareNextVersion} for the Cloudflare runtime build...`
-);
-run(npmCommand, [
-  "install",
-  "--no-save",
-  "--package-lock=false",
-  "--legacy-peer-deps",
-  `next@${cloudflareNextVersion}`,
-]);
+// Keep the patched Next.js installed by npm ci from the application lockfile.
 
 console.log("[cloudflare] Preparing isolated deployment tooling...");
 rmSync(toolDir, {

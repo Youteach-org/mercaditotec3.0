@@ -193,4 +193,14 @@ describe("student application access eligibility", () => {
       now: new Date("2026-10-01T12:00:00Z"),
     })).toEqual({ allowed: true, adminBypass: true });
   });
+
+  it("does not let an admin bypass the institutional-domain rule", () => {
+    const validate = accessValidator();
+    expect(validate({
+      email: "administracion@example.com",
+      emailVerified: true,
+      profile: { role: "superadmin" },
+      now: new Date("2026-10-01T12:00:00Z"),
+    }).allowed).toBe(false);
+  });
 });

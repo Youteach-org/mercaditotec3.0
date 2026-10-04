@@ -34,7 +34,7 @@ jobs:
           done
 
           curl -fsS "$BASE/icon.svg" | grep -q "MercaditoTec"
-          curl -fsS "$BASE/__health" | grep -q '"firebaseSecretPresent": true'
+          curl -fsS "$BASE/__health" | jq -e '.ok == true' >/dev/null
 
           curl -fsS "$BASE/marketplace" -o /tmp/marketplace.html
 

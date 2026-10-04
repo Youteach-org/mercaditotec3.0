@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "../firestoreRest";
 
 import {
   parseStoreEditableInput,
