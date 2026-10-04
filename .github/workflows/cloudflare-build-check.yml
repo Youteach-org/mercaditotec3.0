@@ -1,10 +1,15 @@
 name: Cloudflare build check
 
 on:
+  pull_request:
+    branches:
+      - main
+      - feature/student-stores
   push:
     branches:
       - feature/student-stores
       - preview/marketplace-approved-reference
+      - security/hardening-2026-10-02
   workflow_dispatch:
 
 permissions:
@@ -35,6 +40,15 @@ jobs:
 
       - name: Run tests and Cloudflare build
         run: node scripts/cloudflare-build.mjs
+
+      - name: Use Java for Firebase emulators
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Verify Firebase authorization rules
+        run: npx --yes firebase-tools@15.32.1 emulators:exec --project demo-mercadito-security --only firestore,storage "npm run test:rules"
 
       - name: Verify Worker output
         run: |

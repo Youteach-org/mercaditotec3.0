@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function verifiedInstitution() {
+      return signedIn()
+        && request.auth.token.get('email_verified', false) == true
+        && request.auth.token.get('email', '').matches('^[^@]+@morelia[.]tecnm[.]mx$');
+    }
+
+    function studentMayEnter() {
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let year = request.time.year() - 2000;
+      let years = string(year) + '|' + string(year - 1) + '|' + string(year - 2)
+        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5);
+      return verifiedInstitution() && profile.get('isActive', true) != false
+        && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
+          || profile.get('isAdmin', false) == true || profile.get('admin', false) == true
+          || request.auth.token.email.matches('^[a-z]+(' + years + ')[0-9]{6}@morelia[.]tecnm[.]mx$'));
+    }
+
+    function mayMutate() {
+      let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      let expiry = profile.get('blockedUntil', null);
+      return studentMayEnter() && (profile.get('blocked', false) != true
+        || (expiry is timestamp && expiry <= request.time));
+    }
+
+    match /users/{uid} {
+      allow read: if owns(uid);
+
+      // Role, verification, trust and moderation fields are server-owned.
+      allow create, update, delete: if false;
+
+      match /images/{imageId} {
+        allow read: if owns(uid);
+        allow create, update: if owns(uid) && mayMutate()
+          && request.resource.data.keys().hasOnly([
+            "url",
+            "createdAt",
+            "source",
+            "shared",
+            "sha256",
+            "originalOwnerUid"
+          ])
+          && request.resource.data.url is string
+          && request.resource.data.url.size() <= 2048;
+        allow delete: if owns(uid) && mayMutate();
+      }
+
+      match /endorsements/{endorserUid} {
+        allow read, write: if false;
+      }
+
+      match /trust_counters/{periodId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn() && studentMayEnter();
+      allow write: if false;
+    }
+
+    match /message_reactions/{reactionId} {
+      allow read: if signedIn() && studentMayEnter();
+      allow create: if signedIn() && mayMutate()
+        && request.resource.data.keys().hasOnly([
+          "messageId",
+          "userId",
+          "emoji",
+          "createdAt"
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.messageId is string
+        && request.resource.data.emoji in ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+      allow update: if signedIn() && mayMutate()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          "messageId",
+          "userId",
+          "emoji",
+          "createdAt"
+        ])
+        && request.resource.data.messageId is string
+        && request.resource.data.messageId == resource.data.messageId
+        && request.resource.data.emoji in ["👍", "❤️", "😂", "😮", "😢", "🔥"];
+      allow delete: if signedIn() && mayMutate() && resource.data.userId == request.auth.uid;
+    }
+
+    match /public_profiles/{uid} {
+      allow read: if signedIn() && studentMayEnter();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

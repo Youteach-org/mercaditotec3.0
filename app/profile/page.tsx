@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { doc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import AuthGuard from "@/components/AuthGuard";
-import { db, storage } from "@/lib/firebase";
+import { storage } from "@/lib/firebase";
 import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
 import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
@@ -30,42 +29,81 @@ function ProfileContent() {
   const isAdmin = isAdminRole(appUser);
   const blocked = Boolean(appUser && isAdministrativeBlockActive(appUser));
 
+  async function saveProfilePatch(payload: { displayName?: string; photoURL?: string }) {
+    if (!firebaseUser) throw new Error("Debes iniciar sesión.");
+
+    const token = await firebaseUser.getIdToken(true);
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(body.error ?? "No se pudo actualizar el perfil.");
+    }
+  }
+
   async function saveProfile() {
     if (!firebaseUser) return;
 
     setSaving(true);
     setMessage("");
 
-    await setDoc(
-      doc(db, "users", firebaseUser.uid),
-      {
+    try {
+      await saveProfilePatch({
         displayName: displayName.trim() || (firebaseUser.email?.split("@")[0] ?? "usuario"),
-      },
-      { merge: true },
-    );
-
-    setSaving(false);
-    setMessage("Perfil actualizado.");
+      });
+      setMessage("Perfil actualizado.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo actualizar el perfil.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function uploadPhoto(file: File) {
     if (!firebaseUser) return;
 
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      setMessage("Formato de imagen no permitido.");
+      return;
+    }
+
+    if (file.size <= 0 || file.size > 2 * 1024 * 1024) {
+      setMessage("La foto debe pesar como máximo 2 MB.");
+      return;
+    }
+
     setSaving(true);
     setMessage("");
 
-    const photoRef = ref(storage, `profile-images/${firebaseUser.uid}/${Date.now()}-${file.name}`);
-    await uploadBytes(photoRef, file);
-    const photoURL = await getDownloadURL(photoRef);
-
-    await setDoc(
-      doc(db, "users", firebaseUser.uid),
-      { photoURL },
-      { merge: true },
-    );
-
-    setSaving(false);
-    setMessage("Foto actualizada.");
+    try {
+      const extension =
+        file.type === "image/png"
+          ? "png"
+          : file.type === "image/webp"
+            ? "webp"
+            : file.type === "image/gif"
+              ? "gif"
+              : "jpg";
+      const photoRef = ref(
+        storage,
+        `profile-images/${firebaseUser.uid}/${crypto.randomUUID()}.${extension}`,
+      );
+      await uploadBytes(photoRef, file, { contentType: file.type });
+      const photoURL = await getDownloadURL(photoRef);
+      await saveProfilePatch({ photoURL });
+      setMessage("Foto actualizada.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo actualizar la foto.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

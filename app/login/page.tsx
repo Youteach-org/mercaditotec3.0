@@ -9,10 +9,8 @@ import {
   signOut,
   browserLocalPersistence,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
-import { studentAccessEligibility } from "@/lib/security/domain";
 
 const DOMAIN = "@morelia.tecnm.mx";
 
@@ -60,29 +58,17 @@ export default function LoginPage() {
   const cleanLocalPart = useMemo(() => normalizeLocalPart(localPart), [localPart]);
   const fullEmail = useMemo(() => buildInstitutionalEmail(cleanLocalPart), [cleanLocalPart]);
 
-  async function ensureUserDocument(uid: string, fallbackEmail: string | null, verified: boolean) {
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      await setDoc(userRef, {
-        email: fallbackEmail ?? fullEmail,
-        emailLocalPart: cleanLocalPart,
-        emailVerified: verified,
-        displayName: cleanLocalPart,
-        photoURL: "",
-        plan: "free",
-        isActive: true,
-        blocked: false,
-        createdAt: Date.now(),
-      });
-      return;
-    }
-
-    await updateDoc(userRef, {
-      emailVerified: verified,
-      emailLocalPart: cleanLocalPart,
+  async function syncAccount(user: import("firebase/auth").User) {
+    const token = await user.getIdToken(true);
+    const response = await fetch("/api/account/sync", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
     });
+    const body = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(body.error ?? "No se pudo validar tu cuenta.");
+    }
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -116,27 +102,12 @@ export default function LoginPage() {
         return;
       }
 
-      const profileSnapshot = await getDoc(doc(db, "users", result.user.uid));
-      const profileData = profileSnapshot.exists() ? profileSnapshot.data() : undefined;
-      const tokenResult = await result.user.getIdTokenResult();
-      const accessEligibility = studentAccessEligibility({
-        email: result.user.email ?? fullEmail,
-        emailVerified: result.user.emailVerified,
-        profile: profileData ?? tokenResult.claims,
-      });
-
-      if (!accessEligibility.allowed) {
-        await signOut(auth);
-        setError(accessEligibility.reason);
-        return;
-      }
-
-      await ensureUserDocument(result.user.uid, result.user.email, true);
+      await syncAccount(result.user);
 
       router.replace("/marketplace");
     } catch (err: any) {
       console.error("LOGIN_ERROR", err);
-      setError(getFriendlyAuthError(err?.code));
+      setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo iniciar sesión."));
     } finally {
       setLoadingLogin(false);
     }
@@ -179,7 +150,7 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
 
       if (result.user.emailVerified) {
-        await ensureUserDocument(result.user.uid, result.user.email, true);
+        await syncAccount(result.user);
         setSuccess("Tu correo ya estaba verificado. Ya puedes entrar.");
         await signOut(auth);
         return;

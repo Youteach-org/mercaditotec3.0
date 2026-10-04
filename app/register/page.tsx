@@ -6,8 +6,7 @@ import {
   sendEmailVerification,
   signOut,
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { studentControlEligibility } from "@/lib/security/domain";
 
@@ -19,10 +18,6 @@ function normalizeLocalPart(value: string) {
 
 function buildInstitutionalEmail(localPart: string) {
   return `${normalizeLocalPart(localPart)}${DOMAIN}`;
-}
-
-function prettifyDisplayName(localPart: string) {
-  return normalizeLocalPart(localPart);
 }
 
 export default function RegisterPage() {
@@ -80,22 +75,18 @@ export default function RegisterPage() {
 
       const result = await createUserWithEmailAndPassword(auth, cleanEmail, password);
 
-      await setDoc(doc(db, "users", result.user.uid), {
-        email: cleanEmail,
-        emailLocalPart: cleanLocalPart,
-        emailVerified: false,
-        displayName: prettifyDisplayName(cleanLocalPart),
-        photoURL: "",
-        plan: "free",
-        role: "user",
-        isActive: true,
-        blocked: false,
-        studentStatus: "pending",
-        studentEndorsementCount: 0,
-        studentVerifiedAt: null,
-        studentRevokedAt: null,
-        createdAt: Date.now(),
+      const token = await result.user.getIdToken(true);
+      const bootstrapResponse = await fetch("/api/account/bootstrap", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
       });
+      const bootstrapBody = await bootstrapResponse.json().catch(() => ({}));
+
+      if (!bootstrapResponse.ok) {
+        throw new Error(
+          bootstrapBody.error ?? "No se pudo preparar tu cuenta de Mercadito.",
+        );
+      }
 
       try {
         await sendEmailVerification(result.user);

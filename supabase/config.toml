@@ -1,0 +1,3 @@
+[functions.upload-image]
+# Firebase bearer tokens are verified by the application authorization endpoint.
+verify_jwt = false

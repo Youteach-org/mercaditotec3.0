@@ -160,10 +160,6 @@ export function studentAccessEligibility(input: {
     };
   }
 
-  if (isAdminRole(input.profile)) {
-    return { allowed: true, adminBypass: true };
-  }
-
   const email = input.email.trim().toLowerCase();
   const institutionalDomain = "@morelia.tecnm.mx";
   if (!email.endsWith(institutionalDomain) || email === institutionalDomain) {
@@ -171,6 +167,12 @@ export function studentAccessEligibility(input: {
       allowed: false,
       reason: "Debes usar un correo institucional @morelia.tecnm.mx.",
     };
+  }
+
+  // Administrators bypass only the student control-number rule.
+  // They still require a verified institutional address.
+  if (isAdminRole(input.profile)) {
+    return { allowed: true, adminBypass: true };
   }
 
   const localPart = email.slice(0, -institutionalDomain.length);

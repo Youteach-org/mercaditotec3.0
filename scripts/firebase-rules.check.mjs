@@ -1,0 +1,70 @@
+import { before, after, test } from "node:test";
+import { readFileSync } from "node:fs";
+import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
+import { doc, getDoc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
+import { ref, uploadBytes } from "firebase/storage";
+
+let env;
+const identity = (verified = true, email = "a22121079@morelia.tecnm.mx") => ({ email, email_verified: verified });
+before(async () => {
+  env = await initializeTestEnvironment({ projectId: "demo-mercadito-security", firestore: { rules: readFileSync("firestore.rules", "utf8") }, storage: { rules: readFileSync("storage.rules", "utf8") } });
+  await env.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    for (const [uid, fields] of Object.entries({
+      alice: { role: "user", isActive: true },
+      victim: { role: "user", isActive: true },
+      blocked: { role: "user", blocked: true, blockedUntil: Timestamp.fromDate(new Date("2099-01-01")) },
+      inactive: { role: "user", isActive: false },
+    })) await setDoc(doc(db, "users", uid), fields);
+    await setDoc(doc(db, "messages", "message-1"), { text: "Hello", createdAt: 1, hidden: false });
+  });
+}, { timeout: 60000 });
+after(async () => { if (env) await env.cleanup(); });
+
+test("ordinary student cannot promote themselves or edit verification and trust", async () => {
+  const db = env.authenticatedContext("alice", identity()).firestore();
+  for (const fields of [{ role: "superadmin" }, { isAdmin: true }, { admin: true }, { emailVerified: true }, { studentStatus: "verified" }, { studentEndorsementCount: 2 }, { blocked: false }]) {
+    await assertFails(updateDoc(doc(db, "users", "alice"), fields));
+  }
+});
+test("student can read their profile but not another account", async () => {
+  const db = env.authenticatedContext("alice", identity()).firestore();
+  await assertSucceeds(getDoc(doc(db, "users", "alice")));
+  await assertFails(getDoc(doc(db, "users", "victim")));
+});
+test("unverified and external accounts cannot read institutional chat", async () => {
+  for (const claims of [identity(false), identity(true, "student@example.com")]) {
+    const db = env.authenticatedContext("alice", claims).firestore();
+    await assertFails(getDoc(doc(db, "messages", "message-1")));
+  }
+});
+test("active student can react but blocked and inactive accounts cannot", async () => {
+  for (const uid of ["alice", "blocked", "inactive"]) {
+    const db = env.authenticatedContext(uid, identity()).firestore();
+    const operation = setDoc(doc(db, "message_reactions", uid), { messageId: "message-1", userId: uid, emoji: "👍", createdAt: 1 });
+    if (uid === "alice") await assertSucceeds(operation); else await assertFails(operation);
+  }
+});
+test("reaction cannot impersonate another user", async () => {
+  const db = env.authenticatedContext("alice", identity()).firestore();
+  await assertFails(setDoc(doc(db, "message_reactions", "forged"), { messageId: "message-1", userId: "victim", emoji: "👍", createdAt: 1 }));
+});
+test("anonymous access and direct server-data writes are denied", async () => {
+  await assertFails(getDoc(doc(env.unauthenticatedContext().firestore(), "messages", "message-1")));
+  const db = env.authenticatedContext("alice", identity()).firestore();
+  for (const collection of ["orders", "stores", "admin_audit_logs", "mutation_budgets"]) await assertFails(setDoc(doc(db, collection, "forged"), { uid: "alice" }));
+});
+test("profile-image uploads enforce ownership, format and verified identity", async () => {
+  const own = env.authenticatedContext("alice", identity()).storage();
+  await assertSucceeds(uploadBytes(ref(own, "profile-images/alice/a.png"), new Uint8Array([1]), { contentType: "image/png" }));
+  await assertFails(uploadBytes(ref(own, "profile-images/victim/a.png"), new Uint8Array([1]), { contentType: "image/png" }));
+  await assertFails(uploadBytes(ref(own, "profile-images/alice/a.svg"), new Uint8Array([1]), { contentType: "image/svg+xml" }));
+  const unverified = env.authenticatedContext("alice", identity(false)).storage();
+  await assertFails(uploadBytes(ref(unverified, "profile-images/alice/b.png"), new Uint8Array([1]), { contentType: "image/png" }));
+  const expiredStudent = env.authenticatedContext("alice", identity(true, "a10121079@morelia.tecnm.mx")).storage();
+  await assertFails(uploadBytes(ref(expiredStudent, "profile-images/alice/expired.png"), new Uint8Array([1]), { contentType: "image/png" }));
+  for (const uid of ["blocked", "inactive"]) {
+    const storage = env.authenticatedContext(uid, identity()).storage();
+    await assertFails(uploadBytes(ref(storage, `profile-images/${uid}/a.png`), new Uint8Array([1]), { contentType: "image/png" }));
+  }
+});

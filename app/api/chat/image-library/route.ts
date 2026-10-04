@@ -5,7 +5,7 @@ import {
   listSharedChatImages,
   saveSharedChatImage,
 } from "@/lib/chat/imageLibraryRepository";
-import { ApiAuthError, requireFirebaseUser } from "@/lib/store/auth";
+import { ApiAuthError, requireFirebaseUser, requireUnblockedUser } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
 
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireFirebaseUser(request);
+    const user = await requireUnblockedUser(request);
     const body = await request.json();
     const image = await saveSharedChatImage(user.uid, body);
     return NextResponse.json({ image }, { status: 201 });

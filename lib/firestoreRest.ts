@@ -84,6 +84,22 @@ function randomId(): string {
   return Array.from(bytes, (value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+function assertSafeSegment(value: string): void {
+  if (!value || value === "." || value === ".." ||
+    /[\/\\?#%\u0000-\u001f\u007f]/.test(value) ||
+    new TextEncoder().encode(value).length > 1500) {
+    throw new FirestoreRestError(400, "Identificador de documento inválido.");
+  }
+}
+
+function assertResourcePath(path: string, document: boolean): void {
+  const segments = path.split("/");
+  segments.forEach(assertSafeSegment);
+  if ((segments.length % 2 === 0) !== document) {
+    throw new FirestoreRestError(400, "Ruta de documento inválida.");
+  }
+}
+
 function encodeValue(value: unknown): FirestoreValue {
   if (value === null) return { nullValue: null };
   if (value instanceof Timestamp) return { timestampValue: value.toDate().toISOString() };
@@ -307,13 +323,16 @@ export class QuerySnapshot<T extends DocumentData = DocumentData> {
 }
 
 export class DocumentReference<T extends DocumentData = DocumentData> {
-  constructor(public readonly path: string) {}
+  constructor(public readonly path: string) {
+    assertResourcePath(path, true);
+  }
 
   get id(): string {
     return lastSegment(this.path);
   }
 
   collection(name: string): CollectionReference {
+    assertSafeSegment(name);
     return new CollectionReference(`${this.path}/${name}`);
   }
 
@@ -483,6 +502,7 @@ class Query<T extends DocumentData = DocumentData> {
 
 export class CollectionReference<T extends DocumentData = DocumentData> extends Query<T> {
   constructor(path: string) {
+    assertResourcePath(path, false);
     super(path);
   }
 
@@ -514,6 +534,7 @@ export class CollectionReference<T extends DocumentData = DocumentData> extends 
   }
 
   doc(id: string = randomId()): DocumentReference<T> {
+    assertSafeSegment(id);
     return new DocumentReference<T>(`${this.collectionPath}/${id}`);
   }
 
