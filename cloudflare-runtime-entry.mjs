@@ -2,6 +2,8 @@
 import openNextWorker from "./.open-next/worker.js";
 import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.mjs";
 
+import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
+
 const json = (value, init = {}) =>
   new Response(JSON.stringify(value), {
     ...init,
@@ -38,6 +40,8 @@ export default {
     }
 
     try {
+      const limited = await enforceEdgeBudget(request, env);
+      if (limited) return limited;
       const bounded = await boundApiRequest(request);
       return await getHandler().fetch(bounded, env, ctx);
     } catch (error) {

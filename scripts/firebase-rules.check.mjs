@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { before, after, test } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
@@ -18,7 +19,7 @@ before(async () => {
     })) await setDoc(doc(db, "users", uid), fields);
     await setDoc(doc(db, "messages", "message-1"), { text: "Hello", createdAt: 1, hidden: false });
   });
-}, { timeout: 60000 });
+}, { timeout: 180000 });
 after(async () => { if (env) await env.cleanup(); });
 
 test("ordinary student cannot promote themselves or edit verification and trust", async () => {
@@ -38,11 +39,11 @@ test("unverified and external accounts cannot read institutional chat", async ()
     await assertFails(getDoc(doc(db, "messages", "message-1")));
   }
 });
-test("active student can react but blocked and inactive accounts cannot", async () => {
+test("direct reactions cannot bypass the server mutation budget", async () => {
   for (const uid of ["alice", "blocked", "inactive"]) {
     const db = env.authenticatedContext(uid, identity()).firestore();
     const operation = setDoc(doc(db, "message_reactions", uid), { messageId: "message-1", userId: uid, emoji: "👍", createdAt: 1 });
-    if (uid === "alice") await assertSucceeds(operation); else await assertFails(operation);
+    await assertFails(operation);
   }
 });
 test("reaction cannot impersonate another user", async () => {
@@ -68,3 +69,12 @@ test("profile-image uploads enforce ownership, format and verified identity", as
     await assertFails(uploadBytes(ref(storage, `profile-images/${uid}/a.png`), new Uint8Array([1]), { contentType: "image/png" }));
   }
 });
+
+test("personal image writes cannot bypass the server mutation budget", async () => {
+ const db = env.authenticatedContext("alice", identity()).firestore();
+ await assertFails(setDoc(doc(db, "users", "alice", "images", "spam"), { url: "https://example.com/a.png", createdAt: 1 }));
+});
+
+test("server transactions resist concurrent reaction and image writes", () => {
+ execFileSync(process.execPath, ["node_modules/vitest/vitest.mjs", "run", "lib/chat/personalActions.emulator.test.ts"], { stdio: "inherit" });
+}, { timeout: 60000 });

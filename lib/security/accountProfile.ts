@@ -1,3 +1,4 @@
+import { parseImageUploadPath } from "../store/media";
 import type { DecodedIdToken } from "../firebaseAdmin";
 import { getAdminDb, Timestamp } from "../firestoreRest";
 import { isAdminRole, studentControlEligibility } from "./domain";
@@ -121,38 +122,14 @@ export async function syncVerifiedAccountProfile(
   });
 }
 
-const PROFILE_IMAGE_HOST = "firebasestorage.googleapis.com";
-const PROFILE_IMAGE_BUCKET = "mercadito3-1ff3e.firebasestorage.app";
-
-function validateProfileImageUrl(uid: string, value: string): string {
+export function validateProfileImageUrl(uid: string, value: string): string {
   let url: URL;
-
-  try {
-    url = new URL(value);
-  } catch {
-    throw new AccountProfileError(400, "La URL de la foto no es válida.");
-  }
-
-  if (url.protocol !== "https:" || url.hostname !== PROFILE_IMAGE_HOST) {
-    throw new AccountProfileError(400, "La foto no pertenece al almacenamiento permitido.");
-  }
-
-  const expectedPrefix = `/v0/b/${PROFILE_IMAGE_BUCKET}/o/`;
-  if (!url.pathname.startsWith(expectedPrefix)) {
-    throw new AccountProfileError(400, "La foto no pertenece al almacenamiento permitido.");
-  }
-
-  let objectPath = "";
-  try {
-    objectPath = decodeURIComponent(url.pathname.slice(expectedPrefix.length));
-  } catch {
-    throw new AccountProfileError(400, "La URL de la foto no es válida.");
-  }
-
-  if (!objectPath.startsWith(`profile-images/${uid}/`)) {
-    throw new AccountProfileError(403, "La foto no pertenece a tu cuenta.");
-  }
-
+  try { url = new URL(value); } catch { throw new AccountProfileError(400, "La URL de la foto no es válida."); }
+  const prefix = "/storage/v1/object/public/chat-images/";
+  if (url.origin !== "https://wfmokinfcypfpdisussw.supabase.co" || !url.pathname.startsWith(prefix) || url.search || url.hash || url.username || url.password) throw new AccountProfileError(400, "La foto no pertenece al almacenamiento permitido.");
+  const path = url.pathname.slice(prefix.length);
+  try { parseImageUploadPath(path, uid); } catch { throw new AccountProfileError(403, "La foto no pertenece a tu cuenta."); }
+  if (!path.startsWith(`profile-images/${uid}/`)) throw new AccountProfileError(403, "La foto no pertenece a tu cuenta.");
   return url.toString();
 }
 

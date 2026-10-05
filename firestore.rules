@@ -42,18 +42,7 @@ service cloud.firestore {
 
       match /images/{imageId} {
         allow read: if owns(uid);
-        allow create, update: if owns(uid) && mayMutate()
-          && request.resource.data.keys().hasOnly([
-            "url",
-            "createdAt",
-            "source",
-            "shared",
-            "sha256",
-            "originalOwnerUid"
-          ])
-          && request.resource.data.url is string
-          && request.resource.data.url.size() <= 2048;
-        allow delete: if owns(uid) && mayMutate();
+        allow write: if false;
       }
 
       match /endorsements/{endorserUid} {
@@ -72,29 +61,7 @@ service cloud.firestore {
 
     match /message_reactions/{reactionId} {
       allow read: if signedIn() && studentMayEnter();
-      allow create: if signedIn() && mayMutate()
-        && request.resource.data.keys().hasOnly([
-          "messageId",
-          "userId",
-          "emoji",
-          "createdAt"
-        ])
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.messageId is string
-        && request.resource.data.emoji in ["👍", "❤️", "😂", "😮", "😢", "🔥"];
-      allow update: if signedIn() && mayMutate()
-        && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasOnly([
-          "messageId",
-          "userId",
-          "emoji",
-          "createdAt"
-        ])
-        && request.resource.data.messageId is string
-        && request.resource.data.messageId == resource.data.messageId
-        && request.resource.data.emoji in ["👍", "❤️", "😂", "😮", "😢", "🔥"];
-      allow delete: if signedIn() && mayMutate() && resource.data.userId == request.auth.uid;
+      allow write: if false;
     }
 
     match /public_profiles/{uid} {
