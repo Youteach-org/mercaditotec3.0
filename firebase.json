@@ -8,11 +8,11 @@
   "emulators": {
     "firestore": {
       "host": "127.0.0.1",
-      "port": 8127
+      "port": 8177
     },
     "storage": {
       "host": "127.0.0.1",
-      "port": 9227
+      "port": 9277
     },
     "ui": {
       "enabled": false
