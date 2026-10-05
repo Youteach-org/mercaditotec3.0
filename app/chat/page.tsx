@@ -2,16 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  addDoc,
   collection,
-  deleteDoc,
-  doc,
-  getDocs,
   limit,
   onSnapshot,
   orderBy,
   query,
-  setDoc,
   where,
 } from "firebase/firestore";
 import imageCompression from "browser-image-compression";
@@ -779,51 +774,15 @@ function ChatContent() {
   async function toggleReaction(messageId: string, emoji: string) {
     if (!firebaseUser) return;
 
-    const q = query(
-      collection(db, "message_reactions"),
-      where("messageId", "==", messageId),
-      where("userId", "==", firebaseUser!.uid)
-    );
-
-    const existing = await getDocs(q);
-    const alreadySelected = existing.docs.some((item) => item.data().emoji === emoji);
-
-    if (alreadySelected) {
-      for (const item of existing.docs) {
-        await deleteDoc(doc(db, "message_reactions", item.id));
-      }
-
-      setActionForMessage(null);
-      return;
-    }
-
-    if (existing.docs.length > 0) {
-      const [firstReaction, ...duplicatedReactions] = existing.docs;
-
-      await setDoc(
-        doc(db, "message_reactions", firstReaction.id),
-        {
-          messageId,
-          userId: firebaseUser!.uid,
-          emoji,
-          createdAt: Date.now(),
-        },
-        { merge: true }
-      );
-
-      for (const item of duplicatedReactions) {
-        await deleteDoc(doc(db, "message_reactions", item.id));
-      }
-    } else {
-      await addDoc(collection(db, "message_reactions"), {
-        messageId,
-        userId: firebaseUser!.uid,
-        emoji,
-        createdAt: Date.now(),
+    try {
+      await moderationApiFetch(firebaseUser!, "/api/chat/reactions", {
+        method: "POST", body: JSON.stringify({ messageId, emoji }),
       });
+      setActionForMessage(null);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : "No se pudo guardar la reacción.");
+      window.setTimeout(() => setToast(""), 3000);
     }
-
-    setActionForMessage(null);
   }
 
   function startReply(message: ChatMessage) {
@@ -896,25 +855,8 @@ function ChatContent() {
   ) {
     if (!firebaseUser) return;
 
-    const imagesCollection =
-      collection(db, "users", firebaseUser.uid, "images");
-
-    const existing = await getDocs(
-      query(imagesCollection, where("url", "==", url))
-    );
-
-    if (!existing.empty) return;
-
-    const imageDoc = doc(imagesCollection);
-
-    await setDoc(imageDoc, {
-      url,
-      createdAt: Date.now(),
-      source: options?.source ?? "chat",
-      shared: options?.shared ?? false,
-      sha256: options?.sha256 ?? "",
-      originalOwnerUid:
-        options?.originalOwnerUid ?? firebaseUser.uid,
+    await moderationApiFetch(firebaseUser, "/api/chat/images", {
+      method: "POST", body: JSON.stringify({ url, sha256: options?.sha256 ?? "" }),
     });
   }
 

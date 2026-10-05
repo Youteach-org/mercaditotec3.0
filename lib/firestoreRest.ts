@@ -688,18 +688,16 @@ export class Transaction {
     reference: DocumentReference<T>,
   ): Promise<DocumentSnapshot<T>> {
     const root = await transport.documentsRoot();
-    const params = new URLSearchParams({ transaction: this.transactionId });
-    const response = await transport.request(
-      `${root}/${reference.path}?${params.toString()}`,
-      { method: "GET" },
-      true,
-    );
-
-    if (response.status === 404) return new DocumentSnapshot<T>(reference, null);
-    return new DocumentSnapshot<T>(
-      reference,
-      (await response.json()) as FirestoreDocument,
-    );
+    // batchGet preserves the transaction and also works in the Firestore emulator.
+    const response = await transport.request(`${root}:batchGet`, {
+      method: "POST",
+      body: JSON.stringify({ documents: [`${root}/${reference.path}`], transaction: this.transactionId }),
+    });
+    const rows = (await response.json()) as Array<{ found?: FirestoreDocument; missing?: string }>;
+    if (!Array.isArray(rows)) throw new FirestoreRestError(502, "Firestore returned an invalid transaction read.");
+    const row = rows.find(item => item.found?.name === `${root}/${reference.path}` || item.missing === `${root}/${reference.path}`);
+    if (!row) throw new FirestoreRestError(502, "Firestore returned an invalid transaction read.");
+    return new DocumentSnapshot<T>(reference, row.found ?? null);
   }
 
   set(reference: DocumentReference, data: DocumentData, options?: { merge?: boolean }): this {

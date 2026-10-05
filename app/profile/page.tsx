@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import AuthGuard from "@/components/AuthGuard";
-import { storage } from "@/lib/firebase";
+import { uploadImageFile } from "@/lib/imageStorage";
 import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
 import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
@@ -74,8 +73,8 @@ function ProfileContent() {
       return;
     }
 
-    if (file.size <= 0 || file.size > 2 * 1024 * 1024) {
-      setMessage("La foto debe pesar como máximo 2 MB.");
+    if (file.size <= 0 || file.size > 1024 * 1024) {
+      setMessage("La foto debe pesar como máximo 1 MB.");
       return;
     }
 
@@ -91,12 +90,10 @@ function ProfileContent() {
             : file.type === "image/gif"
               ? "gif"
               : "jpg";
-      const photoRef = ref(
-        storage,
-        `profile-images/${firebaseUser.uid}/${crypto.randomUUID()}.${extension}`,
-      );
-      await uploadBytes(photoRef, file, { contentType: file.type });
-      const photoURL = await getDownloadURL(photoRef);
+      const photoURL = await uploadImageFile({
+        path: `profile-images/${firebaseUser.uid}/${crypto.randomUUID()}.${extension}`,
+        file,
+      });
       await saveProfilePatch({ photoURL });
       setMessage("Foto actualizada.");
     } catch (error) {
