@@ -87,12 +87,29 @@ async function reserveNickname(
   }
 
   const nickname = parsed.nickname;
-  const reference = getAdminDb().collection("nicknames").doc(nickname);
-  const existing = await reference.get();
+  const db = getAdminDb();
+  const reference = db.collection("nicknames").doc(nickname);
+  const [existing, normalizedUsers, legacyUsers] = await Promise.all([
+    reference.get(),
+    db.collection("users")
+      .where("nicknameNormalized", "==", nickname)
+      .limit(2)
+      .get(),
+    db.collection("users")
+      .where("nickname", "==", nickname)
+      .limit(2)
+      .get(),
+  ]);
 
   if (existing.exists) {
     const data = existing.data() ?? {};
     if (String(data.uid ?? "") === uid) return nickname;
+    throw new AccountProfileError(409, "Ese nickname ya está en uso.");
+  }
+
+  const nicknameOwnedByAnotherUser = [...normalizedUsers.docs, ...legacyUsers.docs]
+    .some((document) => document.id !== uid);
+  if (nicknameOwnedByAnotherUser) {
     throw new AccountProfileError(409, "Ese nickname ya está en uso.");
   }
 
