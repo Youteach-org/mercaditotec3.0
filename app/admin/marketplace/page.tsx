@@ -101,9 +101,18 @@ export default function AdminMarketplacePage() {
 
   function toggleMarketplaceCategory(categoryId: string) {
     setContent((current) => {
-      const selected = current.marketplaceCategoryIds.includes(categoryId)
+      const alreadySelected = current.marketplaceCategoryIds.includes(categoryId);
+      const selected = alreadySelected
         ? current.marketplaceCategoryIds.filter((id) => id !== categoryId)
-        : [...current.marketplaceCategoryIds, categoryId];
+        : current.marketplaceCategoryIds.length >= 5
+          ? current.marketplaceCategoryIds
+          : [...current.marketplaceCategoryIds, categoryId];
+
+      if (!alreadySelected && current.marketplaceCategoryIds.length >= 5) {
+        setError("Puedes mostrar hasta 5 categorías directas; el sexto botón es “Todas”.");
+      } else {
+        setError("");
+      }
 
       return {
         ...current,
@@ -218,7 +227,7 @@ export default function AdminMarketplacePage() {
           )}
 
           <p className="mt-4 text-xs font-semibold text-gray-500">
-            “Todas” se muestra automáticamente. Si no seleccionas ninguna, se mostrarán todas las categorías activas.
+            Puedes elegir hasta 5 categorías directas. “Todas” se muestra automáticamente como sexto filtro. Si no eliges ninguna, se usarán las primeras 5 categorías activas.
           </p>
         </section>
 
