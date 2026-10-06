@@ -464,12 +464,18 @@ function ChatContent() {
       return true;
     }
 
+    if (!nicknameResolved) {
+      setToast("Cargando tu nickname...");
+      window.setTimeout(() => setToast(""), 1600);
+      return false;
+    }
+
     setNicknameInput("");
     setNicknameError("");
     setNicknameEditorOpen(true);
 
     setToast(
-      "Elige un nickname antes de enviar mensajes."
+      "Elige un nickname para tu cuenta antes de enviar mensajes."
     );
 
     window.setTimeout(
