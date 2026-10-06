@@ -6,6 +6,7 @@ import {
 } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
+import { coerceRecordTimestamp } from "./legacyTimestamp";
 import {
   assertAdminTransition,
   canOwnerEditStore,
@@ -181,23 +182,6 @@ export function buildAdminStatusMutation(
   return { status: target, reviewMessage: null };
 }
 
-function coerceTimestamp(value: unknown, fallback?: Timestamp): Timestamp {
-  if (value instanceof Timestamp) return value;
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return Timestamp.fromDate(value);
-  }
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Timestamp.fromMillis(value);
-  }
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    if (Number.isFinite(parsed.getTime())) {
-      return Timestamp.fromDate(parsed);
-    }
-  }
-  return fallback ?? Timestamp.fromMillis(0);
-}
-
 function toStoreRecord(id: string, data: DocumentData): StoreRecord {
   return {
     id,
@@ -229,11 +213,11 @@ function toStoreRecord(id: string, data: DocumentData): StoreRecord {
       data.marketplaceVariant === "cloud-6"
         ? data.marketplaceVariant
         : null,
-    createdAt: coerceTimestamp(data.createdAt),
-    updatedAt: coerceTimestamp(data.updatedAt, coerceTimestamp(data.createdAt)),
-    submittedAt: data.submittedAt == null ? null : coerceTimestamp(data.submittedAt),
-    approvedAt: data.approvedAt == null ? null : coerceTimestamp(data.approvedAt),
-    suspendedAt: data.suspendedAt == null ? null : coerceTimestamp(data.suspendedAt),
+    createdAt: coerceRecordTimestamp(data.createdAt),
+    updatedAt: coerceRecordTimestamp(data.updatedAt, coerceRecordTimestamp(data.createdAt)),
+    submittedAt: data.submittedAt == null ? null : coerceRecordTimestamp(data.submittedAt),
+    approvedAt: data.approvedAt == null ? null : coerceRecordTimestamp(data.approvedAt),
+    suspendedAt: data.suspendedAt == null ? null : coerceRecordTimestamp(data.suspendedAt),
   };
 }
 
