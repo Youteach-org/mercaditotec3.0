@@ -416,7 +416,7 @@ export default function StoreBuilderClient() {
                   type="button"
                   onClick={() => void persistInformation(true)}
                   disabled={!editable || infoSaving}
-                  className="w-full rounded-xl bg-[#1457c5] px-5 py-3 font-black text-white shadow-sm hover:bg-[#0e49aa] disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+                  className="store-builder-save-button w-full rounded-xl bg-[#1457c5] px-5 py-3 font-black text-white shadow-sm hover:bg-[#0e49aa] disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
                 >
                   {infoSaving ? "Guardando..." : "Guardar cambios"}
                 </button>
