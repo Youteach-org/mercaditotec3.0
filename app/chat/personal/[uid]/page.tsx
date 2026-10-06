@@ -2,17 +2,9 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import {
-  collection,
-  limit,
-  onSnapshot,
-  orderBy,
-  query,
-} from "firebase/firestore";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import AuthGuard from "@/components/AuthGuard";
-import { db } from "@/lib/firebase";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { useSession } from "@/lib/useSession";
 
@@ -79,32 +71,46 @@ function PersonalChatContent() {
     };
   }, [firebaseUser, targetUid]);
 
+  const loadMessages = useCallback(async () => {
+    if (!firebaseUser || !targetUid) return;
+
+    try {
+      const response = await moderationApiFetch(
+        firebaseUser,
+        `/api/chat/direct/messages?targetUid=${encodeURIComponent(targetUid)}`,
+        { method: "GET" },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudieron cargar los mensajes privados.");
+      }
+
+      if (data.session) setSession(data.session as DirectSession);
+      setMessages(Array.isArray(data.messages) ? data.messages : []);
+
+      window.setTimeout(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+      }, 30);
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : "No se pudieron cargar los mensajes privados.",
+      );
+    }
+  }, [firebaseUser, targetUid]);
+
   useEffect(() => {
-    if (!session?.chatId) return;
+    if (!firebaseUser || !targetUid) return;
 
-    const messagesQuery = query(
-      collection(db, "direct_chats", session.chatId, "messages"),
-      orderBy("createdAt", "asc"),
-      limit(250),
-    );
+    void loadMessages();
+    const interval = window.setInterval(() => {
+      void loadMessages();
+    }, 2500);
 
-    return onSnapshot(
-      messagesQuery,
-      (snapshot) => {
-        setMessages(
-          snapshot.docs.map((document) => ({
-            id: document.id,
-            ...(document.data() as Omit<DirectMessage, "id">),
-          })),
-        );
-        window.setTimeout(() => {
-          const el = scrollRef.current;
-          if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-        }, 50);
-      },
-      () => setError("No se pudieron cargar los mensajes privados."),
-    );
-  }, [session?.chatId]);
+    return () => window.clearInterval(interval);
+  }, [firebaseUser, loadMessages, targetUid]);
 
   async function sendMessage() {
     if (!firebaseUser || !text.trim() || sending) return;
@@ -124,7 +130,15 @@ function PersonalChatContent() {
       if (!response.ok) {
         throw new Error(data.error ?? "No se pudo enviar el mensaje privado.");
       }
+      const saved = data.message as DirectMessage | undefined;
+      if (saved) {
+        setMessages((current) => {
+          if (current.some((message) => message.id === saved.id)) return current;
+          return [...current, saved];
+        });
+      }
       setText("");
+      await loadMessages();
     } catch (sendError) {
       setError(
         sendError instanceof Error
