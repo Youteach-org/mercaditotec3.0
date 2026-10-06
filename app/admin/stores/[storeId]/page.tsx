@@ -5,7 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import AdminStoreReviewProducts from "@/components/store/AdminStoreReviewProducts";
+import MarketplaceCardEditorPreview from "@/components/store/MarketplaceCardEditorPreview";
+import StorefrontPreview from "@/components/store/StorefrontPreview";
+import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
 import { isAdminRole } from "@/lib/security/domain";
+import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
 import {
   actionsForStoreStatus,
   adminActionLabel,
@@ -18,7 +22,17 @@ import {
   storeStatusLabel,
   type StoreApiRecord,
 } from "@/lib/store/client";
+import type { StoreProductApiRecord } from "@/lib/store/productClient";
 import { useSession } from "@/lib/useSession";
+
+type ReviewOwner = {
+  uid: string;
+  nickname: string;
+  displayName: string;
+  email: string;
+  studentStatus: string;
+  studentEndorsementCount: number;
+};
 
 export default function AdminStoreDetailPage() {
   const params = useParams<{ storeId: string }>();
@@ -28,6 +42,10 @@ export default function AdminStoreDetailPage() {
   const isAdmin = isAdminRole(appUser);
 
   const [store, setStore] = useState<StoreApiRecord | null>(null);
+  const [products, setProducts] = useState<StoreProductApiRecord[]>([]);
+  const [categories, setCategories] = useState<StoreCategoryApiRecord[]>([]);
+  const [owner, setOwner] = useState<ReviewOwner | null>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +74,10 @@ export default function AdminStoreDetailPage() {
         throw new Error(data.error ?? "No se pudo cargar la tienda.");
       }
       setStore(data.store as StoreApiRecord);
+      setProducts(Array.isArray(data.products) ? data.products : []);
+      setCategories(Array.isArray(data.categories) ? data.categories : []);
+      setOwner(data.owner ?? null);
+      setReviewConfirmed(false);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -119,7 +141,18 @@ export default function AdminStoreDetailPage() {
   }
 
   function requestAction(action: AdminStoreAction) {
-    if (action === "approve" || action === "reactivate") {
+    if (action === "approve") {
+      if (!reviewConfirmed) {
+        setError(
+          "Antes de aprobar confirma que revisaste información, imágenes, productos, categorías y horario.",
+        );
+        return;
+      }
+      void executeAction(action);
+      return;
+    }
+
+    if (action === "reactivate") {
       void executeAction(action);
       return;
     }
@@ -130,7 +163,7 @@ export default function AdminStoreDetailPage() {
   if (sessionLoading || loading) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-md">
+        <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
           Cargando tienda...
         </div>
       </main>
@@ -140,7 +173,7 @@ export default function AdminStoreDetailPage() {
   if (!store || !firebaseUser) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-md">
+        <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
           <h1 className="text-2xl font-bold">Tienda no disponible</h1>
           <p className="mt-2 text-red-700">{error}</p>
           <Link href="/admin/stores" className="mt-4 inline-block font-semibold text-blue-700">
@@ -152,10 +185,26 @@ export default function AdminStoreDetailPage() {
   }
 
   const actions = actionsForStoreStatus(store.status);
+  const categoryNames = new Map(
+    categories.map((category) => [category.id, category.name]),
+  );
+  const categoryAudit = [
+    ...new Set(
+      products
+        .map((product) =>
+          product.suggestedCategoryName?.trim() ||
+          categoryNames.get(product.categoryId) ||
+          "Categoría no disponible",
+        )
+        .filter(Boolean),
+    ),
+  ];
+  const sellerName =
+    owner?.nickname || owner?.displayName || owner?.email || store.ownerUid;
 
   return (
     <main className="min-h-screen bg-gray-100 p-4">
-      <div className="mx-auto max-w-4xl space-y-5">
+      <div className="mx-auto max-w-7xl space-y-5">
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
             <Link href="/admin/stores" className="text-blue-700 hover:underline">
