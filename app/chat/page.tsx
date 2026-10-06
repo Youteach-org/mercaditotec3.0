@@ -17,6 +17,10 @@ import {
   loadSharedImageLibrary,
   saveSharedImageMetadata,
 } from "@/lib/chat/imageLibraryClient";
+import {
+  generalChatCutoff,
+  isGeneralChatMessageCurrent,
+} from "@/lib/chat/generalRetention";
 import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
@@ -259,6 +263,7 @@ function ChatContent() {
     appUserAny?.admin === true;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [retentionNow, setRetentionNow] = useState(() => Date.now());
   const [userImages, setUserImages] = useState<UserImage[]>([]);
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
@@ -595,8 +600,38 @@ function ChatContent() {
   ]);
 
   useEffect(() => {
+    if (!firebaseUser) return;
+
+    let cancelled = false;
+
+    const refreshRetention = async () => {
+      const now = Date.now();
+      if (!cancelled) setRetentionNow(now);
+
+      try {
+        await moderationApiFetch(firebaseUser, "/api/chat/messages", {
+          method: "GET",
+        });
+      } catch (error) {
+        console.error("GENERAL_CHAT_RETENTION_ERROR", error);
+      }
+    };
+
+    void refreshRetention();
+    const interval = window.setInterval(() => {
+      void refreshRetention();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [firebaseUser]);
+
+  useEffect(() => {
     const q = query(
       collection(db, "messages"),
+      where("createdAt", ">=", generalChatCutoff(retentionNow)),
       orderBy("createdAt", "desc"),
       limit(100),
     );
@@ -606,6 +641,9 @@ function ChatContent() {
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
         }))
+        .filter((message) =>
+          isGeneralChatMessageCurrent(Number(message.createdAt), retentionNow)
+        )
         .reverse();
 
       const newest = msgs[msgs.length - 1];
@@ -665,7 +703,7 @@ function ChatContent() {
     });
 
     return () => unsubscribe();
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, retentionNow]);
 
   useEffect(() => {
     if (!firebaseUser) return;
