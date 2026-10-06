@@ -1,7 +1,8 @@
 import { parseImageUploadPath } from "../store/media";
 import type { DecodedIdToken } from "../firebaseAdmin";
-import { getAdminDb, Timestamp } from "../firestoreRest";
+import { FirestoreRestError, getAdminDb, Timestamp } from "../firestoreRest";
 import { isAdminRole, studentControlEligibility } from "./domain";
+import { validateNicknameSyntax } from "./nickname";
 
 const INSTITUTIONAL_DOMAIN = "@morelia.tecnm.mx";
 
@@ -47,13 +48,20 @@ export function institutionalIdentity(
   };
 }
 
-function newStudentProfile(identity: InstitutionalIdentity, emailVerified: boolean, now: Date) {
+function newStudentProfile(
+  identity: InstitutionalIdentity,
+  emailVerified: boolean,
+  nickname: string,
+  now: Date,
+) {
   const stamp = Timestamp.fromDate(now);
   return {
     email: identity.email,
     emailLocalPart: identity.localPart,
     emailVerified,
-    displayName: identity.localPart,
+    nickname,
+    nicknameNormalized: nickname,
+    displayName: nickname,
     photoURL: "",
     plan: "free",
     role: "user",
@@ -68,8 +76,64 @@ function newStudentProfile(identity: InstitutionalIdentity, emailVerified: boole
   };
 }
 
+async function reserveNickname(
+  uid: string,
+  nicknameInput: string,
+  now: Date,
+): Promise<string> {
+  const parsed = validateNicknameSyntax(nicknameInput);
+  if (!parsed.valid) {
+    throw new AccountProfileError(400, parsed.reason);
+  }
+
+  const nickname = parsed.nickname;
+  const reference = getAdminDb().collection("nicknames").doc(nickname);
+  const existing = await reference.get();
+
+  if (existing.exists) {
+    const data = existing.data() ?? {};
+    if (String(data.uid ?? "") === uid) return nickname;
+    throw new AccountProfileError(409, "Ese nickname ya está en uso.");
+  }
+
+  try {
+    await reference.create({
+      uid,
+      nickname,
+      createdAt: Timestamp.fromDate(now),
+    });
+  } catch (error) {
+    if (error instanceof FirestoreRestError && (error.status === 409 || error.status === 412)) {
+      throw new AccountProfileError(409, "Ese nickname ya está en uso.");
+    }
+    throw error;
+  }
+
+  return nickname;
+}
+
+async function releaseNicknameReservation(uid: string, nickname: string): Promise<void> {
+  const reference = getAdminDb().collection("nicknames").doc(nickname);
+  const snapshot = await reference.get();
+  if (!snapshot.exists) return;
+  const data = snapshot.data() ?? {};
+  if (String(data.uid ?? "") === uid) {
+    await reference.delete();
+  }
+}
+
+export async function isNicknameAvailable(nicknameInput: string): Promise<boolean> {
+  const parsed = validateNicknameSyntax(nicknameInput);
+  if (!parsed.valid) {
+    throw new AccountProfileError(400, parsed.reason);
+  }
+  const snapshot = await getAdminDb().collection("nicknames").doc(parsed.nickname).get();
+  return !snapshot.exists;
+}
+
 export async function bootstrapAccountProfile(
   claims: DecodedIdToken,
+  nicknameInput: string,
   now: Date = new Date(),
 ): Promise<void> {
   const identity = institutionalIdentity(tokenEmail(claims), {
@@ -78,17 +142,39 @@ export async function bootstrapAccountProfile(
   });
   const reference = getAdminDb().collection("users").doc(claims.uid);
   const snapshot = await reference.get();
+  const existing = snapshot.data() ?? {};
 
-  if (!snapshot.exists) {
-    await reference.set(newStudentProfile(identity, claims.email_verified === true, now));
+  if (snapshot.exists && typeof existing.nickname === "string" && existing.nickname.trim()) {
+    await reference.update({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      updatedAt: Timestamp.fromDate(now),
+    });
     return;
   }
 
-  await reference.update({
-    email: identity.email,
-    emailLocalPart: identity.localPart,
-    updatedAt: Timestamp.fromDate(now),
-  });
+  const nickname = await reserveNickname(claims.uid, nicknameInput, now);
+
+  try {
+    if (!snapshot.exists) {
+      await reference.set(
+        newStudentProfile(identity, claims.email_verified === true, nickname, now),
+      );
+      return;
+    }
+
+    await reference.update({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      nickname,
+      nicknameNormalized: nickname,
+      displayName: nickname,
+      updatedAt: Timestamp.fromDate(now),
+    });
+  } catch (error) {
+    await releaseNicknameReservation(claims.uid, nickname).catch(() => undefined);
+    throw error;
+  }
 }
 
 export async function syncVerifiedAccountProfile(
@@ -110,7 +196,7 @@ export async function syncVerifiedAccountProfile(
   });
 
   if (!snapshot.exists) {
-    await reference.set(newStudentProfile(identity, true, now));
+    await reference.set(newStudentProfile(identity, true, identity.localPart, now));
     return;
   }
 
