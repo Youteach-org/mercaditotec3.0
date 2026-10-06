@@ -6,6 +6,11 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { isAdminRole } from "@/lib/security/domain";
 import {
+  CATEGORY_ICON_KEYS,
+  CATEGORY_ICON_LABELS,
+  type CategoryIconKey,
+} from "@/lib/store/categoryIcon";
+import {
   createAdminCategory,
   loadAdminCategories,
   updateAdminCategory,
@@ -22,6 +27,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [iconKey, setIconKey] = useState<CategoryIconKey>("other");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -69,12 +75,14 @@ export default function AdminCategoriesPage() {
       const category = await createAdminCategory(firebaseUser, {
         name,
         active: true,
+        iconKey,
       });
 
       setCategories((current) =>
         [...current, category].sort((a, b) => a.name.localeCompare(b.name, "es")),
       );
       setName("");
+      setIconKey("other");
       setMessage("Categoría creada.");
     } catch (createError) {
       setError(
@@ -97,6 +105,7 @@ export default function AdminCategoriesPage() {
       const updated = await updateAdminCategory(firebaseUser, category.id, {
         name: category.name,
         active: !category.active,
+        iconKey: category.iconKey,
       });
 
       setCategories((current) =>
@@ -108,6 +117,35 @@ export default function AdminCategoriesPage() {
         updateError instanceof Error
           ? updateError.message
           : "No se pudo actualizar la categoría.",
+      );
+    }
+  }
+
+  async function changeCategoryIcon(
+    category: StoreCategoryApiRecord,
+    nextIconKey: CategoryIconKey,
+  ) {
+    if (!firebaseUser || nextIconKey === category.iconKey) return;
+
+    setError("");
+    setMessage("");
+
+    try {
+      const updated = await updateAdminCategory(firebaseUser, category.id, {
+        name: category.name,
+        active: category.active,
+        iconKey: nextIconKey,
+      });
+
+      setCategories((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setMessage(`Icono de “${updated.name}” actualizado.`);
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "No se pudo actualizar el icono.",
       );
     }
   }
@@ -160,7 +198,7 @@ export default function AdminCategoriesPage() {
 
         <form onSubmit={createCategory} className="rounded-2xl bg-white p-6 shadow-md">
           <h2 className="text-xl font-bold text-gray-900">Nueva categoría</h2>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_240px_auto]">
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
@@ -168,8 +206,20 @@ export default function AdminCategoriesPage() {
               minLength={2}
               maxLength={60}
               placeholder="Ej. Alimentos y bebidas"
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
+              className="min-w-0 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
             />
+            <select
+              value={iconKey}
+              onChange={(event) => setIconKey(event.target.value as CategoryIconKey)}
+              className="rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-900 outline-none focus:border-blue-500"
+              aria-label="Icono de la categoría"
+            >
+              {CATEGORY_ICON_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {CATEGORY_ICON_LABELS[key]}
+                </option>
+              ))}
+            </select>
             <button
               type="submit"
               disabled={creating}
@@ -194,7 +244,7 @@ export default function AdminCategoriesPage() {
                   key={category.id}
                   className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <div className="font-semibold text-gray-900">{category.name}</div>
                     <div
                       className={
@@ -205,6 +255,27 @@ export default function AdminCategoriesPage() {
                     >
                       {category.active ? "Activa" : "Inactiva"}
                     </div>
+                    <label className="mt-2 block max-w-xs">
+                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
+                        Icono
+                      </span>
+                      <select
+                        value={category.iconKey}
+                        onChange={(event) =>
+                          void changeCategoryIcon(
+                            category,
+                            event.target.value as CategoryIconKey,
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900"
+                      >
+                        {CATEGORY_ICON_KEYS.map((key) => (
+                          <option key={key} value={key}>
+                            {CATEGORY_ICON_LABELS[key]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
 
                   <button
