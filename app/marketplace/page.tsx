@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
+import MarketplaceRibbon from "@/components/store/MarketplaceRibbon";
 
 import {
   DEMO_MARKETPLACE_STORES,
@@ -288,11 +289,7 @@ function StoreCard({
         />
       </div>
 
-      {ribbonLabel && (
-        <div className={`mkt-store-ribbon mkt-store-ribbon-${slotIndex}`}>
-          {ribbonLabel}
-        </div>
-      )}
+      <MarketplaceRibbon label={ribbonLabel} slotIndex={slotIndex} />
 
       <div className="mkt-store-logo">
         {store.logoUrl ? (

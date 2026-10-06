@@ -1,6 +1,7 @@
 "use client";
 
 import MarketplaceCloudMedia from "./MarketplaceCloudMedia";
+import MarketplaceRibbon from "./MarketplaceRibbon";
 import {
   marketplaceVariantIndex,
   resolveMarketplaceVariant,
@@ -67,11 +68,7 @@ export default function MarketplaceCardEditorPreview({
             />
           </div>
 
-          {displayLabel && (
-            <div className="mkt-store-ribbon mkt-store-ribbon-0">
-              {displayLabel}
-            </div>
-          )}
+          <MarketplaceRibbon label={displayLabel} slotIndex={0} />
 
           <div className="mkt-store-logo">
             {logoUrl ? (
