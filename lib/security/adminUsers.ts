@@ -1,3 +1,4 @@
+import { deleteFirebaseAuthUser } from "../firebaseAdmin";
 import { Timestamp } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
@@ -22,6 +23,7 @@ export class AdminUserError extends Error {
 export interface AdminUserSummary {
   uid: string;
   email: string;
+  username: string;
   displayName: string;
   role: string;
   adminRole: AdminRole | null;
@@ -32,18 +34,12 @@ export interface AdminUserSummary {
   createdAt: string | null;
 }
 
-export function parseAdminTrustChange(input: unknown): "revoked" {
+export function parseAdminTrustChange(input: unknown): "verified" | "revoked" {
   if (!input || typeof input !== "object") {
     throw new AdminUserError(400, "Acción de confianza inválida.");
   }
   const status = String((input as Record<string, unknown>).status ?? "");
-  if (status === "verified") {
-    throw new AdminUserError(
-      409,
-      "La confirmación de alumno se obtiene únicamente con 2 avales.",
-    );
-  }
-  if (status !== "revoked") {
+  if (status !== "verified" && status !== "revoked") {
     throw new AdminUserError(400, "Acción de confianza inválida.");
   }
   return status;
@@ -70,9 +66,16 @@ function createdAtIso(value: unknown): string | null {
 
 function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary {
   const endorsementCount = Number(data.studentEndorsementCount ?? 0);
+  const email = String(data.email ?? "").trim().toLowerCase();
+  const username =
+    String(data.emailLocalPart ?? "").trim().toLowerCase() ||
+    email.split("@", 1)[0] ||
+    String(data.displayName ?? "").trim();
+
   return {
     uid,
-    email: String(data.email ?? ""),
+    email,
+    username,
     displayName: String(data.displayName ?? ""),
     role: String(data.role ?? "user"),
     adminRole: effectiveAdminRole(data),
@@ -102,7 +105,7 @@ export async function setStudentTrustByAdmin(
   actorUid: string,
   actorRole: AdminRole,
   targetUid: string,
-  status: "revoked",
+  status: "verified" | "revoked",
 ): Promise<AdminUserSummary> {
   const db = getAdminDb();
   const reference = db.collection("users").doc(targetUid);
@@ -115,20 +118,50 @@ export async function setStudentTrustByAdmin(
   const previousStatus = normalizeStudentTrustStatus(current.studentStatus);
   const now = Timestamp.now();
 
-  const update: Record<string, unknown> = {
-    studentStatus: "revoked",
-    studentRevokedAt: now,
-    updatedAt: now,
-  };
+  if (status === "verified" && actorRole !== "superadmin") {
+    throw new AdminUserError(
+      403,
+      "Solo el Superadmin puede aprobar manualmente a un alumno pendiente.",
+    );
+  }
+
+  if (status === "verified" && previousStatus !== "pending") {
+    throw new AdminUserError(
+      409,
+      "La aprobación manual solo está disponible para alumnos pendientes.",
+    );
+  }
+
+  const update: Record<string, unknown> =
+    status === "verified"
+      ? {
+          studentStatus: "verified",
+          studentVerifiedAt: now,
+          studentRevokedAt: null,
+          updatedAt: now,
+        }
+      : {
+          studentStatus: "revoked",
+          studentRevokedAt: now,
+          updatedAt: now,
+        };
 
   await reference.update(update);
   await writeAuditEntry({
     actorUid,
     actorRole,
-    action: "user.student.revoke",
+    action:
+      status === "verified"
+        ? "user.student.verify-manual"
+        : "user.student.revoke",
     targetType: "user",
     targetId: targetUid,
-    metadata: { previousStatus, nextStatus: "revoked" },
+    metadata: {
+      previousStatus,
+      nextStatus: status,
+      endorsementCount: Number(current.studentEndorsementCount ?? 0),
+      manualOverride: status === "verified",
+    },
   });
 
   return toSummary(targetUid, { ...current, ...update });
@@ -175,4 +208,91 @@ export async function setUserRoleBySuperadmin(
   });
 
   return toSummary(targetUid, { ...current, role, updatedAt: now });
+}
+
+
+export async function deleteUserBySuperadmin(
+  actorUid: string,
+  targetUid: string,
+): Promise<{ uid: string; email: string; username: string }> {
+  if (actorUid === targetUid) {
+    throw new AdminUserError(
+      409,
+      "No puedes eliminar tu propia cuenta activa.",
+    );
+  }
+
+  const db = getAdminDb();
+  const reference = db.collection("users").doc(targetUid);
+  const snapshot = await reference.get();
+
+  if (!snapshot.exists) {
+    throw new AdminUserError(404, "Usuario no encontrado.");
+  }
+
+  const current = snapshot.data() ?? {};
+  if (effectiveAdminRole(current) === "superadmin") {
+    throw new AdminUserError(
+      409,
+      "No se puede eliminar una cuenta Superadmin desde este control.",
+    );
+  }
+
+  const ownedStores = await db
+    .collection("stores")
+    .where("ownerUid", "==", targetUid)
+    .limit(1)
+    .get();
+
+  if (!ownedStores.empty) {
+    throw new AdminUserError(
+      409,
+      "Este usuario todavía tiene una tienda. Elimina o reasigna su tienda antes de borrar la cuenta.",
+    );
+  }
+
+  const summary = toSummary(targetUid, current);
+
+  try {
+    await deleteFirebaseAuthUser(targetUid);
+  } catch (error) {
+    throw new AdminUserError(
+      502,
+      error instanceof Error
+        ? `Firebase no permitió eliminar la cuenta: ${error.message}`
+        : "Firebase no permitió eliminar la cuenta.",
+    );
+  }
+
+  for (const childCollection of ["endorsements", "trust_counters"]) {
+    const childSnapshot = await reference.collection(childCollection).list(500);
+    if (!childSnapshot.empty) {
+      const batch = db.batch();
+      childSnapshot.docs.forEach((document) => batch.delete(document.ref));
+      await batch.commit();
+    }
+  }
+
+  await reference.delete();
+
+  await writeAuditEntry({
+    actorUid,
+    actorRole: "superadmin",
+    action: "user.delete",
+    targetType: "user",
+    targetId: targetUid,
+    metadata: {
+      email: summary.email,
+      username: summary.username,
+      previousRole: summary.role,
+      previousStudentStatus: summary.studentStatus,
+      endorsementCount: summary.studentEndorsementCount,
+    },
+  });
+
+  return {
+    uid: summary.uid,
+    email: summary.email,
+    username: summary.username,
+  };
 }
