@@ -18,8 +18,8 @@ const cards: Array<{
   icon: string;
 }> = [
   {
-    title: "Usuarios",
-    description: "Revisa alumnos, estado de confianza y cuentas activas.",
+    title: "Usuarios y aprobaciones",
+    description: "Busca alumnos, revisa avales, aprueba pendientes y depura cuentas.",
     href: "/admin/users",
     icon: "👥",
   },
