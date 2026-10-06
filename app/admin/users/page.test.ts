@@ -7,25 +7,30 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const pageSource = readFileSync(join(currentDirectory, "page.tsx"), "utf8");
 
 describe("Admin users card actions", () => {
-  it("reveals subadmin promotion only after selecting an ordinary user card", () => {
+  it("keeps actions collapsed until a user card is selected", () => {
     expect(pageSource).toContain("selectedUserUid");
-    expect(pageSource).toContain("setSelectedUserUid");
-    expect(pageSource).toContain("Hacer Subadmin");
-    expect(pageSource).toContain('updateRole(user, "subadmin")');
-    expect(pageSource).toContain("selectedUserUid === user.uid");
+    expect(pageSource).toContain("const canExpand = !isSelf");
+    expect(pageSource).toContain("{selected && (");
   });
 
-  it("keeps the action for removing an existing subadmin", () => {
-    expect(pageSource).toContain("Quitar Subadmin");
-    expect(pageSource).toContain('updateRole(user, "user")');
-  });
-
-  it("shows approval, username search and protected deletion controls", () => {
+  it("keeps superadmin-only approval and deletion controls protected", () => {
     expect(pageSource).toContain("Aprobar manualmente");
-    expect(pageSource).toContain("Buscar usuario, correo, nombre o ID");
-    expect(pageSource).toContain("Usuario:");
+    expect(pageSource).toContain("isSuperadmin &&");
     expect(pageSource).toContain("Eliminar usuario");
     expect(pageSource).toContain("canDelete");
+    expect(pageSource).toContain("window.confirm");
     expect(pageSource).toContain('method: "DELETE"');
+  });
+
+  it("opens a personal chat from the selected user card", () => {
+    expect(pageSource).toContain("Abrir chat privado");
+    expect(pageSource).toContain("/chat/personal/");
+  });
+
+  it("keeps username search and subadmin controls", () => {
+    expect(pageSource).toContain("Buscar usuario, correo, nombre o ID");
+    expect(pageSource).toContain("Usuario:");
+    expect(pageSource).toContain("Hacer Subadmin");
+    expect(pageSource).toContain("Quitar Subadmin");
   });
 });
