@@ -14,10 +14,22 @@ before(async () => {
     for (const [uid, fields] of Object.entries({
       alice: { role: "user", isActive: true },
       victim: { role: "user", isActive: true },
+      other: { role: "user", isActive: true },
       blocked: { role: "user", blocked: true, blockedUntil: Timestamp.fromDate(new Date("2099-01-01")) },
       inactive: { role: "user", isActive: false },
     })) await setDoc(doc(db, "users", uid), fields);
     await setDoc(doc(db, "messages", "message-1"), { text: "Hello", createdAt: 1, hidden: false });
+    await setDoc(doc(db, "direct_chats", "chat-1"), {
+      participantUids: ["alice", "victim"],
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    await setDoc(doc(db, "direct_chats", "chat-1", "messages", "message-1"), {
+      senderId: "alice",
+      recipientId: "victim",
+      text: "Hola",
+      createdAt: 1,
+    });
   });
 }, { timeout: 180000 });
 after(async () => { if (env) await env.cleanup(); });
@@ -38,6 +50,21 @@ test("unverified and external accounts cannot read institutional chat", async ()
     const db = env.authenticatedContext("alice", claims).firestore();
     await assertFails(getDoc(doc(db, "messages", "message-1")));
   }
+});
+test("private chat is readable only by its participants", async () => {
+  for (const uid of ["alice", "victim"]) {
+    const db = env.authenticatedContext(uid, identity()).firestore();
+    await assertSucceeds(getDoc(doc(db, "direct_chats", "chat-1")));
+    await assertSucceeds(
+      getDoc(doc(db, "direct_chats", "chat-1", "messages", "message-1")),
+    );
+  }
+
+  const outsider = env.authenticatedContext("other", identity()).firestore();
+  await assertFails(getDoc(doc(outsider, "direct_chats", "chat-1")));
+  await assertFails(
+    getDoc(doc(outsider, "direct_chats", "chat-1", "messages", "message-1")),
+  );
 });
 test("direct reactions cannot bypass the server mutation budget", async () => {
   for (const uid of ["alice", "blocked", "inactive"]) {

@@ -300,6 +300,7 @@ export default function AdminUsersPage() {
             {visibleUsers.map((user) => {
               const working = workingUid === user.uid;
               const isSelf = user.uid === firebaseUser.uid;
+              const canExpand = !isSelf;
               const canPromote = isSuperadmin && !isSelf && !user.adminRole;
               const canDelete =
                 isSuperadmin && !isSelf && user.adminRole !== "superadmin";
@@ -308,17 +309,17 @@ export default function AdminUsersPage() {
                 <article
                   key={user.uid}
                   onClick={() => {
-                    if (canPromote) {
+                    if (canExpand) {
                       setSelectedUserUid((current) => current === user.uid ? null : user.uid);
                     }
                   }}
                   onKeyDown={(event) => {
-                    if (!canPromote || (event.key !== "Enter" && event.key !== " ")) return;
+                    if (!canExpand || (event.key !== "Enter" && event.key !== " ")) return;
                     event.preventDefault();
                     setSelectedUserUid((current) => current === user.uid ? null : user.uid);
                   }}
-                  tabIndex={canPromote ? 0 : undefined}
-                  className={`rounded-2xl bg-white p-5 shadow-md transition ${canPromote ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-[#174db4] ring-offset-2 ring-offset-[#fff9ee]" : ""}`}
+                  tabIndex={canExpand ? 0 : undefined}
+                  className={`rounded-2xl bg-white p-5 shadow-md transition ${canExpand ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-[#174db4] ring-offset-2 ring-offset-[#fff9ee]" : ""}`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
@@ -363,10 +364,19 @@ export default function AdminUsersPage() {
                     </div>
                   </div>
 
+                  {selected && (
                   <div
                     className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4"
                     onClick={(event) => event.stopPropagation()}
                   >
+                    {!isSelf && (
+                      <Link
+                        href={`/chat/personal/${user.uid}`}
+                        className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-800 hover:bg-slate-50"
+                      >
+                        Abrir chat privado
+                      </Link>
+                    )}
                     {user.studentStatus === "pending" && (
                       <>
                         <span className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800">
@@ -433,6 +443,7 @@ export default function AdminUsersPage() {
                       </button>
                     )}
                   </div>
+                  )}
 
                   <p className="mt-3 break-all text-[11px] text-gray-400">ID interno: {user.uid}</p>
                 </article>

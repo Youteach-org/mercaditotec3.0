@@ -8,6 +8,10 @@ import {
 } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
+import {
+  GENERAL_CHAT_RETENTION_MS,
+  generalChatCutoff,
+} from "../chat/generalRetention";
 import type { AdminRole } from "../security/domain";
 import {
   assertActionAllowed,
@@ -592,6 +596,47 @@ export async function listReportedMessages(
   })));
 }
 
+async function deleteGeneralChatDocumentsBefore(
+  collectionName: "messages" | "message_reactions",
+  cutoff: number,
+): Promise<number> {
+  const db = getAdminDb();
+  let deleted = 0;
+
+  for (let pass = 0; pass < 20; pass += 1) {
+    const snapshot = await db
+      .collection(collectionName)
+      .where("createdAt", "<", cutoff)
+      .orderBy("createdAt", "asc")
+      .limit(250)
+      .get();
+
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    snapshot.docs.forEach((document) => batch.delete(document.ref));
+    await batch.commit();
+    deleted += snapshot.size;
+
+    if (snapshot.size < 250) break;
+  }
+
+  return deleted;
+}
+
+export async function pruneExpiredGeneralChatMessages(
+  now = Date.now(),
+): Promise<{ cutoff: number; messagesDeleted: number; reactionsDeleted: number }> {
+  const cutoff = generalChatCutoff(now);
+  const messagesDeleted = await deleteGeneralChatDocumentsBefore("messages", cutoff);
+  const reactionsDeleted = await deleteGeneralChatDocumentsBefore(
+    "message_reactions",
+    cutoff,
+  );
+
+  return { cutoff, messagesDeleted, reactionsDeleted };
+}
+
 export async function createGeneralChatMessage(
   actorUid: string,
   input: unknown,
@@ -619,6 +664,7 @@ export async function createGeneralChatMessage(
     throw new ModerationRepositoryError(403, "Tu cuenta está bloqueada temporalmente para realizar esta acción.");
   }
   const now = Date.now();
+  await pruneExpiredGeneralChatMessages(now);
   const reference = db.collection("messages").doc();
   const record = {
     text,
@@ -628,7 +674,7 @@ export async function createGeneralChatMessage(
     senderRole: value.senderRole === "seller" ? "seller" as const : "buyer" as const,
     senderPlan: user.plan === "premium" ? "premium" as const : "free" as const,
     createdAt: now,
-    expiresAt: now + 48 * 60 * 60 * 1000,
+    expiresAt: now + GENERAL_CHAT_RETENTION_MS,
     messageType: imageUrls.length
       ? "image" as const
       : value.messageType === "template"

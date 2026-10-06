@@ -68,6 +68,7 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
   const endorsementCount = Number(data.studentEndorsementCount ?? 0);
   const email = String(data.email ?? "").trim().toLowerCase();
   const username =
+    String(data.nickname ?? "").trim() ||
     String(data.emailLocalPart ?? "").trim().toLowerCase() ||
     email.split("@", 1)[0] ||
     String(data.displayName ?? "").trim();
