@@ -2,6 +2,7 @@ import { Timestamp, type DocumentData } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
 import { canOwnerEditStore, type StoreStatus } from "./domain";
+import { coerceRecordTimestamp } from "./legacyTimestamp";
 import {
   getStoreForOwner,
   type StoreRuleRecord,
@@ -94,23 +95,6 @@ export function buildNewProductRecord(
   };
 }
 
-function coerceTimestamp(value: unknown, fallback?: Timestamp): Timestamp {
-  if (value instanceof Timestamp) return value;
-  if (value instanceof Date && Number.isFinite(value.getTime())) {
-    return Timestamp.fromDate(value);
-  }
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return Timestamp.fromMillis(value);
-  }
-  if (typeof value === "string") {
-    const parsed = new Date(value);
-    if (Number.isFinite(parsed.getTime())) {
-      return Timestamp.fromDate(parsed);
-    }
-  }
-  return fallback ?? Timestamp.fromMillis(0);
-}
-
 function toProductRecord(id: string, data: DocumentData): ProductRecord {
   return {
     id,
@@ -129,8 +113,8 @@ function toProductRecord(id: string, data: DocumentData): ProductRecord {
     priceType: data.priceType as ProductPriceType,
     priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
     visibility: data.visibility as ProductVisibility,
-    createdAt: coerceTimestamp(data.createdAt),
-    updatedAt: coerceTimestamp(data.updatedAt, coerceTimestamp(data.createdAt)),
+    createdAt: coerceRecordTimestamp(data.createdAt),
+    updatedAt: coerceRecordTimestamp(data.updatedAt, coerceRecordTimestamp(data.createdAt)),
   };
 }
 
