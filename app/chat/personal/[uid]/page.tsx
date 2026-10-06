@@ -36,6 +36,7 @@ function PersonalChatContent() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastMarkedIncomingRef = useRef(0);
 
   useEffect(() => {
     if (!firebaseUser || !targetUid) return;
@@ -86,7 +87,24 @@ function PersonalChatContent() {
       }
 
       if (data.session) setSession(data.session as DirectSession);
-      setMessages(Array.isArray(data.messages) ? data.messages : []);
+      const loadedMessages = Array.isArray(data.messages)
+        ? (data.messages as DirectMessage[])
+        : [];
+      setMessages(loadedMessages);
+
+      const latestIncoming = loadedMessages
+        .filter((message) => message.recipientId === firebaseUser.uid)
+        .reduce((latest, message) => Math.max(latest, message.createdAt), 0);
+
+      if (latestIncoming > lastMarkedIncomingRef.current) {
+        lastMarkedIncomingRef.current = latestIncoming;
+        void moderationApiFetch(firebaseUser, "/api/chat/direct/read", {
+          method: "POST",
+          body: JSON.stringify({ targetUid }),
+        }).catch(() => {
+          lastMarkedIncomingRef.current = 0;
+        });
+      }
 
       window.setTimeout(() => {
         const el = scrollRef.current;

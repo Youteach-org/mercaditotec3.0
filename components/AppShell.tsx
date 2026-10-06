@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
+import { moderationApiFetch } from "@/lib/moderation/client";
 import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
@@ -12,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/marketplace", label: "Mercadito", icon: "home" },
   { href: "/orders", label: "Pedidos", icon: "bag" },
   { href: "/mystore", label: "Mis tiendas", icon: "store" },
-  { href: "/chat", label: "Chat", icon: "chat" },
+  { href: "/chat/personal", label: "Mensajes", icon: "chat" },
   { href: "/profile", label: "Perfil", icon: "profile" },
 ];
 
@@ -41,6 +42,9 @@ function isCurrentPath(pathname: string, href: string): boolean {
   if (href === "/mystore") {
     return pathname === href || pathname.startsWith("/mystore/");
   }
+  if (href === "/chat/personal") {
+    return pathname === href || pathname.startsWith("/chat/personal/");
+  }
   return pathname === href;
 }
 
@@ -48,6 +52,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { firebaseUser, appUser, loading } = useSession();
   const [fallbackUnreadCount, setFallbackUnreadCount] = useState(0);
+  const [privateUnreadCount, setPrivateUnreadCount] = useState(0);
+  const [messageAlert, setMessageAlert] = useState("");
+  const previousPrivateUnreadRef = useRef<number | null>(null);
   const [visualPreview, setVisualPreview] = useState(false);
 
   useEffect(() => {
@@ -82,6 +89,60 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [firebaseUser, loading, profileUnreadCount]);
 
   const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
+
+  useEffect(() => {
+    if (loading || !firebaseUser) {
+      setPrivateUnreadCount(0);
+      previousPrivateUnreadRef.current = null;
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadPrivateUnread = async () => {
+      try {
+        const response = await moderationApiFetch(
+          firebaseUser,
+          "/api/chat/direct/conversations",
+          { method: "GET" },
+        );
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || cancelled) return;
+
+        const nextCount = Math.max(0, Math.floor(Number(data.totalUnread ?? 0)));
+        const previous = previousPrivateUnreadRef.current;
+
+        if (
+          !cancelled &&
+          nextCount > 0 &&
+          (previous === null || nextCount > previous)
+        ) {
+          setMessageAlert(
+            nextCount === 1
+              ? "Tienes 1 mensaje privado sin leer"
+              : `Tienes ${nextCount} mensajes privados sin leer`,
+          );
+          window.setTimeout(() => setMessageAlert(""), 5000);
+        }
+
+        previousPrivateUnreadRef.current = nextCount;
+        setPrivateUnreadCount(nextCount);
+      } catch {
+        // Mantener el contador previo ante fallas temporales de red.
+      }
+    };
+
+    void loadPrivateUnread();
+    const interval = window.setInterval(() => {
+      void loadPrivateUnread();
+    }, 8000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [firebaseUser, loading, pathname]);
+
   const showAdmin = isAdminRole(appUser);
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
@@ -137,8 +198,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         >
                           {scrapbookShell && <NavIcon icon={item.icon} />}
                           <span>{item.label}</span>
-                          {scrapbookShell && item.href === "/chat" && (
-                            <span className="absolute right-0 top-1 h-2.5 w-2.5 rounded-full bg-[#f15b32]" aria-hidden="true" />
+                          {item.href === "/chat/personal" && privateUnreadCount > 0 && (
+                            <span className="absolute -right-1 top-0 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white">
+                              {privateUnreadCount > 99 ? "99+" : privateUnreadCount}
+                            </span>
                           )}
                         </Link>
                       );
@@ -225,7 +288,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                               : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
                         }
                       >
-                        {item.label}
+                        <span className="inline-flex items-center gap-1.5">
+                          {item.label}
+                          {item.href === "/chat/personal" && privateUnreadCount > 0 && (
+                            <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white">
+                              {privateUnreadCount > 99 ? "99+" : privateUnreadCount}
+                            </span>
+                          )}
+                        </span>
                       </Link>
                     );
                   })}
@@ -271,6 +341,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         </header>
+      )}
+      {messageAlert && firebaseUser && (
+        <Link
+          href="/chat/personal"
+          className="fixed right-4 top-20 z-[70] max-w-[calc(100vw-2rem)] rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl"
+          aria-live="polite"
+        >
+          💬 {messageAlert}
+        </Link>
       )}
       <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}>{children}</div>
     </div>
