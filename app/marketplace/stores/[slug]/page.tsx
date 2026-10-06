@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import AuthGuard from "@/components/AuthGuard";
 import { createOrderRequest } from "@/lib/orders/client";
+import { storeApiFetch } from "@/lib/store/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
 import { STORE_WEEK_DAYS } from "@/lib/store/schedule";
 import { useSession } from "@/lib/useSession";
@@ -29,7 +31,7 @@ function priceLabel(storeProduct: PublicStoreDetail["products"][number]): string
   return storeProduct.priceType === "negotiable" ? `${amount} · negociable` : amount;
 }
 
-export default function PublicStorePage() {
+function StoreDetailContent() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { firebaseUser } = useSession();
@@ -43,9 +45,15 @@ export default function PublicStorePage() {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    if (!firebaseUser) return;
+
     let cancelled = false;
 
-    void fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
+    void storeApiFetch(
+      firebaseUser,
+      `/api/marketplace/stores/${encodeURIComponent(slug)}`,
+      { cache: "no-store" },
+    )
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar la tienda.");
@@ -63,7 +71,7 @@ export default function PublicStorePage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [firebaseUser, slug]);
 
   async function requestProduct(productId: string) {
     if (!store) return;
@@ -265,5 +273,14 @@ export default function PublicStorePage() {
         </section>
       </div>
     </main>
+  );
+}
+
+
+export default function PublicStorePage() {
+  return (
+    <AuthGuard>
+      <StoreDetailContent />
+    </AuthGuard>
   );
 }
