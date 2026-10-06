@@ -1,3 +1,4 @@
+import { deleteFirebaseAuthUser } from "../firebaseAdmin";
 import { Timestamp } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
@@ -207,4 +208,91 @@ export async function setUserRoleBySuperadmin(
   });
 
   return toSummary(targetUid, { ...current, role, updatedAt: now });
+}
+
+
+export async function deleteUserBySuperadmin(
+  actorUid: string,
+  targetUid: string,
+): Promise<{ uid: string; email: string; username: string }> {
+  if (actorUid === targetUid) {
+    throw new AdminUserError(
+      409,
+      "No puedes eliminar tu propia cuenta activa.",
+    );
+  }
+
+  const db = getAdminDb();
+  const reference = db.collection("users").doc(targetUid);
+  const snapshot = await reference.get();
+
+  if (!snapshot.exists) {
+    throw new AdminUserError(404, "Usuario no encontrado.");
+  }
+
+  const current = snapshot.data() ?? {};
+  if (effectiveAdminRole(current) === "superadmin") {
+    throw new AdminUserError(
+      409,
+      "No se puede eliminar una cuenta Superadmin desde este control.",
+    );
+  }
+
+  const ownedStores = await db
+    .collection("stores")
+    .where("ownerUid", "==", targetUid)
+    .limit(1)
+    .get();
+
+  if (!ownedStores.empty) {
+    throw new AdminUserError(
+      409,
+      "Este usuario todavía tiene una tienda. Elimina o reasigna su tienda antes de borrar la cuenta.",
+    );
+  }
+
+  const summary = toSummary(targetUid, current);
+
+  try {
+    await deleteFirebaseAuthUser(targetUid);
+  } catch (error) {
+    throw new AdminUserError(
+      502,
+      error instanceof Error
+        ? `Firebase no permitió eliminar la cuenta: ${error.message}`
+        : "Firebase no permitió eliminar la cuenta.",
+    );
+  }
+
+  for (const childCollection of ["endorsements", "trust_counters"]) {
+    const childSnapshot = await reference.collection(childCollection).list(500);
+    if (!childSnapshot.empty) {
+      const batch = db.batch();
+      childSnapshot.docs.forEach((document) => batch.delete(document.ref));
+      await batch.commit();
+    }
+  }
+
+  await reference.delete();
+
+  await writeAuditEntry({
+    actorUid,
+    actorRole: "superadmin",
+    action: "user.delete",
+    targetType: "user",
+    targetId: targetUid,
+    metadata: {
+      email: summary.email,
+      username: summary.username,
+      previousRole: summary.role,
+      previousStudentStatus: summary.studentStatus,
+      endorsementCount: summary.studentEndorsementCount,
+    },
+  });
+
+  return {
+    uid: summary.uid,
+    email: summary.email,
+    username: summary.username,
+  };
 }
