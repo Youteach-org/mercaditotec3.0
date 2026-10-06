@@ -25,6 +25,7 @@ import { useSession } from "@/lib/useSession";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
 import { moderationApiFetch } from "@/lib/moderation/client";
+import { validateNicknameSyntax } from "@/lib/security/nickname";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 const TEMPLATE_MESSAGES = [
@@ -269,6 +270,8 @@ function ChatContent() {
   const [reactions, setReactions] = useState<ReactionRecord[]>([]);
   const [nicknameOverride, setNicknameOverride] =
     useState("");
+  const [nicknameResolved, setNicknameResolved] =
+    useState(false);
   const [nicknameEditorOpen, setNicknameEditorOpen] =
     useState(false);
   const [nicknameInput, setNicknameInput] =
@@ -327,41 +330,9 @@ function ChatContent() {
   const lastMessageCreatedAtRef = useRef(0);
   const isNearBottomRef = useRef(true);
 
-  function normalizeNicknameKey(value: string) {
-    return value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLocaleLowerCase("es-MX")
-      .replace(/[._-]/g, "")
-      .trim();
-  }
-
   function validateNickname(value: string) {
-    const nickname = value.trim();
-
-    if (nickname.length < 3) {
-      return "El nickname debe tener al menos 3 caracteres.";
-    }
-
-    if (nickname.length > 20) {
-      return "El nickname puede tener máximo 20 caracteres.";
-    }
-
-    if (!/^[\p{L}\p{N}._-]+$/u.test(nickname)) {
-      return "Usa solo letras, números, punto, guion o _.";
-    }
-
-    const normalized =
-      normalizeNicknameKey(nickname);
-
-    if (
-      ["tu", "admin", "administrador", "mercaditotec", "sistema"]
-        .includes(normalized)
-    ) {
-      return "Ese nickname está reservado.";
-    }
-
-    return "";
+    const parsed = validateNicknameSyntax(value);
+    return parsed.valid ? "" : parsed.reason;
   }
 
   async function saveNickname() {
@@ -442,8 +413,9 @@ function ChatContent() {
       }
 
       setNicknameOverride(
-        nickname
+        String(result?.nickname || nickname).trim()
       );
+      setNicknameResolved(true);
 
       setNicknameInput(
         nickname
@@ -492,12 +464,18 @@ function ChatContent() {
       return true;
     }
 
+    if (!nicknameResolved) {
+      setToast("Cargando tu nickname...");
+      window.setTimeout(() => setToast(""), 1600);
+      return false;
+    }
+
     setNicknameInput("");
     setNicknameError("");
     setNicknameEditorOpen(true);
 
     setToast(
-      "Elige un nickname antes de enviar mensajes."
+      "Elige un nickname para tu cuenta antes de enviar mensajes."
     );
 
     window.setTimeout(
@@ -510,6 +488,36 @@ function ChatContent() {
 
   useEffect(() => {
     setNicknameOverride("");
+    setNicknameResolved(false);
+    setNicknameEditorOpen(false);
+
+    if (!firebaseUser) return;
+
+    let cancelled = false;
+
+    void moderationApiFetch(firebaseUser, "/api/nickname", {
+      method: "GET",
+    })
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || cancelled) return;
+
+        const accountNickname = String(result?.nickname ?? "").trim();
+        setNicknameOverride(accountNickname);
+        setNicknameResolved(true);
+
+        if (accountNickname) {
+          setNicknameInput(accountNickname);
+          setNicknameEditorOpen(false);
+        }
+      })
+      .catch((error) => {
+        console.error("LOAD_ACCOUNT_NICKNAME_ERROR", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
@@ -584,6 +592,7 @@ function ChatContent() {
     if (
       loading ||
       !firebaseUser ||
+      !nicknameResolved ||
       savedNickname
     ) {
       return;
@@ -592,10 +601,10 @@ function ChatContent() {
     setNicknameInput("");
     setNicknameError("");
     setNicknameEditorOpen(true);
-
   }, [
     loading,
     firebaseUser?.uid,
+    nicknameResolved,
     savedNickname,
   ]);
 
@@ -1211,7 +1220,7 @@ function ChatContent() {
               <input
                 type="text"
                 value={nicknameInput}
-                maxLength={20}
+                maxLength={24}
                 autoFocus
                 autoComplete="off"
                 placeholder="Ej. Batman25"
@@ -1248,9 +1257,8 @@ function ChatContent() {
                     : "mt-2 text-[11px] text-gray-500"
                 }
               >
-                3–20 caracteres. Letras, números, punto,
-                guion o _. Mayúsculas y acentos no permiten
-                crear duplicados.
+                3–24 caracteres. Letras, números y _. El sistema
+                verifica que nadie más esté usando ese nickname.
               </p>
 
               {nicknameError && (
