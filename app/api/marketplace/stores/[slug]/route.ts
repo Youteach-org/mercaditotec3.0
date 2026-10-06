@@ -11,8 +11,8 @@ import {
 
 export const runtime = "nodejs";
 
-const PUBLIC_CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=30",
+const PRIVATE_CACHE_HEADERS = {
+  "Cache-Control": "private, no-store, max-age=0",
 };
 
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
     await requireFirebaseUser(request);
     const { slug } = await context.params;
     const store = await getPublicStoreDetail(slug);
-    return NextResponse.json({ store }, { headers: PUBLIC_CACHE_HEADERS });
+    return NextResponse.json({ store }, { headers: PRIVATE_CACHE_HEADERS });
   } catch (error) {
     if (error instanceof ApiAuthError || error instanceof PublicMarketplaceError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
