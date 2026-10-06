@@ -3551,3 +3551,67 @@ body {
     height: 330px;
   }
 }
+
+
+/* RIBBON TEXT SAFETY — 2026-10-06
+   One final authoritative rule for every marketplace/store-editor ribbon.
+   The torn-paper shape lives behind the text; names may wrap but never clip. */
+.mkt-store-ribbon {
+  display: inline-block !important;
+  box-sizing: border-box !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+}
+
+.mkt-store-ribbon-text {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-overflow: clip;
+  line-height: 1.16;
+}
+
+.mkt-store-ribbon-0 { max-width: 90% !important; }
+.mkt-store-ribbon-1 { max-width: 90% !important; }
+.mkt-store-ribbon-2 { max-width: 88% !important; }
+.mkt-store-ribbon-3 { max-width: 68% !important; }
+.mkt-store-ribbon-4 { max-width: 90% !important; }
+.mkt-store-ribbon-5 { max-width: 89% !important; }
+
+.mkt-editor-card-stage .mkt-store-ribbon,
+.mkt-editor-card-stage .mkt-store-ribbon-0 {
+  left: 4% !important;
+  max-width: 90% !important;
+  width: auto !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 620px) {
+  .mkt-store-ribbon {
+    max-width: 88% !important;
+    line-height: 1.18 !important;
+  }
+
+  .mkt-store-ribbon-3 {
+    left: 12% !important;
+    max-width: 84% !important;
+  }
+
+  .mkt-editor-card-stage .mkt-store-ribbon,
+  .mkt-editor-card-stage .mkt-store-ribbon-0 {
+    left: 4% !important;
+    max-width: 92% !important;
+  }
+
+  .mkt-store-ribbon-text {
+    line-height: 1.18;
+  }
+}
