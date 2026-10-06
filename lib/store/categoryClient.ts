@@ -1,11 +1,13 @@
 import type { User } from "firebase/auth";
 
 import { storeApiFetch } from "./client";
+import type { CategoryIconKey } from "./categoryIcon";
 
 export interface StoreCategoryApiRecord {
   id: string;
   name: string;
   active: boolean;
+  iconKey: CategoryIconKey;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -36,7 +38,7 @@ export async function loadAdminCategories(
 
 export async function createAdminCategory(
   user: User,
-  input: { name: string; active: boolean },
+  input: { name: string; active: boolean; iconKey?: CategoryIconKey },
 ): Promise<StoreCategoryApiRecord> {
   const response = await storeApiFetch(user, "/api/admin/categories", {
     method: "POST",
@@ -55,7 +57,7 @@ export async function createAdminCategory(
 export async function updateAdminCategory(
   user: User,
   categoryId: string,
-  input: { name: string; active: boolean },
+  input: { name: string; active: boolean; iconKey?: CategoryIconKey },
 ): Promise<StoreCategoryApiRecord> {
   const response = await storeApiFetch(
     user,

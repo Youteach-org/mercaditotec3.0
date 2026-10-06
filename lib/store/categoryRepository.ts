@@ -6,6 +6,10 @@
 import {
   getAdminDb,
 } from "../firestoreRest";
+import {
+  normalizeCategoryIconKey,
+  type CategoryIconKey,
+} from "./categoryIcon";
 
 export interface StoreCategory {
   id: string;
@@ -14,6 +18,7 @@ export interface StoreCategory {
   normalizedName: string;
 
   active: boolean;
+  iconKey: CategoryIconKey;
 
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
@@ -22,6 +27,7 @@ export interface StoreCategory {
 export interface CategoryEditableInput {
   name: string;
   active: boolean;
+  iconKey?: CategoryIconKey;
 }
 
 export class CategoryRepositoryError
@@ -99,6 +105,7 @@ export function validateCategoryInput(
       normalizeCategoryName(name),
 
     active: data.active,
+    iconKey: normalizeCategoryIconKey(data.iconKey, name),
   };
 }
 
@@ -114,13 +121,12 @@ function toCategory(
   id: string,
   data: DocumentData,
 ): StoreCategory {
+  const name = String(data.name ?? "");
+
   return {
     id,
 
-    name:
-      String(
-        data.name ?? "",
-      ),
+    name,
 
     normalizedName:
       String(
@@ -129,6 +135,12 @@ function toCategory(
 
     active:
       data.active === true,
+
+    iconKey:
+      normalizeCategoryIconKey(
+        data.iconKey,
+        name,
+      ),
 
     createdAt:
       data.createdAt instanceof
@@ -309,6 +321,9 @@ export async function createCategory(
         active:
           validated.active,
 
+        iconKey:
+          validated.iconKey,
+
         createdAt: now,
         updatedAt: now,
       };
@@ -448,6 +463,9 @@ export async function updateCategory(
         active:
           validated.active,
 
+        iconKey:
+          validated.iconKey,
+
         updatedAt: now,
       };
 
@@ -462,6 +480,9 @@ export async function updateCategory(
 
           active:
             next.active,
+
+          iconKey:
+            next.iconKey,
 
           updatedAt: now,
         },
@@ -493,6 +514,9 @@ export function serializeCategory(
 
     active:
       category.active,
+
+    iconKey:
+      category.iconKey,
 
     createdAt:
       category.createdAt
