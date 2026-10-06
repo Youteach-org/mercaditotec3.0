@@ -40,7 +40,7 @@ export interface PublicStoreSummary {
   marketplaceNote: string;
   marketplaceTags: string[];
   marketplaceVariant: MarketplaceVariant | null;
-  categoryIds: string[];
+  categoryIds?: string[];
   openNow: boolean;
 }
 
