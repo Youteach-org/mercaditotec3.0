@@ -37,6 +37,7 @@ export interface DirectConversationSummary {
   };
   lastMessage: DirectChatMessage | null;
   updatedAt: number;
+  unreadCount: number;
 }
 
 function cleanUid(value: string): string {
@@ -100,6 +101,10 @@ export async function getOrCreateDirectChat(
       createdAt: now,
       updatedAt: now,
       lastMessageAt: null,
+      readAtByUid: {
+        [actorUid]: now,
+        [targetUid]: 0,
+      },
     });
   } else {
     const stored = snapshot.data() ?? {};
@@ -201,6 +206,41 @@ export async function listDirectMessages(
   };
 }
 
+function readAtFor(
+  data: Record<string, unknown>,
+  uid: string,
+): number {
+  const raw = data.readAtByUid;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return 0;
+  const value = Number((raw as Record<string, unknown>)[uid] ?? 0);
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+export async function markDirectConversationRead(
+  actorUidInput: string,
+  targetUidInput: string,
+): Promise<{ chatId: string; readAt: number }> {
+  const actorUid = cleanUid(actorUidInput);
+  const session = await getOrCreateDirectChat(actorUid, targetUidInput);
+  const db = getAdminDb();
+  const reference = db.collection("direct_chats").doc(session.chatId);
+  const snapshot = await reference.get();
+  if (!snapshot.exists) {
+    throw new DirectChatError(404, "Conversación no encontrada.");
+  }
+
+  const data = snapshot.data() ?? {};
+  const current =
+    data.readAtByUid && typeof data.readAtByUid === "object" && !Array.isArray(data.readAtByUid)
+      ? { ...(data.readAtByUid as Record<string, unknown>) }
+      : {};
+  const readAt = Date.now();
+  current[actorUid] = readAt;
+
+  await reference.update({ readAtByUid: current });
+  return { chatId: session.chatId, readAt };
+}
+
 export async function listDirectConversations(
   actorUidInput: string,
 ): Promise<DirectConversationSummary[]> {
@@ -222,17 +262,26 @@ export async function listDirectConversations(
       const targetUid = participants.find((uid) => uid !== actorUid) ?? "";
       if (!targetUid) return null;
 
-      const [target, messages] = await Promise.all([
+      const readAt = readAtFor(data, actorUid);
+      const [target, messages, unreadMessages] = await Promise.all([
         db.collection("users").doc(targetUid).get(),
         db.collection("direct_chats").doc(id).collection("messages")
           .orderBy("createdAt", "desc")
           .limit(1)
+          .get(),
+        db.collection("direct_chats").doc(id).collection("messages")
+          .where("createdAt", ">", readAt)
+          .limit(100)
           .get(),
       ]);
 
       if (!target.exists) return null;
       const targetData = target.data() ?? {};
       const last = messages.docs[0];
+      const unreadCount = unreadMessages.docs
+        .map((document) => directMessageFromData(document.id, document.data()))
+        .filter((message) => message.recipientId === actorUid)
+        .length;
 
       return {
         chatId: id,
@@ -245,6 +294,7 @@ export async function listDirectConversations(
           ? directMessageFromData(last.id, last.data())
           : null,
         updatedAt: Number(data.updatedAt ?? data.createdAt ?? 0),
+        unreadCount,
       } satisfies DirectConversationSummary;
     }),
   );
