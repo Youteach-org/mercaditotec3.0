@@ -274,6 +274,21 @@ export async function deleteUserBySuperadmin(
     }
   }
 
+  const nickname = String(current.nicknameNormalized ?? current.nickname ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (nickname) {
+    const nicknameReference = db.collection("nicknames").doc(nickname);
+    const nicknameSnapshot = await nicknameReference.get();
+    if (nicknameSnapshot.exists) {
+      const nicknameData = nicknameSnapshot.data() ?? {};
+      if (String(nicknameData.uid ?? "") === targetUid) {
+        await nicknameReference.delete();
+      }
+    }
+  }
+
   await reference.delete();
 
   await writeAuditEntry({
