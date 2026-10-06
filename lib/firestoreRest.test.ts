@@ -21,3 +21,29 @@ it('propagates server failures and rejects malformed or mismatched transaction r
   vi.stubGlobal('fetch',async()=>Response.json(result));await expect(read()).rejects.toMatchObject({status:502});
  }
 });
+
+it('backs off and retries aborted transaction commits instead of failing immediately',async()=>{
+ let beginCount=0;
+ let commitCount=0;
+ vi.stubGlobal('fetch',async(input:string)=>{
+  if(input.endsWith('/documents:beginTransaction')){
+   beginCount+=1;
+   return Response.json({transaction:`transaction-${beginCount}`});
+  }
+  if(input.endsWith('/documents:commit')){
+   commitCount+=1;
+   if(commitCount<3){
+    return Response.json(
+     {error:{code:409,message:'Transaction lock timeout.',status:'ABORTED'}},
+     {status:409},
+    );
+   }
+   return Response.json({writeResults:[]});
+  }
+  if(input.endsWith('/documents:rollback')) return Response.json({});
+  throw new Error(`Unexpected URL: ${input}`);
+ });
+ await expect(getAdminDb().runTransaction(async()=> 'saved')).resolves.toBe('saved');
+ expect(commitCount).toBe(3);
+ expect(beginCount).toBe(3);
+});
