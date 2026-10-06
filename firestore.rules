@@ -69,6 +69,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /direct_chats/{chatId} {
+      allow read: if signedIn()
+        && studentMayEnter()
+        && request.auth.uid in resource.data.participantUids;
+      allow write: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && studentMayEnter()
+          && request.auth.uid in
+            get(/databases/$(database)/documents/direct_chats/$(chatId)).data.participantUids;
+        allow write: if false;
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
