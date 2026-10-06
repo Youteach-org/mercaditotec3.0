@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "@/lib/useSession";
 
 export default function AuthGuard({
@@ -10,13 +10,15 @@ export default function AuthGuard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { firebaseUser, loading } = useSession();
 
   useEffect(() => {
     if (!loading && !firebaseUser) {
-      router.replace("/login");
+      const next = pathname && pathname !== "/login" ? pathname : "/marketplace";
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
     }
-  }, [firebaseUser, loading, router]);
+  }, [firebaseUser, loading, pathname, router]);
 
   if (loading) {
     return (
