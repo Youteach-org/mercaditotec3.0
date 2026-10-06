@@ -170,8 +170,8 @@ function PersonalChatContent() {
         <header className="border-b border-gray-200 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <Link href="/admin/users" className="text-sm font-bold text-blue-700 hover:underline">
-                ← Usuarios y aprobaciones
+              <Link href="/chat/personal" className="text-sm font-bold text-blue-700 hover:underline">
+                ← Chats privados
               </Link>
               <h1 className="mt-1 text-xl font-black text-gray-900">{title}</h1>
               <p className="text-sm text-gray-500">
