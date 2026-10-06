@@ -181,6 +181,23 @@ export function buildAdminStatusMutation(
   return { status: target, reviewMessage: null };
 }
 
+function coerceTimestamp(value: unknown, fallback?: Timestamp): Timestamp {
+  if (value instanceof Timestamp) return value;
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return Timestamp.fromDate(value);
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Timestamp.fromMillis(value);
+  }
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    if (Number.isFinite(parsed.getTime())) {
+      return Timestamp.fromDate(parsed);
+    }
+  }
+  return fallback ?? Timestamp.fromMillis(0);
+}
+
 function toStoreRecord(id: string, data: DocumentData): StoreRecord {
   return {
     id,
@@ -212,11 +229,11 @@ function toStoreRecord(id: string, data: DocumentData): StoreRecord {
       data.marketplaceVariant === "cloud-6"
         ? data.marketplaceVariant
         : null,
-    createdAt: data.createdAt as Timestamp,
-    updatedAt: data.updatedAt as Timestamp,
-    submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt : null,
-    approvedAt: data.approvedAt instanceof Timestamp ? data.approvedAt : null,
-    suspendedAt: data.suspendedAt instanceof Timestamp ? data.suspendedAt : null,
+    createdAt: coerceTimestamp(data.createdAt),
+    updatedAt: coerceTimestamp(data.updatedAt, coerceTimestamp(data.createdAt)),
+    submittedAt: data.submittedAt == null ? null : coerceTimestamp(data.submittedAt),
+    approvedAt: data.approvedAt == null ? null : coerceTimestamp(data.approvedAt),
+    suspendedAt: data.suspendedAt == null ? null : coerceTimestamp(data.suspendedAt),
   };
 }
 
