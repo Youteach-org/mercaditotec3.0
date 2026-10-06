@@ -15,8 +15,12 @@ export async function GET(request: Request) {
   try {
     const actor = await requireUnblockedUser(request);
     const conversations = await listDirectConversations(actor.uid);
+    const totalUnread = conversations.reduce(
+      (sum, conversation) => sum + conversation.unreadCount,
+      0,
+    );
     return NextResponse.json(
-      { conversations },
+      { conversations, totalUnread },
       { headers: { "Cache-Control": "private, no-store, max-age=0" } },
     );
   } catch (error) {
