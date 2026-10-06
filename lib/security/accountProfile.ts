@@ -127,8 +127,21 @@ export async function isNicknameAvailable(nicknameInput: string): Promise<boolea
   if (!parsed.valid) {
     throw new AccountProfileError(400, parsed.reason);
   }
-  const snapshot = await getAdminDb().collection("nicknames").doc(parsed.nickname).get();
-  return !snapshot.exists;
+
+  const db = getAdminDb();
+  const [reservation, normalizedUser, legacyUser] = await Promise.all([
+    db.collection("nicknames").doc(parsed.nickname).get(),
+    db.collection("users")
+      .where("nicknameNormalized", "==", parsed.nickname)
+      .limit(1)
+      .get(),
+    db.collection("users")
+      .where("nickname", "==", parsed.nickname)
+      .limit(1)
+      .get(),
+  ]);
+
+  return reservation.exists === false && normalizedUser.empty && legacyUser.empty;
 }
 
 export async function bootstrapAccountProfile(
@@ -196,7 +209,13 @@ export async function syncVerifiedAccountProfile(
   });
 
   if (!snapshot.exists) {
-    await reference.set(newStudentProfile(identity, true, identity.localPart, now));
+    const nickname = await reserveNickname(claims.uid, identity.localPart, now);
+    try {
+      await reference.set(newStudentProfile(identity, true, nickname, now));
+    } catch (error) {
+      await releaseNicknameReservation(claims.uid, nickname).catch(() => undefined);
+      throw error;
+    }
     return;
   }
 
