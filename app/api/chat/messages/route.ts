@@ -1,10 +1,27 @@
 import { NextResponse } from "next/server";
 
 import { moderationApiError, serializePublicMessage } from "@/lib/moderation/http";
-import { createGeneralChatMessage } from "@/lib/moderation/repository";
-import { requireUnblockedUser } from "@/lib/store/auth";
+import {
+  createGeneralChatMessage,
+  pruneExpiredGeneralChatMessages,
+} from "@/lib/moderation/repository";
+import {
+  requireFirebaseUser,
+  requireUnblockedUser,
+} from "@/lib/store/auth";
 
 export const runtime = "nodejs";
+
+export async function GET(request: Request) {
+  try {
+    await requireFirebaseUser(request);
+    const cleanup = await pruneExpiredGeneralChatMessages();
+    return NextResponse.json({ cleanup });
+  } catch (error) {
+    const apiError = moderationApiError(error);
+    return NextResponse.json({ error: apiError.message }, { status: apiError.status });
+  }
+}
 
 export async function POST(request: Request) {
   try {
