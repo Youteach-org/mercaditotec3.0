@@ -23,12 +23,13 @@ import {
 } from "@/lib/store/marketplacePresentation";
 import { shouldUseMarketplaceDemo } from "@/lib/store/marketplacePreview";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
+import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
 
-type CategoryId = "all" | DemoMarketplaceCategory;
+type CategoryVisualId = "all" | DemoMarketplaceCategory;
 
 const SHOW_TEMPORARY_EXAMPLE_STORES = true;
 
-const CATEGORY_ITEMS: Array<{ id: CategoryId; label: string }> = [
+const DEMO_CATEGORY_ITEMS: Array<{ id: CategoryVisualId; label: string }> = [
   { id: "food", label: "Comida" },
   { id: "drinks", label: "Bebidas" },
   { id: "desserts", label: "Postres" },
@@ -56,6 +57,21 @@ function categoryLabel(
   labels: MarketplaceContent["categoryLabels"],
 ): string {
   return labels[category] ?? "Tienda";
+}
+
+function categoryVisualId(name: string): CategoryVisualId {
+  const normalized = name
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (/comida|snack|alimento|torta/.test(normalized)) return "food";
+  if (/bebida|cafe|jugo|te\b/.test(normalized)) return "drinks";
+  if (/postre|dulce|pastel|repost/.test(normalized)) return "desserts";
+  if (/artesan|accesorio|joyer/.test(normalized)) return "crafts";
+  if (/papeler|util|cuaderno|libreta/.test(normalized)) return "stationery";
+  return "all";
 }
 
 function MultilineText({ text }: { text: string }) {
@@ -89,7 +105,7 @@ function PinIcon() {
   );
 }
 
-function CategoryIcon({ id }: { id: CategoryId }) {
+function CategoryIcon({ id }: { id: CategoryVisualId }) {
   const common = "mkt-category-svg";
 
   if (id === "food") {
@@ -350,7 +366,8 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<CategoryId>("all");
+  const [category, setCategory] = useState("all");
+  const [approvedCategories, setApprovedCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
   const [forceDemo, setForceDemo] = useState(false);
   const [marketplaceContent, setMarketplaceContent] = useState<MarketplaceContent>(
@@ -383,6 +400,7 @@ export default function MarketplacePage() {
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
         if (!cancelled) {
           setLiveStores(Array.isArray(data.stores) ? data.stores : []);
+          setApprovedCategories(Array.isArray(data.categories) ? data.categories : []);
           if (data.content) setMarketplaceContent(data.content as MarketplaceContent);
         }
       })
@@ -413,27 +431,77 @@ export default function MarketplacePage() {
     : [...liveStores, ...temporaryExamples];
   const normalizedQuery = query.trim().toLocaleLowerCase("es-MX");
 
-  const categoryItems = useMemo(
-    () =>
-      CATEGORY_ITEMS.map((item) => ({
-        ...item,
-        label: marketplaceContent.categoryLabels[item.id],
-      })),
-    [marketplaceContent.categoryLabels],
-  );
+  const categoryItems = useMemo(() => {
+    if (previewMode) {
+      return DEMO_CATEGORY_ITEMS.map((item) => ({
+        id: item.id,
+        label:
+          item.id === "all"
+            ? "Todas"
+            : marketplaceContent.categoryLabels[item.id],
+        visualId: item.id,
+      }));
+    }
+
+    const active = approvedCategories.filter((item) => item.active);
+    const selectedIds =
+      marketplaceContent.marketplaceCategoryIds.length > 0
+        ? marketplaceContent.marketplaceCategoryIds
+        : active.slice(0, 5).map((item) => item.id);
+    const selectedSet = new Set(selectedIds);
+
+    return [
+      ...active
+        .filter((item) => selectedSet.has(item.id))
+        .slice(0, 5)
+        .map((item) => ({
+          id: item.id,
+          label: item.name,
+          visualId: categoryVisualId(item.name),
+        })),
+      { id: "all", label: "Todas", visualId: "all" as const },
+    ];
+  }, [
+    approvedCategories,
+    marketplaceContent.categoryLabels,
+    marketplaceContent.marketplaceCategoryIds,
+    previewMode,
+  ]);
 
   const filteredStores = useMemo(() => {
+    const categoryNames = new Map(
+      approvedCategories.map((item) => [item.id, item.name]),
+    );
+
     return sourceStores.filter((store) => {
-      const categoryMatch = category === "all" || inferredCategory(store) === category;
+      const demo = "demoCategory" in store;
+      const categoryMatch =
+        category === "all" ||
+        (demo
+          ? inferredCategory(store) === category
+          : (store.categoryIds ?? []).includes(category));
+
+      const searchableCategories = (store.categoryIds ?? [])
+        .map((categoryId) => categoryNames.get(categoryId) ?? "")
+        .filter(Boolean);
+
       const queryMatch =
         !normalizedQuery ||
-        [store.name, store.description, store.deliveryLocation]
+        [
+          store.name,
+          store.description,
+          store.deliveryLocation,
+          ...store.marketplaceTags,
+          ...searchableCategories,
+        ]
           .filter(Boolean)
-          .some((value) => value.toLocaleLowerCase("es-MX").includes(normalizedQuery));
+          .some((value) =>
+            value.toLocaleLowerCase("es-MX").includes(normalizedQuery),
+          );
 
       return categoryMatch && queryMatch;
     });
-  }, [category, normalizedQuery, sourceStores]);
+  }, [approvedCategories, category, normalizedQuery, sourceStores]);
 
   const featured = filteredStores.slice(0, 6);
   const additionalStores = filteredStores.slice(6);
@@ -487,7 +555,7 @@ export default function MarketplacePage() {
               className={category === item.id ? "mkt-category-button is-active" : "mkt-category-button"}
               onClick={() => setCategory(item.id)}
             >
-              <span className="mkt-category-icon-wrap"><CategoryIcon id={item.id} /></span>
+              <span className="mkt-category-icon-wrap"><CategoryIcon id={item.visualId} /></span>
               <span>{item.label}</span>
             </button>
           ))}

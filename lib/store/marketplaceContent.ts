@@ -25,6 +25,7 @@ export interface MarketplaceContent {
   searchPlaceholder: string;
   searchButtonLabel: string;
   moreStoresHeading: string;
+  marketplaceCategoryIds: string[];
   categoryLabels: Record<MarketplaceCategoryId, string>;
 }
 
@@ -44,6 +45,7 @@ export const DEFAULT_MARKETPLACE_CONTENT: MarketplaceContent = {
   searchPlaceholder: "Busca comida, bebidas, papelería, artesanías...",
   searchButtonLabel: "Buscar",
   moreStoresHeading: "Más tiendas de la comunidad",
+  marketplaceCategoryIds: [],
   categoryLabels: {
     food: "Comida",
     drinks: "Bebidas",
@@ -84,6 +86,14 @@ export function normalizeMarketplaceContent(input: unknown): MarketplaceContent 
     searchPlaceholder: cleanText(source.searchPlaceholder, DEFAULT_MARKETPLACE_CONTENT.searchPlaceholder, 100),
     searchButtonLabel: cleanText(source.searchButtonLabel, DEFAULT_MARKETPLACE_CONTENT.searchButtonLabel, 30),
     moreStoresHeading: cleanText(source.moreStoresHeading, DEFAULT_MARKETPLACE_CONTENT.moreStoresHeading, 70),
+    marketplaceCategoryIds: Array.isArray(source.marketplaceCategoryIds)
+      ? [...new Set(
+          source.marketplaceCategoryIds
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter(Boolean),
+        )].slice(0, 5)
+      : [],
     categoryLabels: {
       food: cleanText(labels.food, DEFAULT_MARKETPLACE_CONTENT.categoryLabels.food, 30),
       drinks: cleanText(labels.drinks, DEFAULT_MARKETPLACE_CONTENT.categoryLabels.drinks, 30),

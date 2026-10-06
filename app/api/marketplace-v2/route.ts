@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { DEMO_MARKETPLACE_STORES } from "@/lib/store/demoMarketplace";
 import { getMarketplaceContent } from "@/lib/store/marketplaceContentRepository";
 import { listPublicStores } from "@/lib/store/publicMarketplaceRepository";
+import {
+  listActiveCategories,
+  serializeCategory,
+} from "@/lib/store/categoryRepository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,9 +19,10 @@ const HEADERS = {
 
 export async function GET() {
   try {
-    const [liveStores, content] = await Promise.all([
+    const [liveStores, content, categories] = await Promise.all([
       listPublicStores(),
       getMarketplaceContent(),
+      listActiveCategories(),
     ]);
 
     const temporaryExamples = DEMO_MARKETPLACE_STORES
@@ -30,6 +35,7 @@ export async function GET() {
       {
         stores,
         content,
+        categories: categories.map(serializeCategory),
         temporaryExamplesEnabled: true,
         realStoreCount: liveStores.length,
         exampleStoreCount: temporaryExamples.length,
