@@ -10,10 +10,8 @@ describe("parseAdminTrustChange", () => {
     expect(parseAdminTrustChange({ status: "revoked" })).toBe("revoked");
   });
 
-  it("does not allow administrators to bypass the two-endorsement rule", () => {
-    expect(() => parseAdminTrustChange({ status: "verified" })).toThrow(
-      "La confirmación de alumno se obtiene únicamente con 2 avales.",
-    );
+  it("accepts manual verification as an explicit administrative action", () => {
+    expect(parseAdminTrustChange({ status: "verified" })).toBe("verified");
   });
 
   it("rejects unsupported trust states", () => {
