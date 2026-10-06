@@ -27,10 +27,11 @@ import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 
 type CategoryVisualId = "all" | CategoryIconKey;
+type DemoCategoryVisualId = "all" | DemoMarketplaceCategory;
 
 const SHOW_TEMPORARY_EXAMPLE_STORES = true;
 
-const DEMO_CATEGORY_ITEMS: Array<{ id: CategoryVisualId; label: string }> = [
+const DEMO_CATEGORY_ITEMS: Array<{ id: DemoCategoryVisualId; label: string }> = [
   { id: "food", label: "Comida" },
   { id: "drinks", label: "Bebidas" },
   { id: "desserts", label: "Postres" },
