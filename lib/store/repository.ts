@@ -78,7 +78,27 @@ export class StoreRepositoryError extends Error {
 }
 
 export function reservationKeyForName(normalizedName: string): string {
-  return encodeURIComponent(normalizeStoreName(normalizedName));
+  const normalized = normalizeStoreName(normalizedName);
+  const legacy = encodeURIComponent(normalized);
+
+  // Preserve existing reservation ids whenever encodeURIComponent already
+  // produced a Firestore-safe segment.
+  if (
+    legacy &&
+    legacy !== "." &&
+    legacy !== ".." &&
+    !/[\\/\\?#%\\u0000-\\u001f\\u007f]/.test(legacy)
+  ) {
+    return legacy;
+  }
+
+  // For names with spaces, emoji, accents or punctuation that would introduce
+  // percent escapes, use a deterministic UTF-8 hex key instead.
+  const hex = Array.from(new TextEncoder().encode(normalized), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
+
+  return `n-${hex}`;
 }
 
 export function buildCreateStoreMutation(
