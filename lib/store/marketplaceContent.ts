@@ -92,7 +92,7 @@ export function normalizeMarketplaceContent(input: unknown): MarketplaceContent 
             .filter((value): value is string => typeof value === "string")
             .map((value) => value.trim())
             .filter(Boolean),
-        )].slice(0, 12)
+        )].slice(0, 5)
       : [],
     categoryLabels: {
       food: cleanText(labels.food, DEFAULT_MARKETPLACE_CONTENT.categoryLabels.food, 30),
