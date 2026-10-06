@@ -29,6 +29,7 @@ describe("validateCategoryInput", () => {
       name: "Postres",
       normalizedName: "postres",
       active: true,
+      iconKey: "desserts",
     });
   });
 
