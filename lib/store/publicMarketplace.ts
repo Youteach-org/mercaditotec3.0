@@ -22,6 +22,7 @@ export interface PublicStoreSource {
   marketplaceNote: string;
   marketplaceTags: string[];
   marketplaceVariant: MarketplaceVariant | null;
+  categoryIds: string[];
 }
 
 export interface PublicStoreSummary {
@@ -39,6 +40,7 @@ export interface PublicStoreSummary {
   marketplaceNote: string;
   marketplaceTags: string[];
   marketplaceVariant: MarketplaceVariant | null;
+  categoryIds: string[];
   openNow: boolean;
 }
 
@@ -101,6 +103,7 @@ export function serializePublicStore(
     marketplaceNote: store.marketplaceNote,
     marketplaceTags: [...store.marketplaceTags],
     marketplaceVariant: store.marketplaceVariant,
+    categoryIds: [...store.categoryIds],
     openNow: isStoreOpenNow(
       store.schedule,
       store.operationalMode,
