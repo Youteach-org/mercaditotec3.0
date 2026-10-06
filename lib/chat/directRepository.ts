@@ -28,6 +28,17 @@ export interface DirectChatMessage {
   createdAt: number;
 }
 
+export interface DirectConversationSummary {
+  chatId: string;
+  target: {
+    uid: string;
+    username: string;
+    displayName: string;
+  };
+  lastMessage: DirectChatMessage | null;
+  updatedAt: number;
+}
+
 function cleanUid(value: string): string {
   const uid = value.trim();
   if (!uid || uid.length > 128 || /[\/\\?#%\u0000-\u001f\u007f]/.test(uid)) {
@@ -153,4 +164,96 @@ export async function createDirectChatMessage(
     id: messageReference.id,
     ...record,
   };
+}
+
+
+function directMessageFromData(
+  id: string,
+  data: Record<string, unknown>,
+): DirectChatMessage {
+  return {
+    id,
+    senderId: String(data.senderId ?? ""),
+    recipientId: String(data.recipientId ?? ""),
+    text: String(data.text ?? ""),
+    createdAt: Number(data.createdAt ?? 0),
+  };
+}
+
+export async function listDirectMessages(
+  actorUidInput: string,
+  targetUidInput: string,
+): Promise<{ session: DirectChatSession; messages: DirectChatMessage[] }> {
+  const session = await getOrCreateDirectChat(actorUidInput, targetUidInput);
+  const snapshot = await getAdminDb()
+    .collection("direct_chats")
+    .doc(session.chatId)
+    .collection("messages")
+    .orderBy("createdAt", "asc")
+    .limit(250)
+    .get();
+
+  return {
+    session,
+    messages: snapshot.docs.map((document) =>
+      directMessageFromData(document.id, document.data())
+    ),
+  };
+}
+
+export async function listDirectConversations(
+  actorUidInput: string,
+): Promise<DirectConversationSummary[]> {
+  const actorUid = cleanUid(actorUidInput);
+  const db = getAdminDb();
+  const snapshot = await db.collection("direct_chats").list(250);
+  const owned = snapshot.docs
+    .map((document) => ({ id: document.id, data: document.data() }))
+    .filter(({ data }) =>
+      Array.isArray(data.participantUids) &&
+      data.participantUids.map(String).includes(actorUid)
+    );
+
+  const conversations = await Promise.all(
+    owned.map(async ({ id, data }) => {
+      const participants = Array.isArray(data.participantUids)
+        ? data.participantUids.map(String)
+        : [];
+      const targetUid = participants.find((uid) => uid !== actorUid) ?? "";
+      if (!targetUid) return null;
+
+      const [target, messages] = await Promise.all([
+        db.collection("users").doc(targetUid).get(),
+        db.collection("direct_chats").doc(id).collection("messages")
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get(),
+      ]);
+
+      if (!target.exists) return null;
+      const targetData = target.data() ?? {};
+      const last = messages.docs[0];
+
+      return {
+        chatId: id,
+        target: {
+          uid: targetUid,
+          username: usernameFor(targetData),
+          displayName: String(targetData.displayName ?? "").trim(),
+        },
+        lastMessage: last
+          ? directMessageFromData(last.id, last.data())
+          : null,
+        updatedAt: Number(data.updatedAt ?? data.createdAt ?? 0),
+      } satisfies DirectConversationSummary;
+    }),
+  );
+
+  return conversations
+    .filter((item): item is DirectConversationSummary => Boolean(item))
+    .filter((item) => item.lastMessage !== null)
+    .sort((a, b) =>
+      (b.lastMessage?.createdAt ?? b.updatedAt) -
+      (a.lastMessage?.createdAt ?? a.updatedAt)
+    );
 }
