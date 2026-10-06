@@ -1,6 +1,9 @@
 "use client";
 
-import { uploadImageFile } from "@/lib/imageStorage";
+import {
+  prepareImageForUpload,
+  uploadImageFile,
+} from "@/lib/imageStorage";
 
 import {
   buildStoreMediaPath,
@@ -17,12 +20,17 @@ export async function uploadStoreMedia(
     productId?: string;
   },
 ): Promise<string> {
+  const prepared = await prepareImageForUpload(
+    input.file,
+    input.file.name,
+  );
+
   validateMediaFileMeta({
     type:
-      input.file.type,
+      prepared.type,
 
     size:
-      input.file.size,
+      prepared.size,
   });
 
   const nonce =
@@ -45,12 +53,12 @@ export async function uploadStoreMedia(
       nonce,
 
       mimeType:
-        input.file.type,
+        prepared.type,
     });
 
   return uploadImageFile({
     path,
-    file: input.file,
-    filename: input.file.name,
+    file: prepared,
+    filename: prepared.name,
   });
 }
