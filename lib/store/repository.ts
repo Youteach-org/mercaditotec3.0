@@ -87,7 +87,7 @@ export function reservationKeyForName(normalizedName: string): string {
     legacy &&
     legacy !== "." &&
     legacy !== ".." &&
-    !/[\\/\\?#%\\u0000-\\u001f\\u007f]/.test(legacy)
+    !legacy.includes("%")
   ) {
     return legacy;
   }
