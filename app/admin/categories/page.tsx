@@ -27,7 +27,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
-  const [iconKey, setIconKey] = useState<CategoryIconKey>("other");
+  const [iconKey, setIconKey] = useState<CategoryIconKey | "">("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
@@ -67,6 +67,11 @@ export default function AdminCategoriesPage() {
     event.preventDefault();
     if (!firebaseUser) return;
 
+    if (!iconKey) {
+      setError("Selecciona el icono que corresponde a la categoría.");
+      return;
+    }
+
     setCreating(true);
     setError("");
     setMessage("");
@@ -82,7 +87,7 @@ export default function AdminCategoriesPage() {
         [...current, category].sort((a, b) => a.name.localeCompare(b.name, "es")),
       );
       setName("");
-      setIconKey("other");
+      setIconKey("");
       setMessage("Categoría creada.");
     } catch (createError) {
       setError(
@@ -210,10 +215,12 @@ export default function AdminCategoriesPage() {
             />
             <select
               value={iconKey}
-              onChange={(event) => setIconKey(event.target.value as CategoryIconKey)}
+              required
+              onChange={(event) => setIconKey(event.target.value as CategoryIconKey | "")}
               className="rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-900 outline-none focus:border-blue-500"
               aria-label="Icono de la categoría"
             >
+              <option value="">Elige icono…</option>
               {CATEGORY_ICON_KEYS.map((key) => (
                 <option key={key} value={key}>
                   {CATEGORY_ICON_LABELS[key]}
