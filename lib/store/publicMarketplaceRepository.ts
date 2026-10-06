@@ -1,5 +1,6 @@
 import { getAdminDb } from "../firestoreRest";
 import { normalizeStoredSchedule } from "./schedule";
+import { listActiveCategories } from "./categoryRepository";
 import {
   isPublicProductVisibility,
   serializePublicProduct,
@@ -45,6 +46,7 @@ function storeSource(id: string, data: Record<string, unknown>): PublicStoreSour
       data.marketplaceVariant === "cloud-6"
         ? data.marketplaceVariant
         : null,
+    categoryIds: [],
   };
 }
 
@@ -72,14 +74,38 @@ function productSource(id: string, data: Record<string, unknown>): PublicProduct
 }
 
 export async function listPublicStores(): Promise<PublicStoreSummary[]> {
-  const snapshot = await getAdminDb()
-    .collection("stores")
-    .where("status", "==", "active")
-    .limit(100)
-    .get();
+  const db = getAdminDb();
+  const [storeSnapshot, productSnapshot, activeCategories] = await Promise.all([
+    db.collection("stores")
+      .where("status", "==", "active")
+      .limit(50)
+      .get(),
+    db.collection("products")
+      .where("visibility", "==", "published")
+      .get(),
+    listActiveCategories(),
+  ]);
 
-  return snapshot.docs
-    .map((document) => storeSource(document.id, document.data()))
+  const activeCategoryIds = new Set(activeCategories.map((category) => category.id));
+  const categoriesByStore = new Map<string, Set<string>>();
+
+  for (const document of productSnapshot.docs) {
+    const data = document.data();
+    const storeId = typeof data.storeId === "string" ? data.storeId : "";
+    const categoryId = typeof data.categoryId === "string" ? data.categoryId : "";
+    if (!storeId || !categoryId || !activeCategoryIds.has(categoryId)) continue;
+
+    const categories = categoriesByStore.get(storeId) ?? new Set<string>();
+    categories.add(categoryId);
+    categoriesByStore.set(storeId, categories);
+  }
+
+  return storeSnapshot.docs
+    .map((document) => {
+      const store = storeSource(document.id, document.data());
+      store.categoryIds = [...(categoriesByStore.get(document.id) ?? new Set<string>())];
+      return store;
+    })
     .filter((store) => Boolean(store.slug))
     .map((store) => serializePublicStore(store))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
