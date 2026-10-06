@@ -328,7 +328,7 @@ export default function StoreBuilderClient() {
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</div>}
 
         <div className="store-builder-layout grid gap-5 xl:grid-cols-[minmax(360px,0.7fr)_minmax(0,1.3fr)] xl:items-start">
-          <div className="store-builder-form order-2 space-y-5 xl:order-1">
+          <div className="store-builder-form order-1 space-y-5 xl:order-1">
             <section className="store-builder-panel store-builder-panel-info rounded-2xl bg-white p-5 shadow-md sm:p-6">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -433,9 +433,45 @@ export default function StoreBuilderClient() {
               <div className="pt-5"><StoreScheduleSection user={firebaseUser} store={store} editable={editable} onStoreChanged={acceptStoreChange} onScheduleChanged={acceptSchedule} /></div>
             </div>
 
-            <div className="store-builder-step relative">
-              <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">4. Producto inicial</div>
-              <div className="pt-5"><StoreProductsSection user={firebaseUser} storeId={store.id} storeStatus={store.status} editable={editable} onProductsChanged={acceptProducts} /></div>
+          </div>
+
+          <aside className="store-builder-side order-2 space-y-5 xl:order-2">
+            <div className="store-builder-preview">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
+              <div>
+                <h2 className="text-lg font-black text-gray-950">Vista previa de tu página!</h2>
+                <span className="text-xs text-gray-500">Así la verán tus clientes.</span>
+              </div>
+              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+                <button type="button" onClick={() => setPreviewMode("desktop")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "desktop" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Escritorio</button>
+                <button type="button" onClick={() => setPreviewMode("mobile")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "mobile" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Móvil</button>
+              </div>
+            </div>
+
+            <StorefrontPreview
+              name={name}
+              sellerName={sellerName}
+              description={description}
+              deliveryLocation={deliveryLocation}
+              logoUrl={previewLogo}
+              coverUrl={previewCover}
+              schedule={scheduleForPreview}
+              products={products}
+              previewMode={previewMode}
+            />
+            </div>
+
+            <div className="store-builder-step store-builder-product-step relative">
+              <div className="pointer-events-none absolute left-5 top-4 z-10 text-sm font-bold uppercase tracking-wide text-blue-600">4. {store.status === "draft" || store.status === "changes_required" ? "Producto inicial" : "Productos"}</div>
+              <div className="pt-5">
+                <StoreProductsSection
+                  user={firebaseUser}
+                  storeId={store.id}
+                  storeStatus={store.status}
+                  editable={editable}
+                  onProductsChanged={acceptProducts}
+                />
+              </div>
             </div>
 
             {canSubmit && (
@@ -473,30 +509,6 @@ export default function StoreBuilderClient() {
                 </button>
               </section>
             )}
-          </div>
-
-          <aside className="store-builder-preview order-1 xl:order-2 xl:sticky xl:top-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
-              <div>
-                <h2 className="text-lg font-black text-gray-950">Vista previa de tu página!</h2>
-                <span className="text-xs text-gray-500">Así la verán tus clientes.</span>
-              </div>
-              <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                <button type="button" onClick={() => setPreviewMode("desktop")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "desktop" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Escritorio</button>
-                <button type="button" onClick={() => setPreviewMode("mobile")} className={`rounded-lg px-3 py-1.5 text-xs font-bold ${previewMode === "mobile" ? "bg-slate-900 text-white" : "text-slate-600"}`}>Móvil</button>
-              </div>
-            </div>
-            <StorefrontPreview
-              name={name}
-              sellerName={sellerName}
-              description={description}
-              deliveryLocation={deliveryLocation}
-              logoUrl={previewLogo}
-              coverUrl={previewCover}
-              schedule={scheduleForPreview}
-              products={products}
-              previewMode={previewMode}
-            />
           </aside>
         </div>
       </div>
