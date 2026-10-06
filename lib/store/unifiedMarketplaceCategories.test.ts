@@ -28,8 +28,12 @@ describe("unified marketplace categories", () => {
 
   it("caps the public marketplace at 50 active stores, not 6 or 100", () => {
     expect(repository).toContain('.where("status", "==", "active")');
-    expect(repository).toContain(".limit(50)");
-    expect(repository).not.toContain(".limit(100)\n    .get();\n\n  return snapshot.docs");
+    const storeListing = repository.slice(
+      repository.indexOf("export async function listPublicStores"),
+      repository.indexOf("export async function getPublicStoreBySlug"),
+    );
+    expect(storeListing).toContain(".limit(50)");
+    expect(storeListing).not.toContain(".limit(100)");
   });
 
   it("filters real stores by approved category ids instead of inferred text", () => {
