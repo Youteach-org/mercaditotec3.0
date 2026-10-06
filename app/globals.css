@@ -657,55 +657,76 @@ body {
 }
 
 .mkt-store-ribbon {
+  --mkt-ribbon-bg: #ff9fbd;
   position: absolute;
   z-index: 5;
   left: 4%;
   top: 4%;
-  max-width: 80%;
-  padding: 2.5% 4%;
+  max-width: 90%;
+  padding: 2.8% 5.5%;
   color: #102f70;
-  background: #ff9fbd;
+  background: transparent !important;
   font-family: var(--font-market-marker), var(--font-market-hand), cursive;
   font-size: clamp(10px, 1.25vw, 18px);
   font-weight: 1000;
-  line-height: .95;
+  line-height: 1.12;
+  overflow: visible !important;
+  overflow-wrap: anywhere;
+  white-space: normal;
   transform: rotate(-5deg);
-  box-shadow: 0 4px 9px rgba(13,52,121,.09);
+  box-shadow: none !important;
+  isolation: isolate;
+}
+
+.mkt-store-ribbon::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -4% -3%;
+  background: var(--mkt-ribbon-bg);
+  clip-path: polygon(0 18%, 7% 7%, 20% 12%, 33% 2%, 47% 10%, 61% 4%, 76% 12%, 90% 5%, 100% 11%, 97% 84%, 85% 79%, 72% 91%, 58% 83%, 43% 92%, 27% 82%, 13% 91%, 2% 82%);
+  filter: drop-shadow(0 4px 4px rgba(13,52,121,.09));
+  pointer-events: none;
 }
 
 .mkt-store-ribbon-1 {
-  background: #205cc9;
+  --mkt-ribbon-bg: #205cc9;
+  background: transparent !important;
   color: #ff8c54;
   font-size: clamp(15px, 2.15vw, 33px);
   transform: rotate(-4deg);
 }
 
 .mkt-store-ribbon-2 {
-  background: #fff7e5;
+  --mkt-ribbon-bg: #fff7e5;
+  background: transparent !important;
   font-size: clamp(13px, 1.65vw, 25px);
   transform: rotate(-6deg);
 }
 
 .mkt-store-ribbon-3 {
+  --mkt-ribbon-bg: #fff4de;
   left: 28%;
   top: 2%;
-  background: #fff4de;
+  background: transparent !important;
   color: #141414;
   font-size: clamp(13px, 1.55vw, 24px);
   transform: rotate(-4deg);
 }
 
 .mkt-store-ribbon-4 {
+  --mkt-ribbon-bg: #ff9cbd;
   top: 0;
-  background: #ff9cbd;
+  background: transparent !important;
   color: #55122f;
   font-size: clamp(12px, 1.55vw, 24px);
   transform: rotate(-3deg);
 }
 
 .mkt-store-ribbon-5 {
+  --mkt-ribbon-bg: #ff9fbd;
   top: 2%;
-  background: #ff9fbd;
+  background: transparent !important;
   color: #103d88;
   font-size: clamp(13px, 1.65vw, 26px);
   transform: rotate(-4deg);
@@ -1809,7 +1830,7 @@ body {
   }
 
   .mkt-store-ribbon {
-    clip-path: polygon(0 18%, 7% 7%, 20% 12%, 33% 2%, 47% 10%, 61% 4%, 76% 12%, 90% 5%, 100% 11%, 97% 84%, 85% 79%, 72% 91%, 58% 83%, 43% 92%, 27% 82%, 13% 91%, 2% 82%);
+    clip-path: none !important;
   }
 
   .mkt-store-ribbon-1 {
@@ -1818,13 +1839,10 @@ body {
   }
 
   .mkt-store-ribbon-2,
-  .mkt-store-ribbon-3 {
-    clip-path: polygon(1% 10%, 10% 3%, 23% 8%, 38% 2%, 51% 7%, 65% 1%, 81% 8%, 97% 4%, 100% 88%, 86% 82%, 72% 92%, 56% 84%, 40% 93%, 24% 84%, 8% 91%);
-  }
-
+  .mkt-store-ribbon-3,
   .mkt-store-ribbon-4,
   .mkt-store-ribbon-5 {
-    clip-path: polygon(0 15%, 9% 5%, 21% 12%, 36% 2%, 50% 10%, 64% 4%, 80% 11%, 96% 5%, 100% 85%, 87% 80%, 73% 91%, 58% 82%, 42% 91%, 27% 83%, 12% 91%, 2% 83%);
+    clip-path: none !important;
   }
 
   .mkt-store-card-0 .mkt-store-copy {
@@ -3483,6 +3501,41 @@ body {
   .store-builder-page {
     padding-left: 8px !important;
     padding-right: 8px !important;
+  }
+
+  .mkt-store-ribbon {
+    max-width: 94% !important;
+    padding: 10px 16px 11px !important;
+    font-size: clamp(14px, 5.2vw, 22px) !important;
+    line-height: 1.16 !important;
+  }
+
+  .mkt-store-ribbon-3 {
+    left: 12% !important;
+  }
+
+  .store-builder-save-button {
+    min-height: 50px;
+    border: 2px solid #0b2c63 !important;
+    background: #123d82 !important;
+    color: #ffffff !important;
+    box-shadow: 0 5px 0 rgba(11,44,99,.20) !important;
+    font-weight: 900 !important;
+    opacity: 1 !important;
+  }
+
+  .store-builder-save-button:hover,
+  .store-builder-save-button:focus-visible {
+    background: #0e326f !important;
+    color: #ffffff !important;
+  }
+
+  .store-builder-save-button:disabled {
+    border-color: #9ca3af !important;
+    background: #e5e7eb !important;
+    color: #374151 !important;
+    box-shadow: none !important;
+    opacity: 1 !important;
   }
 
   .store-builder-hero {
