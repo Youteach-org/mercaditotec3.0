@@ -22,7 +22,7 @@ export interface PublicStoreSource {
   marketplaceNote: string;
   marketplaceTags: string[];
   marketplaceVariant: MarketplaceVariant | null;
-  categoryIds: string[];
+  categoryIds?: string[];
 }
 
 export interface PublicStoreSummary {
@@ -103,7 +103,7 @@ export function serializePublicStore(
     marketplaceNote: store.marketplaceNote,
     marketplaceTags: [...store.marketplaceTags],
     marketplaceVariant: store.marketplaceVariant,
-    categoryIds: [...store.categoryIds],
+    categoryIds: [...(store.categoryIds ?? [])],
     openNow: isStoreOpenNow(
       store.schedule,
       store.operationalMode,
