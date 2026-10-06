@@ -9,6 +9,10 @@ import {
   type MarketplaceContent,
 } from "@/lib/store/marketplaceContent";
 import { storeApiFetch } from "@/lib/store/client";
+import {
+  loadAdminCategories,
+  type StoreCategoryApiRecord,
+} from "@/lib/store/categoryClient";
 import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
@@ -53,6 +57,7 @@ export default function AdminMarketplacePage() {
   const [content, setContent] = useState<MarketplaceContent>(DEFAULT_MARKETPLACE_CONTENT);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [approvedCategories, setApprovedCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -68,11 +73,15 @@ export default function AdminMarketplacePage() {
   useEffect(() => {
     if (!firebaseUser || !isAdminRole(appUser)) return;
     let cancelled = false;
-    void storeApiFetch(firebaseUser, "/api/admin/marketplace-content")
-      .then(async (response) => {
+    void Promise.all([
+      storeApiFetch(firebaseUser, "/api/admin/marketplace-content"),
+      loadAdminCategories(firebaseUser),
+    ])
+      .then(async ([response, categories]) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar la configuración.");
         if (!cancelled && data.content) setContent(data.content as MarketplaceContent);
+        if (!cancelled) setApprovedCategories(categories.filter((category) => category.active));
       })
       .catch((loadError) => {
         if (!cancelled) setError(loadError instanceof Error ? loadError.message : "No se pudo cargar la configuración.");
@@ -90,14 +99,17 @@ export default function AdminMarketplacePage() {
     setMessage("");
   }
 
-  function updateCategory(
-    key: keyof MarketplaceContent["categoryLabels"],
-    value: string,
-  ) {
-    setContent((current) => ({
-      ...current,
-      categoryLabels: { ...current.categoryLabels, [key]: value },
-    }));
+  function toggleMarketplaceCategory(categoryId: string) {
+    setContent((current) => {
+      const selected = current.marketplaceCategoryIds.includes(categoryId)
+        ? current.marketplaceCategoryIds.filter((id) => id !== categoryId)
+        : [...current.marketplaceCategoryIds, categoryId];
+
+      return {
+        ...current,
+        marketplaceCategoryIds: selected,
+      };
+    });
     setMessage("");
   }
 
@@ -139,7 +151,7 @@ export default function AdminMarketplacePage() {
           <Link href="/admin" className="text-sm font-bold text-sky-300 hover:underline">← Administración</Link>
           <h1 className="mt-2 text-3xl font-black">Editar portada del Mercadito</h1>
           <p className="mt-2 max-w-3xl text-sm text-slate-300">
-            Edita los textos decorativos, post-its, letreros, buscador y etiquetas de categorías sin modificar la composición visual.
+            Edita los textos decorativos, post-its y buscador. Las categorías se seleccionan desde la lista aprobada del sistema.
           </p>
         </section>
 
@@ -172,15 +184,42 @@ export default function AdminMarketplacePage() {
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-md">
-          <h2 className="text-xl font-black text-gray-900">Etiquetas de categorías</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <TextField label="Comida" value={content.categoryLabels.food} onChange={(value) => updateCategory("food", value)} />
-            <TextField label="Bebidas" value={content.categoryLabels.drinks} onChange={(value) => updateCategory("drinks", value)} />
-            <TextField label="Postres" value={content.categoryLabels.desserts} onChange={(value) => updateCategory("desserts", value)} />
-            <TextField label="Artesanías" value={content.categoryLabels.crafts} onChange={(value) => updateCategory("crafts", value)} />
-            <TextField label="Papelería" value={content.categoryLabels.stationery} onChange={(value) => updateCategory("stationery", value)} />
-            <TextField label="Más categorías" value={content.categoryLabels.all} onChange={(value) => updateCategory("all", value)} />
-          </div>
+          <h2 className="text-xl font-black text-gray-900">Categorías visibles en el Mercadito</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Selecciona únicamente entre las categorías aprobadas para tiendas y productos.
+            Estas mismas categorías se usarán como filtros; ya no son etiquetas independientes.
+          </p>
+
+          {approvedCategories.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+              No hay categorías activas disponibles.
+            </div>
+          ) : (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {approvedCategories.map((category) => {
+                const selected = content.marketplaceCategoryIds.includes(category.id);
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => toggleMarketplaceCategory(category.id)}
+                    className={
+                      selected
+                        ? "rounded-full border-2 border-blue-700 bg-blue-700 px-4 py-2 font-black text-white shadow-sm"
+                        : "rounded-full border-2 border-gray-300 bg-white px-4 py-2 font-bold text-gray-800 hover:border-blue-400"
+                    }
+                    aria-pressed={selected}
+                  >
+                    {selected ? "✓ " : ""}{category.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="mt-4 text-xs font-semibold text-gray-500">
+            “Todas” se muestra automáticamente. Si no seleccionas ninguna, se mostrarán todas las categorías activas.
+          </p>
         </section>
 
         <section className="sticky bottom-3 z-20 flex flex-col gap-3 rounded-2xl border border-blue-200 bg-white p-4 shadow-xl sm:flex-row sm:items-center sm:justify-between">
