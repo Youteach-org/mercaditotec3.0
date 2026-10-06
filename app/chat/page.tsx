@@ -1117,6 +1117,9 @@ function ChatContent() {
                 <a href="/" className={darkMode ? "block px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700" : "block px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"}>
                   Inicio
                 </a>
+                <a href="/chat/personal" className={darkMode ? "block px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700" : "block px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"}>
+                  Chats privados
+                </a>
                 <a href="/mystore" className={darkMode ? "block px-3 py-2 rounded-xl text-sm text-slate-100 hover:bg-slate-700" : "block px-3 py-2 rounded-xl text-sm text-gray-900 hover:bg-gray-100"}>
                   MyStore
                 </a>
