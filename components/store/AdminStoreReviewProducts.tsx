@@ -10,6 +10,8 @@ import type { StoreProductApiRecord } from "@/lib/store/productClient";
 interface Props {
   user: User;
   storeId: string;
+  initialProducts?: StoreProductApiRecord[];
+  initialCategories?: StoreCategoryApiRecord[];
 }
 
 function priceLabel(product: StoreProductApiRecord) {
@@ -18,13 +20,30 @@ function priceLabel(product: StoreProductApiRecord) {
   return product.priceType === "negotiable" ? `${amount} · a tratar` : amount;
 }
 
-export default function AdminStoreReviewProducts({ user, storeId }: Props) {
-  const [products, setProducts] = useState<StoreProductApiRecord[]>([]);
-  const [categories, setCategories] = useState<StoreCategoryApiRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function AdminStoreReviewProducts({
+  user,
+  storeId,
+  initialProducts,
+  initialCategories,
+}: Props) {
+  const hasInitialData = Array.isArray(initialProducts) && Array.isArray(initialCategories);
+  const [products, setProducts] = useState<StoreProductApiRecord[]>(
+    initialProducts ?? [],
+  );
+  const [categories, setCategories] = useState<StoreCategoryApiRecord[]>(
+    initialCategories ?? [],
+  );
+  const [loading, setLoading] = useState(!hasInitialData);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (hasInitialData) {
+      setProducts(initialProducts ?? []);
+      setCategories(initialCategories ?? []);
+      setLoading(false);
+      return;
+    }
+
     let active = true;
 
     void (async () => {
@@ -56,7 +75,7 @@ export default function AdminStoreReviewProducts({ user, storeId }: Props) {
     return () => {
       active = false;
     };
-  }, [storeId, user]);
+  }, [hasInitialData, initialCategories, initialProducts, storeId, user]);
 
   const categoryNames = useMemo(
     () => new Map(categories.map((category) => [category.id, category.name])),
@@ -96,8 +115,17 @@ export default function AdminStoreReviewProducts({ user, storeId }: Props) {
         </div>
       )}
 
+      <div className="mt-5 rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+        <div className="text-sm font-black uppercase tracking-wide text-amber-900">
+          Revisión obligatoria de categorías
+        </div>
+        <p className="mt-1 text-sm text-amber-900">
+          Comprueba que la categoría realmente corresponda a lo que vende la tienda antes de aprobar.
+        </p>
+      </div>
+
       {suggested.length > 0 && (
-        <div className="mt-5 rounded-xl border border-violet-200 bg-violet-50 p-4">
+        <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-4">
           <div className="text-sm font-bold text-violet-900">Categorías sugeridas por esta tienda</div>
           <div className="mt-2 flex flex-wrap gap-2">
             {suggested.map((name) => (
@@ -146,10 +174,12 @@ export default function AdminStoreReviewProducts({ user, storeId }: Props) {
                   <div className="min-w-0">
                     <h3 className="font-bold text-gray-900">{product.title}</h3>
                     <p className="text-sm font-semibold text-blue-700">{priceLabel(product)}</p>
-                    <p className="mt-1 text-xs text-gray-600">
-                      {product.suggestedCategoryName ? "Categoría sugerida: " : "Categoría: "}
-                      <span className="font-semibold">{categoryLabel}</span>
-                    </p>
+                    <div className="mt-2 rounded-lg border-2 border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                      <span className="font-black">
+                        {product.suggestedCategoryName ? "Categoría sugerida: " : "Categoría registrada: "}
+                      </span>
+                      <span className="font-black">{categoryLabel}</span>
+                    </div>
                   </div>
                   <span
                     className={
