@@ -25,7 +25,24 @@ describe("store repository rules", () => {
   });
 
   it("genera una clave de reserva segura incluso si el nombre contiene slash", () => {
-    expect(reservationKeyForName("Dulces/Fer")).not.toContain("/");
+    const key = reservationKeyForName("Dulces/Fer");
+    expect(key).not.toContain("/");
+    expect(key).not.toContain("%");
+  });
+
+  it("genera una clave Firestore-safe para nombres con espacios y emoji", () => {
+    const key = reservationKeyForName(
+      "VANTECK– BOLETOS Y COMBOS PARA EL CINE 🍿",
+    );
+
+    expect(key).toMatch(/^n-[0-9a-f]+$/);
+    expect(key).not.toMatch(/[\\/\\?#%]/);
+    expect(new TextEncoder().encode(key).length).toBeLessThan(1500);
+  });
+
+  it("conserva las claves legacy que ya eran seguras", () => {
+    expect(reservationKeyForName("dulces-fer")).toBe("dulces-fer");
+    expect(reservationKeyForName("snack_lab")).toBe("snack_lab");
   });
 
   it("permite editar el nombre del borrador sin generar URL", () => {

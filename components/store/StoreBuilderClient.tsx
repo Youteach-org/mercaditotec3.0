@@ -40,7 +40,7 @@ function friendlyStoreStepError(
     if (step === "horario") {
       return "No se pudo guardar el horario de la tienda. Recarga la página e inténtalo de nuevo.";
     }
-    return "No se pudo enviar la tienda a revisión. Estamos corrigiendo compatibilidad con tiendas creadas anteriormente; recarga e inténtalo de nuevo.";
+    return "No se pudo enviar la tienda a revisión. Inténtalo de nuevo.";
   }
 
   return message;
