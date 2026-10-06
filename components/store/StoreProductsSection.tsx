@@ -284,7 +284,7 @@ export default function StoreProductsSection({
   const showForm = editable && (editingId !== null || !creationMode || products.length === 0);
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
+    <section className="store-products-section rounded-2xl bg-white p-5 shadow-md sm:p-6">
       <ValidationModal message={validationMessage} onClose={() => setValidationMessage("")} />
 
       <div className="flex items-start justify-between gap-3">
