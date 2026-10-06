@@ -6,6 +6,7 @@ import {
 } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
+import { coerceRecordTimestamp } from "./legacyTimestamp";
 import {
   assertAdminTransition,
   canOwnerEditStore,
@@ -212,11 +213,11 @@ function toStoreRecord(id: string, data: DocumentData): StoreRecord {
       data.marketplaceVariant === "cloud-6"
         ? data.marketplaceVariant
         : null,
-    createdAt: data.createdAt as Timestamp,
-    updatedAt: data.updatedAt as Timestamp,
-    submittedAt: data.submittedAt instanceof Timestamp ? data.submittedAt : null,
-    approvedAt: data.approvedAt instanceof Timestamp ? data.approvedAt : null,
-    suspendedAt: data.suspendedAt instanceof Timestamp ? data.suspendedAt : null,
+    createdAt: coerceRecordTimestamp(data.createdAt),
+    updatedAt: coerceRecordTimestamp(data.updatedAt, coerceRecordTimestamp(data.createdAt)),
+    submittedAt: data.submittedAt == null ? null : coerceRecordTimestamp(data.submittedAt),
+    approvedAt: data.approvedAt == null ? null : coerceRecordTimestamp(data.approvedAt),
+    suspendedAt: data.suspendedAt == null ? null : coerceRecordTimestamp(data.suspendedAt),
   };
 }
 

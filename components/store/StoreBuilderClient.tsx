@@ -24,6 +24,28 @@ import type { StoreProductApiRecord } from "@/lib/store/productClient";
 import type { StoreSchedule } from "@/lib/store/schedule";
 import { useSession } from "@/lib/useSession";
 
+function friendlyStoreStepError(
+  step: "información" | "horario" | "envío",
+  raw: unknown,
+): string {
+  const message =
+    typeof raw === "string" && raw.trim()
+      ? raw.trim()
+      : "No se pudo completar la operación.";
+
+  if (message === "Ocurrió un error interno.") {
+    if (step === "información") {
+      return "No se pudo guardar la información de la tienda. Recarga la página e inténtalo de nuevo.";
+    }
+    if (step === "horario") {
+      return "No se pudo guardar el horario de la tienda. Recarga la página e inténtalo de nuevo.";
+    }
+    return "No se pudo enviar la tienda a revisión. Estamos corrigiendo compatibilidad con tiendas creadas anteriormente; recarga e inténtalo de nuevo.";
+  }
+
+  return message;
+}
+
 function ErrorModal({ message, onClose }: { message: string; onClose: () => void }) {
   if (!message) return null;
   return (
@@ -248,18 +270,39 @@ export default function StoreBuilderClient() {
         }),
       });
       const infoData = await infoResponse.json();
-      if (!infoResponse.ok) throw new Error(infoData.error ?? "Revisa la información de la tienda.");
+      if (!infoResponse.ok) {
+        throw new Error(
+          friendlyStoreStepError(
+            "información",
+            infoData.error ?? "Revisa la información de la tienda.",
+          ),
+        );
+      }
 
       const scheduleResponse = await storeApiFetch(firebaseUser, `/api/stores/${store.id}/schedule`, {
         method: "PATCH",
         body: JSON.stringify({ schedule: previewSchedule, operationalMode: "automatic", manualOpen: null }),
       });
       const scheduleData = await scheduleResponse.json();
-      if (!scheduleResponse.ok) throw new Error(scheduleData.error ?? "Revisa el horario de la tienda.");
+      if (!scheduleResponse.ok) {
+        throw new Error(
+          friendlyStoreStepError(
+            "horario",
+            scheduleData.error ?? "Revisa el horario de la tienda.",
+          ),
+        );
+      }
 
       const response = await storeApiFetch(firebaseUser, `/api/stores/${store.id}/submit`, { method: "POST" });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "La tienda todavía no está lista para revisión.");
+      if (!response.ok) {
+        throw new Error(
+          friendlyStoreStepError(
+            "envío",
+            data.error ?? "La tienda todavía no está lista para revisión.",
+          ),
+        );
+      }
 
       router.replace("/mystore");
     } catch (submitError) {

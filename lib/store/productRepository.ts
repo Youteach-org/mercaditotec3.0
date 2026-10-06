@@ -2,6 +2,7 @@ import { Timestamp, type DocumentData } from "../firestoreRest";
 
 import { getAdminDb } from "../firestoreRest";
 import { canOwnerEditStore, type StoreStatus } from "./domain";
+import { coerceRecordTimestamp } from "./legacyTimestamp";
 import {
   getStoreForOwner,
   type StoreRuleRecord,
@@ -112,8 +113,8 @@ function toProductRecord(id: string, data: DocumentData): ProductRecord {
     priceType: data.priceType as ProductPriceType,
     priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
     visibility: data.visibility as ProductVisibility,
-    createdAt: data.createdAt as Timestamp,
-    updatedAt: data.updatedAt as Timestamp,
+    createdAt: coerceRecordTimestamp(data.createdAt),
+    updatedAt: coerceRecordTimestamp(data.updatedAt, coerceRecordTimestamp(data.createdAt)),
   };
 }
 
