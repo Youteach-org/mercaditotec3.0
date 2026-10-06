@@ -58,14 +58,46 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     let mounted = true;
     let unsubDoc: (() => void) | null = null;
 
-    const finishAuthResolution = (user: User | null) => {
+    const resolveUserAndProfile = (user: User | null) => {
       if (!mounted) return;
+
+      if (unsubDoc) {
+        unsubDoc();
+        unsubDoc = null;
+      }
+
       setFirebaseUser(user);
-      setLoading(false);
+
+      if (!user) {
+        setAppUser(null);
+        setLoading(false);
+        return;
+      }
+
+      // Auth can resolve before the Firestore profile that carries role/nickname.
+      // Keep the session loading until the profile snapshot resolves so protected
+      // pages never evaluate permissions against a temporary null appUser.
+      setAppUser(null);
+      setLoading(true);
+
+      const userRef = doc(db, "users", user.uid);
+      unsubDoc = onSnapshot(
+        userRef,
+        (snap) => {
+          if (!mounted) return;
+          setAppUser(snap.exists() ? (snap.data() as AppUser) : null);
+          setLoading(false);
+        },
+        () => {
+          if (!mounted) return;
+          setAppUser(null);
+          setLoading(false);
+        },
+      );
     };
 
     const timeoutId = window.setTimeout(() => {
-      finishAuthResolution(auth.currentUser);
+      resolveUserAndProfile(auth.currentUser);
     }, AUTH_RESOLUTION_TIMEOUT_MS);
 
     const unsubAuth = onAuthStateChanged(
@@ -73,37 +105,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       (user) => {
         if (!mounted) return;
         window.clearTimeout(timeoutId);
-
-        if (unsubDoc) {
-          unsubDoc();
-          unsubDoc = null;
-        }
-
-        finishAuthResolution(user);
-
-        if (!user) {
-          setAppUser(null);
-          return;
-        }
-
-        const userRef = doc(db, "users", user.uid);
-        unsubDoc = onSnapshot(
-          userRef,
-          (snap) => {
-            if (!mounted) return;
-            setAppUser(snap.exists() ? (snap.data() as AppUser) : null);
-          },
-          () => {
-            if (!mounted) return;
-            setAppUser(null);
-          },
-        );
+        resolveUserAndProfile(user);
       },
       () => {
         if (!mounted) return;
         window.clearTimeout(timeoutId);
-        setAppUser(null);
-        finishAuthResolution(null);
+        resolveUserAndProfile(null);
       },
     );
 
