@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/store/auth";
+import { getAdminDb } from "@/lib/firestoreRest";
 import {
   listAllCategories,
   serializeCategory,
@@ -33,10 +34,24 @@ export async function GET(
       listAllCategories(),
     ]);
 
+    const ownerSnapshot = await getAdminDb()
+      .collection("users")
+      .doc(store.ownerUid)
+      .get();
+    const ownerData = ownerSnapshot.data() ?? {};
+
     return NextResponse.json({
       store: serializeStore(store),
       products: products.map(serializeProduct),
       categories: categories.map(serializeCategory),
+      owner: {
+        uid: store.ownerUid,
+        nickname: String(ownerData.nickname ?? "").trim(),
+        displayName: String(ownerData.displayName ?? "").trim(),
+        email: String(ownerData.email ?? "").trim(),
+        studentStatus: String(ownerData.studentStatus ?? "pending"),
+        studentEndorsementCount: Number(ownerData.studentEndorsementCount ?? 0),
+      },
     });
   } catch (error) {
     const apiError = toApiError(error);
