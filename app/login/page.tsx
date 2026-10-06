@@ -22,6 +22,15 @@ function buildInstitutionalEmail(localPart: string) {
   return `${normalizeLocalPart(localPart)}${DOMAIN}`;
 }
 
+function safePostLoginPath(): string {
+  if (typeof window === "undefined") return "/marketplace";
+  const value = new URLSearchParams(window.location.search).get("next") ?? "";
+  if (!value.startsWith("/") || value.startsWith("//") || value.startsWith("/login")) {
+    return "/marketplace";
+  }
+  return value;
+}
+
 function getFriendlyAuthError(code?: string) {
   switch (code) {
     case "auth/invalid-credential":
@@ -104,7 +113,7 @@ export default function LoginPage() {
 
       await syncAccount(result.user);
 
-      router.replace("/marketplace");
+      router.replace(safePostLoginPath());
     } catch (err: any) {
       console.error("LOGIN_ERROR", err);
       setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo iniciar sesión."));
