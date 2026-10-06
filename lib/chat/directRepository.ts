@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { Timestamp, getAdminDb } from "../firestoreRest";
+import { getAdminDb } from "../firestoreRest";
 
 export class DirectChatError extends Error {
   constructor(
@@ -84,7 +84,7 @@ export async function getOrCreateDirectChat(
 
   if (!snapshot.exists) {
     const now = Date.now();
-    await reference.create({
+    await reference.set({
       participantUids,
       createdAt: now,
       updatedAt: now,
