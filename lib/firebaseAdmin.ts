@@ -325,6 +325,44 @@ export function getFirebaseProjectId(): string {
   return getServiceAccount().project_id;
 }
 
+export async function deleteFirebaseAuthUser(uid: string): Promise<void> {
+  const cleanUid = uid.trim();
+  if (!cleanUid || cleanUid.length > 128) {
+    throw new Error("Firebase user id is invalid");
+  }
+
+  const projectId = getFirebaseProjectId();
+  const token = await getAdminAccessToken();
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/accounts:delete`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ localId: cleanUid }),
+    },
+  );
+
+  if (response.ok) return;
+
+  let details = "";
+  try {
+    details = await response.text();
+  } catch {
+    details = "";
+  }
+
+  if (response.status === 404 || /USER_NOT_FOUND/i.test(details)) return;
+
+  throw new Error(
+    `Firebase Auth user deletion failed with HTTP ${response.status}${
+      details ? `: ${details.slice(0, 500)}` : ""
+    }`,
+  );
+}
+
 export async function getAdminAccessToken(): Promise<string> {
   const now = Date.now();
 
