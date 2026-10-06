@@ -747,8 +747,9 @@ export class FirestoreRest {
 
   async runTransaction<T>(callback: (transaction: Transaction) => Promise<T>): Promise<T> {
     let lastError: unknown = null;
+    const retryDelaysMs = [90, 180, 360, 720, 1200];
 
-    for (let attempt = 0; attempt < 5; attempt += 1) {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
       const databaseRoot = await transport.databaseRoot();
       const begin = await transport.request(`${databaseRoot}/documents:beginTransaction`, {
         method: "POST",
@@ -778,9 +779,15 @@ export class FirestoreRest {
 
         if (
           error instanceof FirestoreRestError &&
-          (error.status === 409 || error.status === 412) &&
-          attempt < 4
+          (error.status === 409 ||
+            error.status === 412 ||
+            error.status === 429 ||
+            error.status === 503) &&
+          attempt < 5
         ) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, retryDelaysMs[Math.min(attempt, retryDelaysMs.length - 1)]),
+          );
           continue;
         }
 

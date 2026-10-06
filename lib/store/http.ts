@@ -1,3 +1,4 @@
+import { FirestoreRestError } from "../firestoreRest";
 import type { StoreEditableInput } from "./domain";
 import { validateStoreDraftInput } from "./domain";
 import { ApiAuthError } from "./auth";
@@ -61,6 +62,24 @@ export function toApiError(error: unknown): { status: number; message: string } 
     error instanceof StoreHttpError
   ) {
     return { status: error.status, message: error.message };
+  }
+
+  if (error instanceof FirestoreRestError) {
+    console.error("Firestore store API error:", error);
+    if (error.status === 409 || error.status === 412) {
+      return {
+        status: 409,
+        message:
+          "La tienda estaba guardando otro cambio al mismo tiempo. Intenta guardar de nuevo.",
+      };
+    }
+    if (error.status === 429 || error.status === 503) {
+      return {
+        status: 503,
+        message:
+          "El guardado está temporalmente ocupado. Intenta de nuevo en unos segundos.",
+      };
+    }
   }
 
   console.error("Unexpected store API error:", error);
