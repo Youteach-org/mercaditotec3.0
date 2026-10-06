@@ -3,12 +3,15 @@
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
   sendEmailVerification,
   signOut,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
+
+import { auth } from "@/lib/firebase";
 import { studentControlEligibility } from "@/lib/security/domain";
+import { validateNicknameSyntax } from "@/lib/security/nickname";
 
 const DOMAIN = "@morelia.tecnm.mx";
 
@@ -24,6 +27,7 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [localPart, setLocalPart] = useState("");
+  const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -43,6 +47,7 @@ export default function RegisterPage() {
 
     const cleanLocalPart = normalizeLocalPart(localPart);
     const cleanEmail = buildInstitutionalEmail(cleanLocalPart);
+    const parsedNickname = validateNicknameSyntax(nickname);
 
     if (!cleanLocalPart) {
       setError("Escribe la parte inicial de tu correo institucional.");
@@ -60,6 +65,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!parsedNickname.valid) {
+      setError(parsedNickname.reason);
+      return;
+    }
+
     if (password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -73,16 +83,48 @@ export default function RegisterPage() {
     try {
       setLoading(true);
 
-      const result = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+      const availabilityResponse = await fetch("/api/account/nickname", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname: parsedNickname.nickname }),
+      });
+      const availabilityBody = await availabilityResponse.json().catch(() => ({}));
+
+      if (!availabilityResponse.ok) {
+        throw new Error(
+          availabilityBody.error ?? "No se pudo comprobar el nickname.",
+        );
+      }
+
+      if (availabilityBody.available !== true) {
+        throw new Error("Ese nickname ya está en uso.");
+      }
+
+      const result = await createUserWithEmailAndPassword(
+        auth,
+        cleanEmail,
+        password,
+      );
 
       const token = await result.user.getIdToken(true);
       const bootstrapResponse = await fetch("/api/account/bootstrap", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nickname: parsedNickname.nickname }),
       });
       const bootstrapBody = await bootstrapResponse.json().catch(() => ({}));
 
       if (!bootstrapResponse.ok) {
+        try {
+          await deleteUser(result.user);
+        } catch {
+          // La cuenta recién creada podría requerir limpieza administrativa
+          // si Firebase rechaza la eliminación excepcionalmente.
+        }
+
         throw new Error(
           bootstrapBody.error ?? "No se pudo preparar tu cuenta de Mercadito.",
         );
@@ -90,18 +132,25 @@ export default function RegisterPage() {
 
       try {
         await sendEmailVerification(result.user);
-        setSuccess("Cuenta creada. Te enviamos un correo de verificación. Revisa tu bandeja o spam.");
+        setSuccess(
+          "Cuenta creada. Te enviamos un correo de verificación. Revisa tu bandeja o spam.",
+        );
       } catch (verifyError: any) {
         if (verifyError?.code === "auth/too-many-requests") {
-          setSuccess("Cuenta creada. Firebase limitó temporalmente el envío de correos. Intenta reenviar la verificación más tarde desde login.");
+          setSuccess(
+            "Cuenta creada. Firebase limitó temporalmente el envío de correos. Intenta reenviar la verificación más tarde desde login.",
+          );
         } else {
-          setSuccess("Cuenta creada. Si no recibes correo, intenta reenviar la verificación más tarde desde login.");
+          setSuccess(
+            "Cuenta creada. Si no recibes correo, intenta reenviar la verificación más tarde desde login.",
+          );
         }
       }
 
       await signOut(auth);
 
       setLocalPart("");
+      setNickname("");
       setPassword("");
       setConfirmPassword("");
 
@@ -114,7 +163,9 @@ export default function RegisterPage() {
       } else if (err?.code === "auth/weak-password") {
         setError("La contraseña debe tener al menos 6 caracteres.");
       } else if (err?.code === "auth/too-many-requests") {
-        setError("Firebase bloqueó temporalmente los intentos. Espera unos minutos e intenta de nuevo.");
+        setError(
+          "Firebase bloqueó temporalmente los intentos. Espera unos minutos e intenta de nuevo.",
+        );
       } else {
         setError(err?.message || "No se pudo crear la cuenta.");
       }
@@ -125,7 +176,10 @@ export default function RegisterPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-      <form onSubmit={handleRegister} className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md space-y-4">
+      <form
+        onSubmit={handleRegister}
+        className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md space-y-4"
+      >
         <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
 
         <div>
@@ -148,6 +202,33 @@ export default function RegisterPage() {
 
           <p className="mt-2 text-xs text-gray-600 break-all">
             Correo final: <span className="font-semibold">{previewEmail}</span>
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Nickname
+          </label>
+          <div className="flex rounded-xl border border-gray-300 overflow-hidden">
+            <div className="bg-gray-100 px-3 flex items-center font-black text-gray-500 border-r border-gray-300">
+              @
+            </div>
+            <input
+              type="text"
+              required
+              minLength={3}
+              maxLength={24}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="tu_nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value.toLowerCase())}
+              className="flex-1 min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-600">
+            Obligatorio y único. Usa de 3 a 24 caracteres: letras, números y guion bajo.
           </p>
         </div>
 
