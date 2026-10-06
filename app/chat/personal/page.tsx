@@ -22,6 +22,7 @@ type Conversation = {
     createdAt: number;
   } | null;
   updatedAt: number;
+  unreadCount: number;
 };
 
 function PrivateInboxContent() {
@@ -121,19 +122,38 @@ function PrivateInboxContent() {
                   <Link
                     key={conversation.chatId}
                     href={`/chat/personal/${conversation.target.uid}`}
-                    className="block p-4 hover:bg-gray-50"
+                    className={
+                      conversation.unreadCount > 0
+                        ? "block bg-amber-50 p-4 hover:bg-amber-100"
+                        : "block p-4 hover:bg-gray-50"
+                    }
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <div className="truncate font-black text-gray-900">
-                          {label}
+                        <div className="flex items-center gap-2">
+                          <div className={
+                            conversation.unreadCount > 0
+                              ? "truncate font-black text-gray-950"
+                              : "truncate font-bold text-gray-900"
+                          }>
+                            {label}
+                          </div>
+                          {conversation.unreadCount > 0 && (
+                            <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white">
+                              {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
+                            </span>
+                          )}
                         </div>
                         {conversation.target.username && (
                           <div className="text-xs font-semibold text-gray-500">
                             @{conversation.target.username}
                           </div>
                         )}
-                        <div className="mt-2 truncate text-sm text-gray-600">
+                        <div className={
+                          conversation.unreadCount > 0
+                            ? "mt-2 truncate text-sm font-black text-gray-900"
+                            : "mt-2 truncate text-sm text-gray-600"
+                        }>
                           {conversation.lastMessage?.text || "Sin mensajes"}
                         </div>
                       </div>
