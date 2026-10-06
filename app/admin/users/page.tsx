@@ -169,6 +169,44 @@ export default function AdminUsersPage() {
     }
   }
 
+  async function deleteUser(user: AdminUserSummary) {
+    if (!firebaseUser || !isSuperadmin) return;
+
+    const label = user.username ? `@${user.username}` : user.email || user.uid;
+    const confirmed = window.confirm(
+      `¿Eliminar definitivamente a ${label}? Se borrarán su acceso de Firebase y su perfil de Mercadito. Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+
+    setWorkingUid(user.uid);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await storeApiFetch(
+        firebaseUser,
+        `/api/admin/users/${user.uid}`,
+        { method: "DELETE" },
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo eliminar al usuario.");
+      }
+
+      setUsers((current) => current.filter((item) => item.uid !== user.uid));
+      setSelectedUserUid((current) => (current === user.uid ? null : current));
+      setMessage(`Usuario ${label} eliminado.`);
+    } catch (actionError) {
+      setError(
+        actionError instanceof Error
+          ? actionError.message
+          : "No se pudo eliminar al usuario.",
+      );
+    } finally {
+      setWorkingUid(null);
+    }
+  }
+
   if (sessionLoading || !firebaseUser || !isAdmin) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
@@ -263,6 +301,8 @@ export default function AdminUsersPage() {
               const working = workingUid === user.uid;
               const isSelf = user.uid === firebaseUser.uid;
               const canPromote = isSuperadmin && !isSelf && !user.adminRole;
+              const canDelete =
+                isSuperadmin && !isSelf && user.adminRole !== "superadmin";
               const selected = selectedUserUid === user.uid;
               return (
                 <article
@@ -379,6 +419,17 @@ export default function AdminUsersPage() {
                         className="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50"
                       >
                         Quitar Subadmin
+                      </button>
+                    )}
+
+                    {canDelete && (
+                      <button
+                        type="button"
+                        disabled={working}
+                        onClick={() => void deleteUser(user)}
+                        className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100 disabled:opacity-50"
+                      >
+                        Eliminar usuario
                       </button>
                     )}
                   </div>
