@@ -57,7 +57,11 @@ export default {
 
       if (!rulesResponse.ok || rules?.ok !== true) {
         return json(
-          { ok: false, firebaseRules: "sync-failed" },
+          {
+            ok: false,
+            firebaseRules: "sync-failed",
+            firebaseRulesReason: rules?.reason || "sync-error",
+          },
           { status: 503 },
         );
       }
