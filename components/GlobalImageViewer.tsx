@@ -125,7 +125,13 @@ export default function GlobalImageViewer() {
       const target = event.target;
       if (!(target instanceof Element) || event.button !== 0) return;
 
-      const cloud = target.closest("[data-image-double-href][data-image-zoom-src]");
+      // SVG cloud shapes are not always the click target (notably on
+      // mobile when the browser hit-tests a transparent area of the SVG).
+      // Resolve the whole visible photo region back to its zoomable cloud.
+      const photo = target.closest(".mkt-store-photo");
+      const cloud =
+        target.closest("[data-image-double-href][data-image-zoom-src]") ||
+        photo?.querySelector("[data-image-double-href][data-image-zoom-src]");
       if (cloud) {
         const href = cloud.getAttribute("data-image-double-href")?.trim() ?? "";
         const src = cloud.getAttribute("data-image-zoom-src")?.trim() ?? "";
@@ -140,7 +146,10 @@ export default function GlobalImageViewer() {
         }
       }
 
-      const logo = target.closest("img[data-image-double-href]");
+      const logoContainer = target.closest(".mkt-store-logo");
+      const logo =
+        target.closest("img[data-image-double-href]") ||
+        logoContainer?.querySelector("img[data-image-double-href]");
       if (logo instanceof HTMLImageElement && logo.dataset.noImageZoom !== "true") {
         const href = logo.dataset.imageDoubleHref?.trim() ?? "";
         const src = logo.currentSrc || logo.src;
