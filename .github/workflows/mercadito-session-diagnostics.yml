@@ -71,18 +71,24 @@ jobs:
                   event = json.loads(line)
               except json.JSONDecodeError:
                   continue
-              if isinstance(event, str):
+              for _ in range(5):
+                  if not isinstance(event, str):
+                      break
                   try:
-                      event = json.loads(event)
+                      next_event = json.loads(event)
                   except json.JSONDecodeError:
-                      if "PUBLIC_MARKETPLACE_RUNTIME_ERROR" in event:
-                          import re
-                          pos = event.index("PUBLIC_MARKETPLACE_RUNTIME_ERROR")
-                          excerpt = event[pos:pos+550]
-                          excerpt = re.sub(r"[A-Za-z0-9_/-]{32,}", "[redacted]", excerpt)
-                          print("API diagnostic raw:", excerpt)
-                          found = True
-                      continue
+                      break
+                  if next_event == event:
+                      break
+                  event = next_event
+              if isinstance(event, str) and "PUBLIC_MARKETPLACE_RUNTIME_ERROR" in event:
+                  import re
+                  pos = event.index("PUBLIC_MARKETPLACE_RUNTIME_ERROR")
+                  excerpt = event[pos:pos+700]
+                  excerpt = re.sub(r"[A-Za-z0-9_/-]{32,}", "[redacted]", excerpt)
+                  print("API diagnostic raw:", excerpt)
+                  found = True
+                  continue
               if not isinstance(event, dict):
                   continue
               raw_logs = event.get("logs", [])
