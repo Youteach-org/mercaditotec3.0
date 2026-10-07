@@ -60,6 +60,11 @@ export function assertStudentMayEnter(
   claims: Record<string, unknown>,
   now = new Date(),
 ): void {
+  // A Firebase ID token by itself never establishes an eligible student.
+  // In particular, no legacy "admin" custom claim can replace a profile.
+  if (!profile) {
+    throw new ApiAuthError(403, "Tu cuenta no está habilitada para entrar al Mercadito.");
+  }
   const email =
     typeof claims.email === "string"
       ? claims.email
