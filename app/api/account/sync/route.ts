@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAdminAuth } from "@/lib/firebaseAdmin";
+import { FirestoreRestError } from "@/lib/firestoreRest";
 import { AccountProfileError, syncVerifiedAccountProfile } from "@/lib/security/accountProfile";
 
 export const runtime = "nodejs";
@@ -22,7 +23,15 @@ export async function POST(request: Request) {
     if (error instanceof AccountProfileError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("ACCOUNT_SYNC_ERROR", error);
-    return NextResponse.json({ error: "La sesión no es válida o ha expirado." }, { status: 401 });
+    if (error instanceof FirestoreRestError && (error.status === 429 || error.status >= 500)) {
+      // A backend quota/outage is not an invalid Firebase session.
+      console.error("ACCOUNT_SYNC_DATA_UNAVAILABLE", error.status);
+      return NextResponse.json(
+        { error: "El servicio de datos está temporalmente saturado.", retryable: true },
+        { status: 503, headers: { "Retry-After": "60" } },
+      );
+    }
+    console.error("ACCOUNT_SYNC_ERROR", error instanceof Error ? error.name : "UnknownError");
+    return NextResponse.json({ error: "No se pudo validar tu cuenta." }, { status: 401 });
   }
 }

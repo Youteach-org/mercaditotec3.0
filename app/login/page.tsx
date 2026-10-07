@@ -58,7 +58,7 @@ export default function LoginPage() {
   const cleanLocalPart = useMemo(() => normalizeLocalPart(localPart), [localPart]);
   const fullEmail = useMemo(() => buildInstitutionalEmail(cleanLocalPart), [cleanLocalPart]);
 
-  async function syncAccount(user: import("firebase/auth").User) {
+  async function syncAccount(user: import("firebase/auth").User): Promise<"ok" | "deferred"> {
     const token = await user.getIdToken(true);
     const response = await fetch("/api/account/sync", {
       method: "POST",
@@ -66,9 +66,16 @@ export default function LoginPage() {
     });
     const body = await response.json().catch(() => ({}));
 
+    if (response.status === 503 && body.retryable === true) {
+      // Firebase already verified these credentials. A temporary Firestore
+      // outage cannot invalidate the login; protected APIs keep enforcing
+      // their own server-side authorization.
+      return "deferred";
+    }
     if (!response.ok) {
       throw new Error(body.error ?? "No se pudo validar tu cuenta.");
     }
+    return "ok";
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -89,6 +96,10 @@ export default function LoginPage() {
     try {
       setLoadingLogin(true);
 
+      // A prior admin session must never survive an unsuccessful login
+      // attempt as though the newly entered credentials were accepted.
+      await signOut(auth);
+      window.sessionStorage.removeItem("mercadito-profile-sync-pending");
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
@@ -102,10 +113,18 @@ export default function LoginPage() {
         return;
       }
 
-      await syncAccount(result.user);
+      const syncStatus = await syncAccount(result.user);
+      if (syncStatus === "deferred") {
+        window.sessionStorage.setItem("mercadito-profile-sync-pending", "1");
+      } else {
+        window.sessionStorage.removeItem("mercadito-profile-sync-pending");
+      }
 
       router.replace("/marketplace");
     } catch (err: any) {
+      // If Firebase accepted the credentials but account validation failed
+      // for a non-retryable reason, remove that partially signed-in state.
+      await signOut(auth).catch(() => undefined);
       console.error("LOGIN_ERROR", err);
       setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo iniciar sesión."));
     } finally {
@@ -145,6 +164,8 @@ export default function LoginPage() {
     try {
       setLoadingResendVerification(true);
 
+      await signOut(auth);
+      window.sessionStorage.removeItem("mercadito-profile-sync-pending");
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
@@ -160,6 +181,7 @@ export default function LoginPage() {
       await signOut(auth);
       setSuccess("Se reenvió el correo de verificación a tu cuenta institucional.");
     } catch (err: any) {
+      await signOut(auth).catch(() => undefined);
       console.error("RESEND_ERROR", err);
       setError(getFriendlyAuthError(err?.code));
     } finally {

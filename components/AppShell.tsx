@@ -57,6 +57,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [messageAlert, setMessageAlert] = useState("");
   const previousPrivateUnreadRef = useRef<number | null>(null);
   const [visualPreview, setVisualPreview] = useState(false);
+  const [syncDeferred, setSyncDeferred] = useState(false);
+
+  useEffect(() => {
+    setSyncDeferred(
+      window.sessionStorage.getItem("mercadito-profile-sync-pending") === "1",
+    );
+  }, [pathname]);
 
   useEffect(() => {
     if (pathname !== "/marketplace") {
@@ -144,7 +151,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, loading, pathname]);
 
-  const showAdmin = isAdminRole(appUser);
+  const showAdmin = isAdminRole(appUser) && !syncDeferred && pathname !== "/login" && pathname !== "/register";
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
   const scrapbookShell = true;
@@ -351,6 +358,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         >
           💬 {messageAlert}
         </Link>
+      )}
+      {syncDeferred && firebaseUser && (
+        <div role="status" className="mx-auto w-full max-w-[1448px] border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-semibold text-amber-900">
+          Sesión iniciada. El servicio de datos está temporalmente saturado; algunas funciones podrían no cargar.
+        </div>
       )}
       <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}>{children}</div>
       <GlobalImageViewer />

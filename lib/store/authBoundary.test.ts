@@ -29,6 +29,11 @@ describe("server authorization boundary", () => {
   it("a persisted demotion overrides old administrator token claims", async () => {
     await expect(requireAdmin(request())).rejects.toMatchObject({ status: 403 });
   });
+  it("does not grant admin access when the user profile is absent", async () => {
+    state.profile = undefined as unknown as Record<string, unknown>;
+    await expect(requireAdmin(request())).rejects.toMatchObject({ status: 403 });
+    await expect(requireSuperadmin(request())).rejects.toMatchObject({ status: 403 });
+  });
   it("subadministrators cannot change administrator roles", async () => {
     state.profile.role = "subadmin";
     await expect(requireSuperadmin(request())).rejects.toMatchObject({ status: 403 });

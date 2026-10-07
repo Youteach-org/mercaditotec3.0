@@ -8,7 +8,7 @@ import {
 } from "../security/domain";
 import { isAdministrativeBlockActive } from "../moderation/domain";
 import { getAdminAuth } from "../firebaseAdmin";
-import { getAdminDb } from "../firestoreRest";
+import { FirestoreRestError, getAdminDb } from "../firestoreRest";
 import { consumeMutationBudget, MutationLimitError } from "../security/rateLimit";
 
 export class ApiAuthError extends Error {
@@ -23,6 +23,8 @@ export class ApiAuthError extends Error {
 export interface AuthenticatedUser {
   uid: string;
   claims: DecodedIdToken;
+  /** Server-read profile, never trust role claims when the record is missing. */
+  profile?: Record<string, unknown>;
 }
 
 export function isAdminProfile(profile: unknown): boolean {
@@ -106,10 +108,15 @@ export async function requireFirebaseUser(
       assertUserMayMutate(profile);
       await consumeMutationBudget(claims.uid);
     }
-    return { uid: claims.uid, claims };
+    return { uid: claims.uid, claims, profile };
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
     if (error instanceof ApiAuthError) throw error;
+    if (error instanceof FirestoreRestError && (error.status === 429 || error.status >= 500)) {
+      // Database saturation must not be presented as an expired login.
+      console.error("AUTH_PROFILE_DATA_UNAVAILABLE", error.status);
+      throw new ApiAuthError(503, "El servicio de datos está temporalmente saturado. Inténtalo más tarde.");
+    }
     throw new ApiAuthError(
       401,
       "La sesión no es válida o ha expirado.",
@@ -121,7 +128,7 @@ export async function requireUnblockedUser(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  assertUserMayMutate(await loadProfile(user.uid));
+  assertUserMayMutate(user.profile);
   return user;
 }
 
@@ -129,20 +136,13 @@ export async function requireAdmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  const profile = await loadProfile(user.uid);
-  assertUserMayMutate(profile);
-
-  if (profile) {
-    if (!isAdminRole(profile)) {
-      throw new ApiAuthError(403, "No tienes permisos de administrador.");
-    }
-    return user;
-  }
-
-  if (!isAdminRole(user.claims)) {
+  const profile = user.profile;
+  // Fail closed: a missing Firestore record cannot grant privilege from
+  // stale Firebase custom claims or local browser state.
+  if (!profile || !isAdminRole(profile)) {
     throw new ApiAuthError(403, "No tienes permisos de administrador.");
   }
-
+  assertUserMayMutate(profile);
   return user;
 }
 
@@ -150,28 +150,16 @@ export async function requireSuperadmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  const profile = await loadProfile(user.uid);
-  assertUserMayMutate(profile);
-
-  if (profile) {
-    if (!isSuperadminRole(profile)) {
-      throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
-    }
-    return user;
-  }
-
-  if (!isSuperadminRole(user.claims)) {
+  const profile = user.profile;
+  if (!profile || !isSuperadminRole(profile)) {
     throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
   }
-
+  assertUserMayMutate(profile);
   return user;
 }
 
 export async function getAuthenticatedAdminRole(
   user: AuthenticatedUser,
 ) {
-  const profile = await loadProfile(user.uid);
-  if (profile) return effectiveAdminRole(profile);
-
-  return effectiveAdminRole(user.claims);
+  return effectiveAdminRole(user.profile);
 }
