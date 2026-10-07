@@ -39,7 +39,14 @@ export async function GET() {
       },
       { headers: PUBLIC_CACHE_HEADERS },
     );
-  } catch {
+  } catch (error) {
+    // Only safe diagnostic metadata is logged. Never expose account details
+    // or backend credentials in public HTTP responses.
+    console.error(
+      "PUBLIC_MARKETPLACE_RUNTIME_ERROR",
+      error instanceof Error ? error.name : "UnknownError",
+      error instanceof Error ? error.message.slice(0, 240) : "Unexpected backend error",
+    );
     return NextResponse.json(
       { error: "No se pudo cargar el Mercadito." },
       { status: 500 },
