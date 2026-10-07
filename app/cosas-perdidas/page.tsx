@@ -255,7 +255,7 @@ function LostAndFoundContent() {
                         timeStyle: "short",
                       })}
                     </time>
-                    {post.authorUid === firebaseUser.uid && (
+                    {post.authorUid === firebaseUser?.uid && (
                       <button
                         type="button"
                         className="lost-found-resolve"
