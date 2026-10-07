@@ -27,7 +27,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
   const { firebaseUser, loading } = useSession();
   const [state, setState] = useState<AccessState>("checking");
   const [attempt, setAttempt] = useState(0);
-  const [verified, setVerified] = useState<{ uid: string; checkedAt: number } | null>(null);
+  const [verified, setVerified] = useState<{ uid: string; path: string; checkedAt: number } | null>(null);
   const lastVerified = useRef<{ uid: string; checkedAt: number } | null>(null);
   const setupPage = isAccountSetupPage(pathname);
   const protectedPage = isProtectedPage(pathname);
@@ -50,7 +50,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
     // Every protected API still checks the five-year rule independently.
     const cached = lastVerified.current;
     if (cached?.uid === firebaseUser.uid && Date.now() - cached.checkedAt < 30_000 && attempt === 0) {
-      setVerified(cached);
+      setVerified({ ...cached, path: pathname });
       setState("allowed");
       return;
     }
@@ -75,7 +75,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
           }
           const validated = { uid: firebaseUser.uid, checkedAt: Date.now() };
           lastVerified.current = validated;
-          setVerified(validated);
+          setVerified({ ...validated, path: pathname });
           setState("allowed");
           return;
         }
@@ -107,7 +107,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
   }, [firebaseUser, loading, pathname, protectedPage, router, setupPage, attempt]);
 
   if (setupPage || !protectedPage) return <>{children}</>;
-  if (state === "allowed" && verified?.uid === firebaseUser?.uid) return <>{children}</>;
+  if (state === "allowed" && verified?.uid === firebaseUser?.uid && verified?.path === pathname) return <>{children}</>;
 
   return (
     <main className="min-h-screen bg-gray-100 p-5">
