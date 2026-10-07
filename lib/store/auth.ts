@@ -8,7 +8,7 @@ import {
 } from "../security/domain";
 import { isAdministrativeBlockActive } from "../moderation/domain";
 import { getAdminAuth } from "../firebaseAdmin";
-import { getAdminDb } from "../firestoreRest";
+import { FirestoreRestError, getAdminDb } from "../firestoreRest";
 import { consumeMutationBudget, MutationLimitError } from "../security/rateLimit";
 
 export class ApiAuthError extends Error {
@@ -110,6 +110,11 @@ export async function requireFirebaseUser(
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
     if (error instanceof ApiAuthError) throw error;
+    if (error instanceof FirestoreRestError && (error.status === 429 || error.status >= 500)) {
+      // Database saturation must not be presented as an expired login.
+      console.error("AUTH_PROFILE_DATA_UNAVAILABLE", error.status);
+      throw new ApiAuthError(503, "El servicio de datos está temporalmente saturado. Inténtalo más tarde.");
+    }
     throw new ApiAuthError(
       401,
       "La sesión no es válida o ha expirado.",
