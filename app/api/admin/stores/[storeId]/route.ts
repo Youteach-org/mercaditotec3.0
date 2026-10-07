@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/store/auth";
+import { getAdminDb } from "@/lib/firestoreRest";
+import { normalizeStudentTrustStatus } from "@/lib/security/domain";
 import {
   listAllCategories,
   serializeCategory,
@@ -33,10 +35,25 @@ export async function GET(
       listAllCategories(),
     ]);
 
+    // Give reviewers the entire registered store in one response, including
+    // seller identity and ALL products (no marketplace-preview slicing).
+    const ownerSnapshot = await getAdminDb().collection("users").doc(store.ownerUid).get();
+    const ownerData = ownerSnapshot.data() ?? {};
+
     return NextResponse.json({
       store: serializeStore(store),
       products: products.map(serializeProduct),
       categories: categories.map(serializeCategory),
+      owner: {
+        uid: store.ownerUid,
+        nickname: String(ownerData.nickname ?? "").trim(),
+        displayName: String(ownerData.displayName ?? "").trim(),
+        email: String(ownerData.email ?? "").trim(),
+        studentStatus: normalizeStudentTrustStatus(ownerData.studentStatus),
+        endorsementCount: Number.isFinite(Number(ownerData.studentEndorsementCount))
+          ? Math.max(0, Number(ownerData.studentEndorsementCount))
+          : 0,
+      },
     });
   } catch (error) {
     const apiError = toApiError(error);
