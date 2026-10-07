@@ -40,7 +40,7 @@ describe("server authorization boundary", () => {
     await expect(requireSuperadmin(request())).rejects.toMatchObject({ status: 403 });
   });
   it("rejects a verified older student on every authenticated API, despite old admin token claims", async () => {
-    const expiredYear = String((new Date().getUTCFullYear() - 6) % 100).padStart(2, "0");
+    const expiredYear = String((new Date().getUTCFullYear() - 9) % 100).padStart(2, "0");
     state.claims.email = `a${expiredYear}121079@morelia.tecnm.mx`;
     await expect(requireFirebaseUser(request())).rejects.toMatchObject({ status: 403 });
     await expect(requireAdmin(request())).rejects.toMatchObject({ status: 403 });
