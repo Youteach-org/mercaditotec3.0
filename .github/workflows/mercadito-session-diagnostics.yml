@@ -71,8 +71,18 @@ jobs:
                   event = json.loads(line)
               except json.JSONDecodeError:
                   continue
-              for entry in event.get("logs", []):
-                  msg = entry.get("message", [])
+              if not isinstance(event, dict):
+                  continue
+              raw_logs = event.get("logs", [])
+              if not isinstance(raw_logs, list):
+                  continue
+              for entry in raw_logs:
+                  if isinstance(entry, dict):
+                      msg = entry.get("message", [])
+                  elif isinstance(entry, str):
+                      msg = [entry]
+                  else:
+                      continue
                   if isinstance(msg, str):
                       msg = [msg]
                   if isinstance(msg, list) and any(isinstance(v, str) and "PUBLIC_MARKETPLACE_RUNTIME_ERROR" in v for v in msg):
