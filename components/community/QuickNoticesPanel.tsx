@@ -11,7 +11,7 @@ import {
 } from "@/lib/community/client";
 import type { CommunityPostApiRecord } from "@/lib/community/http";
 import { buildCommunityPostMediaPath } from "@/lib/community/media";
-import { uploadImageFile } from "@/lib/imageStorage";
+import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { validateMediaFileMeta } from "@/lib/store/media";
 
 type ComposerMode = "notice" | "found" | null;
@@ -124,13 +124,18 @@ export default function QuickNoticesPanel({
       let imageUrl: string | null = null;
 
       if (composerMode === "found" && photo) {
-        validateMediaFileMeta(photo);
+        const preparedPhoto = await prepareImageForUpload(photo, photo.name);
+        validateMediaFileMeta(preparedPhoto);
         const path = buildCommunityPostMediaPath({
           ownerUid: user.uid,
           nonce: crypto.randomUUID(),
-          mimeType: photo.type,
+          mimeType: preparedPhoto.type,
         });
-        imageUrl = await uploadImageFile({ path, file: photo });
+        imageUrl = await uploadImageFile({
+          path,
+          file: preparedPhoto,
+          filename: preparedPhoto.name,
+        });
       }
 
       await createCommunityPostRequest(user, {
