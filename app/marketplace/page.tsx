@@ -351,7 +351,22 @@ function StoreCard({
   }
 
   return (
-    <Link href={storeHref} className={className}>
+    <Link
+      href={storeHref}
+      className={className}
+      onClickCapture={(event) => {
+        // The image has its own 1-tap zoom / 2-tap navigation gesture.
+        // Prevent Next Link navigation even if a delegated click handler
+        // is registered before the global viewer on this device.
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          target.closest(".mkt-store-photo, .mkt-store-logo")
+        ) {
+          event.preventDefault();
+        }
+      }}
+    >
       {body}
     </Link>
   );

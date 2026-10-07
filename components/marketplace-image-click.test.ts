@@ -16,12 +16,12 @@ const cloud = readFileSync(
 describe("Marketplace image click behavior", () => {
   it("keeps a single image click pending long enough for a real double click", () => {
     expect(viewer).toContain("pendingMarketplaceClickRef");
-    expect(viewer).toContain("event.detail >= 2");
-    expect(viewer).toContain("}, 430)");
+    expect(viewer).toContain("shouldOpenStoreFromImageInteraction");
+    expect(viewer).toContain("}, 550)");
   });
 
   it("uses the browser dblclick event and cancels pending zoom before navigation", () => {
-    expect(viewer).toContain('document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick)');
+    expect(viewer).toContain('document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick, true)');
     expect(viewer).toContain("clearPendingMarketplaceClick()");
     expect(viewer).toContain("window.location.assign(href)");
   });
@@ -33,6 +33,8 @@ describe("Marketplace image click behavior", () => {
   });
 
   it("keeps normal card navigation available outside the zoomable image", () => {
-    expect(marketplace).toContain("<Link href={storeHref} className={className}>");
+    expect(marketplace).toContain("href={storeHref}");
+    expect(marketplace).toContain("onClickCapture={(event) => {");
+    expect(marketplace).toContain('target.closest(".mkt-store-photo, .mkt-store-logo")');
   });
 });
