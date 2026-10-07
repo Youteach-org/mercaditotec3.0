@@ -6,7 +6,7 @@ import {
 import {
   normalizeWhatsappNumber,
   WhatsappNumberError,
-} from "@/lib/security/whatsapp";
+} from "../security/whatsapp";
 
 import {
   CategoryRepositoryError,
