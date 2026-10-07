@@ -299,7 +299,11 @@ function StoreCard({
       <div className="mkt-store-logo">
         {store.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={store.logoUrl} alt="" />
+          <img
+            src={store.logoUrl}
+            alt={`Logo de ${store.name}`}
+            data-force-image-zoom="true"
+          />
         ) : (
           <DemoLogo index={variantIndex} name={store.name} />
         )}
