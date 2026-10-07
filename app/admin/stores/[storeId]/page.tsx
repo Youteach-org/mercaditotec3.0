@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import AdminStoreReviewProducts from "@/components/store/AdminStoreReviewProducts";
+import AdminCompleteStoreReview, { type AdminReviewOwner } from "@/components/store/AdminCompleteStoreReview";
+import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
+import type { StoreProductApiRecord } from "@/lib/store/productClient";
 import { isAdminRole } from "@/lib/security/domain";
 import {
   actionsForStoreStatus,
@@ -28,6 +30,10 @@ export default function AdminStoreDetailPage() {
   const isAdmin = isAdminRole(appUser);
 
   const [store, setStore] = useState<StoreApiRecord | null>(null);
+  const [products, setProducts] = useState<StoreProductApiRecord[]>([]);
+  const [categories, setCategories] = useState<StoreCategoryApiRecord[]>([]);
+  const [owner, setOwner] = useState<AdminReviewOwner | null>(null);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
@@ -56,6 +62,11 @@ export default function AdminStoreDetailPage() {
         throw new Error(data.error ?? "No se pudo cargar la tienda.");
       }
       setStore(data.store as StoreApiRecord);
+      // Full review data must load atomically from the admin-only API.
+      setProducts(Array.isArray(data.products) ? data.products : []);
+      setCategories(Array.isArray(data.categories) ? data.categories : []);
+      setOwner(data.owner ?? null);
+      setReviewConfirmed(false);
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -119,7 +130,16 @@ export default function AdminStoreDetailPage() {
   }
 
   function requestAction(action: AdminStoreAction) {
-    if (action === "approve" || action === "reactivate") {
+    if (action === "approve") {
+      if (!reviewConfirmed || products.length === 0) {
+        setError("Revisa todos los datos y productos y marca la confirmación antes de aprobar.");
+        return;
+      }
+      void executeAction(action);
+      return;
+    }
+
+    if (action === "reactivate") {
       void executeAction(action);
       return;
     }
@@ -130,7 +150,7 @@ export default function AdminStoreDetailPage() {
   if (sessionLoading || loading) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-md">
+        <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
           Cargando tienda...
         </div>
       </main>
@@ -140,7 +160,7 @@ export default function AdminStoreDetailPage() {
   if (!store || !firebaseUser) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
-        <div className="mx-auto max-w-4xl rounded-2xl bg-white p-6 shadow-md">
+        <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
           <h1 className="text-2xl font-bold">Tienda no disponible</h1>
           <p className="mt-2 text-red-700">{error}</p>
           <Link href="/admin/stores" className="mt-4 inline-block font-semibold text-blue-700">
@@ -155,7 +175,7 @@ export default function AdminStoreDetailPage() {
 
   return (
     <main className="min-h-screen bg-gray-100 p-4">
-      <div className="mx-auto max-w-4xl space-y-5">
+      <div className="mx-auto max-w-7xl space-y-5">
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
             <Link href="/admin/stores" className="text-blue-700 hover:underline">
@@ -198,54 +218,45 @@ export default function AdminStoreDetailPage() {
           </div>
         )}
 
-        <section className="rounded-2xl bg-white p-6 shadow-md">
-          <h2 className="text-xl font-bold text-gray-900">Información para revisión</h2>
-
-          <dl className="mt-5 space-y-4">
-            <div>
-              <dt className="text-sm font-semibold text-gray-500">Nombre</dt>
-              <dd className="mt-1 text-gray-900">{store.name}</dd>
-            </div>
-            <div>
-              <dt className="text-sm font-semibold text-gray-500">Descripción</dt>
-              <dd className="mt-1 whitespace-pre-wrap text-gray-900">
-                {store.description || "Sin descripción."}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-semibold text-gray-500">Propietario interno</dt>
-              <dd className="mt-1 break-all font-mono text-sm text-gray-700">{store.ownerUid}</dd>
-            </div>
-            {store.reviewMessage && (
-              <div>
-                <dt className="text-sm font-semibold text-orange-700">Cambios solicitados</dt>
-                <dd className="mt-1 text-orange-900">{store.reviewMessage}</dd>
-              </div>
-            )}
-            {store.suspensionReason && (
-              <div>
-                <dt className="text-sm font-semibold text-red-700">Motivo de suspensión</dt>
-                <dd className="mt-1 text-red-900">{store.suspensionReason}</dd>
-              </div>
-            )}
-          </dl>
-        </section>
-
-        <AdminStoreReviewProducts user={firebaseUser} storeId={store.id} />
+        <AdminCompleteStoreReview
+          store={store}
+          products={products}
+          categories={categories}
+          owner={owner}
+        />
 
         {actions.length > 0 && (
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="text-xl font-bold text-gray-900">Acciones administrativas</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Al aprobar una tienda pendiente se asignará su URL pública y se incorporarán sus categorías sugeridas a la lista general. La decisión queda registrada en el historial administrativo.
+              Aprobar incorporará la tienda al Marketplace y promoverá las categorías propuestas de sus productos. Si algún dato está mal clasificado, usa “Requiere cambios” e indica el motivo.
             </p>
+
+            {store.status === "pending_review" && (
+              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+                <input
+                  type="checkbox"
+                  checked={reviewConfirmed}
+                  onChange={(event) => {
+                    setReviewConfirmed(event.target.checked);
+                    if (event.target.checked) setError("");
+                  }}
+                  className="mt-0.5 h-5 w-5 shrink-0"
+                />
+                <span className="text-sm font-bold text-amber-950">
+                  Revisé la tienda COMPLETA: vendedor y su verificación, nombre, descripción,
+                  categorías y clasificación de TODOS los productos, TODOS los precios y fotos,
+                  lugar de entrega, horario de los 7 días, modo de operación y personalización del Marketplace.
+                </span>
+              </label>
+            )}
 
             <div className="mt-4 flex flex-wrap gap-3">
               {actions.map((action) => (
                 <button
                   key={action}
                   type="button"
-                  disabled={working}
+                  disabled={working || (action === "approve" && (!reviewConfirmed || products.length === 0))}
                   onClick={() => requestAction(action)}
                   className={
                     action === "approve" || action === "reactivate"
