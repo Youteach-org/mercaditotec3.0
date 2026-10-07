@@ -48,6 +48,23 @@ export default function GlobalImageViewer() {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
+      const explicitTarget = target.closest("[data-image-zoom-src]");
+      if (explicitTarget instanceof HTMLElement || explicitTarget instanceof SVGElement) {
+        const src = explicitTarget.getAttribute("data-image-zoom-src")?.trim() ?? "";
+        if (src) {
+          event.preventDefault();
+          event.stopPropagation();
+          setImage({
+            src,
+            alt:
+              explicitTarget.getAttribute("data-image-zoom-alt")?.trim() ||
+              "Imagen ampliada",
+          });
+          resetTransform();
+          return;
+        }
+      }
+
       const img = target.closest("img");
       if (!(img instanceof HTMLImageElement)) return;
       if (img.dataset.noImageZoom === "true") return;
