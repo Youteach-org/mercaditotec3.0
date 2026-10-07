@@ -49,3 +49,35 @@ jobs:
             secret_text|secret_key) echo "FIREBASE_SERVICE_ACCOUNT_JSON binding: PRESENT ($secret_type)" ;;
             *) echo "::error::FIREBASE_SERVICE_ACCOUNT_JSON binding missing or wrong type ($secret_type)"; exit 1 ;;
           esac
+      - name: Collect sanitized marketplace backend error from Cloudflare Tail
+        shell: bash
+        run: |
+          set -u
+          npm install --no-audit --no-fund --ignore-scripts --prefix /tmp/wrangler-cli wrangler@4.132.0 >/dev/null 2>&1
+          timeout 35s /tmp/wrangler-cli/node_modules/.bin/wrangler tail "$PRODUCTION_WORKER_NAME" --format json > /tmp/tail-output.jsonl 2> /tmp/tail-error.log &
+          tail_pid=$!
+          sleep 10
+          for retry in 1 2 3; do
+            curl -L -sS --connect-timeout 10 --max-time 25 -o /dev/null "https://mercaditotec3-0.youteach-tk.workers.dev/api/marketplace?session_diagnostic=$retry" || true
+            sleep 2
+          done
+          wait "$tail_pid" || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          found = False
+          for line in Path("/tmp/tail-output.jsonl").read_text(errors="replace").splitlines():
+              try:
+                  event = json.loads(line)
+              except json.JSONDecodeError:
+                  continue
+              for entry in event.get("logs", []):
+                  msg = entry.get("message", [])
+                  if isinstance(msg, str):
+                      msg = [msg]
+                  if isinstance(msg, list) and any(isinstance(v, str) and "PUBLIC_MARKETPLACE_RUNTIME_ERROR" in v for v in msg):
+                      print("API diagnostic:", " | ".join(str(v)[:240] for v in msg[:3])[:500])
+                      found = True
+          if not found:
+              print("No sanitized diagnostic event captured; see deployment and secret metadata checks.")
+          PY
