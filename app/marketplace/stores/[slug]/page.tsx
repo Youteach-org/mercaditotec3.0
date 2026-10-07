@@ -125,8 +125,8 @@ export default function PublicStorePage() {
           </Link>
         </div>
 
-        <header className="overflow-hidden rounded-3xl bg-white shadow-lg">
-          <div className="relative h-44 bg-gradient-to-br from-slate-900 to-slate-600 sm:h-60">
+        <header className="relative isolate overflow-visible rounded-3xl bg-white shadow-lg">
+          <div className="relative z-0 h-44 overflow-hidden rounded-t-3xl bg-gradient-to-br from-slate-900 to-slate-600 sm:h-60">
             {store.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
@@ -135,9 +135,9 @@ export default function PublicStorePage() {
             )}
           </div>
 
-          <div className="p-5 sm:p-7">
+          <div className="relative z-10 p-5 sm:p-7">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <div className="-mt-14 h-24 w-24 shrink-0 overflow-hidden rounded-3xl border-4 border-white bg-slate-100 shadow-md">
+              <div className="relative z-20 -mt-14 h-24 w-24 shrink-0 overflow-hidden rounded-3xl border-4 border-white bg-slate-100 shadow-md">
                 {store.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
