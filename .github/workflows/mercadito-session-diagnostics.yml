@@ -89,6 +89,19 @@ jobs:
                       print("API diagnostic:", " | ".join(str(v)[:240] for v in msg[:3])[:500])
                       found = True
           if not found:
+              import collections
+              data = Path("/tmp/tail-output.jsonl").read_text(errors="replace")
+              events = []
+              for line in data.splitlines():
+                  try: events.append(json.loads(line))
+                  except json.JSONDecodeError: pass
+              types = collections.Counter(type(event).__name__ for event in events)
+              print("Parsed tail event types:", dict(types))
+              print("Raw log fingerprint:", {key: data.count(key) for key in ["PUBLIC_MARKETPLACE_RUNTIME_ERROR", "exception", "Error", "error", "FAILED", "GET /api/marketplace"]})
+              for event in [event for event in events if isinstance(event, dict)][:2]:
+                  print("Tail structure:", list(event.keys()), "outcome:", str(event.get("outcome", ""))[:100], "log-types:", [type(v).__name__ for v in event.get("logs", [])[:2]] if isinstance(event.get("logs", []), list) else "not-list")
+                  for ex in event.get("exceptions", [])[:1] if isinstance(event.get("exceptions", []), list) else []:
+                      print("Exception type:", str(ex.get("name", "unknown"))[:100] if isinstance(ex, dict) else type(ex).__name__)
               print("No sanitized diagnostic event captured.")
               print("Tail file size:", Path("/tmp/tail-output.jsonl").stat().st_size)
               tail_errors = Path("/tmp/tail-error.log").read_text(errors="replace")
