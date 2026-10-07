@@ -8,6 +8,7 @@ import GlobalImageViewer from "@/components/GlobalImageViewer";
 import AccountAccessGate from "@/components/AccountAccessGate";
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { moderationApiFetch } from "@/lib/moderation/client";
+import { storeApiFetch } from "@/lib/store/client";
 import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
@@ -63,6 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const previousPrivateUnreadRef = useRef<number | null>(null);
   const [visualPreview, setVisualPreview] = useState(false);
   const [syncDeferred, setSyncDeferred] = useState(false);
+  const [serverAdminVerified, setServerAdminVerified] = useState(false);
 
   useEffect(() => {
     setSyncDeferred(
@@ -102,6 +104,45 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [firebaseUser, loading, profileUnreadCount]);
 
   const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
+
+  useEffect(() => {
+    if (loading || !firebaseUser || !isAdminRole(appUser) || syncDeferred) {
+      setServerAdminVerified(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setServerAdminVerified(false);
+
+    void (async () => {
+      try {
+        const response = await storeApiFetch(firebaseUser, "/api/admin/session", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (cancelled) return;
+
+        if (!response.ok) {
+          setServerAdminVerified(false);
+          return;
+        }
+
+        const body = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        setServerAdminVerified(
+          body.role === "superadmin" || body.role === "subadmin",
+        );
+      } catch {
+        if (!cancelled) setServerAdminVerified(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [appUser, firebaseUser, loading, syncDeferred]);
 
   useEffect(() => {
     if (loading || !firebaseUser) {
@@ -156,7 +197,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, loading, pathname]);
 
-  const showAdmin = isAdminRole(appUser) && !syncDeferred && pathname !== "/login" && pathname !== "/register";
+  const showAdmin = serverAdminVerified && !syncDeferred && Boolean(firebaseUser) && pathname !== "/login" && pathname !== "/register";
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
   const scrapbookShell = true;
