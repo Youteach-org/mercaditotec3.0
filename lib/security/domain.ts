@@ -3,6 +3,7 @@ export type StudentTrustStatus = "pending" | "verified" | "revoked";
 
 export const ENDORSEMENTS_REQUIRED = 2;
 export const MAX_ENDORSEMENTS_PER_PERIOD = 5;
+export const STUDENT_CONTROL_MAX_AGE_YEARS = 8;
 
 export function effectiveAdminRole(profile: unknown): AdminRole | null {
   if (!profile || typeof profile !== "object") return null;
@@ -121,12 +122,19 @@ export function studentControlEligibility(
   const controlNumber = match[1];
   const entryYear = 2000 + Number(controlNumber.slice(0, 2));
   const currentYear = now.getUTCFullYear();
-  const earliestYear = currentYear - 5;
+  const earliestYear = currentYear - STUDENT_CONTROL_MAX_AGE_YEARS;
 
-  if (entryYear < earliestYear || entryYear > currentYear) {
+  if (entryYear < earliestYear) {
     return {
       allowed: false,
-      reason: `El número de control debe corresponder a un ingreso dentro de los últimos 5 años (${earliestYear}-${currentYear}).`,
+      reason: `Tu número de control corresponde a un ingreso de hace más de 8 años. Mercadito admite ingresos de ${earliestYear} a ${currentYear}.`,
+    };
+  }
+
+  if (entryYear > currentYear) {
+    return {
+      allowed: false,
+      reason: `El año de ingreso de tu número de control (${entryYear}) es posterior al año actual (${currentYear}).`,
     };
   }
 

@@ -7,6 +7,11 @@ import { ref, uploadBytes } from "firebase/storage";
 
 let env;
 const identity = (verified = true, email = "a22121079@morelia.tecnm.mx") => ({ email, email_verified: verified });
+const controlEmailForAge = (yearsAgo) => {
+  const entryYear = new Date().getUTCFullYear() - yearsAgo;
+  const twoDigitYear = String(entryYear % 100).padStart(2, "0");
+  return `a${twoDigitYear}121079@morelia.tecnm.mx`;
+};
 before(async () => {
   env = await initializeTestEnvironment({ projectId: "demo-mercadito-security", firestore: { rules: readFileSync("firestore.rules", "utf8") }, storage: { rules: readFileSync("storage.rules", "utf8") } });
   await env.withSecurityRulesDisabled(async (context) => {
@@ -39,6 +44,13 @@ test("unverified and external accounts cannot read institutional chat", async ()
     await assertFails(getDoc(doc(db, "messages", "message-1")));
   }
 });
+test("student access includes the 8-year boundary and rejects 9-year-old control numbers", async () => {
+  const boundaryDb = env.authenticatedContext("alice", identity(true, controlEmailForAge(8))).firestore();
+  await assertSucceeds(getDoc(doc(boundaryDb, "messages", "message-1")));
+
+  const expiredDb = env.authenticatedContext("alice", identity(true, controlEmailForAge(9))).firestore();
+  await assertFails(getDoc(doc(expiredDb, "messages", "message-1")));
+});
 test("direct reactions cannot bypass the server mutation budget", async () => {
   for (const uid of ["alice", "blocked", "inactive"]) {
     const db = env.authenticatedContext(uid, identity()).firestore();
@@ -62,7 +74,9 @@ test("profile-image uploads enforce ownership, format and verified identity", as
   await assertFails(uploadBytes(ref(own, "profile-images/alice/a.svg"), new Uint8Array([1]), { contentType: "image/svg+xml" }));
   const unverified = env.authenticatedContext("alice", identity(false)).storage();
   await assertFails(uploadBytes(ref(unverified, "profile-images/alice/b.png"), new Uint8Array([1]), { contentType: "image/png" }));
-  const expiredStudent = env.authenticatedContext("alice", identity(true, "a10121079@morelia.tecnm.mx")).storage();
+  const boundaryStudent = env.authenticatedContext("alice", identity(true, controlEmailForAge(8))).storage();
+  await assertSucceeds(uploadBytes(ref(boundaryStudent, "profile-images/alice/boundary.png"), new Uint8Array([1]), { contentType: "image/png" }));
+  const expiredStudent = env.authenticatedContext("alice", identity(true, controlEmailForAge(9))).storage();
   await assertFails(uploadBytes(ref(expiredStudent, "profile-images/alice/expired.png"), new Uint8Array([1]), { contentType: "image/png" }));
   for (const uid of ["blocked", "inactive"]) {
     const storage = env.authenticatedContext(uid, identity()).storage();
