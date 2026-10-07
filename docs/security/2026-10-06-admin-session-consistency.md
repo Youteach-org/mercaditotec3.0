@@ -26,3 +26,10 @@ Los endpoints de administración continúan verificando autenticación y autoriz
 - Usuario Firebase válido con `/api/account/sync` diferido: puede navegar contenido público, pero no saltar el guard administrativo.
 
 Comprobar el despliegue real antes de declarar corregida la incidencia en producción; una compilación satisfactoria no demuestra por sí sola la recuperación de Firestore.
+
+
+## Ajuste de disponibilidad del login (2026-10-07)
+
+La política de cierre preventivo se mantiene para todas las rutas privadas y administrativas, pero un HTTP 503 marcado explícitamente como `retryable` por `/api/account/sync` ya no se presenta como credenciales inválidas ni destruye la sesión Firebase recién autenticada. En ese único caso, el usuario puede continuar al marketplace público con la sincronización marcada como pendiente.
+
+Esto no concede acceso privado: `AccountAccessGate` continúa exigiendo `/api/account/session` antes de montar rutas protegidas y el enlace de administración permanece oculto mientras la sincronización está pendiente. Los errores permanentes de elegibilidad (401/403, correo no verificado, dominio incorrecto o número de control fuera de la ventana permitida) siguen cerrando la sesión.

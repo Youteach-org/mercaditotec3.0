@@ -37,12 +37,16 @@ describe("student access wiring", () => {
     expect(auth).not.toContain("profile?.emailVerified === true");
   });
 
-  it("never admits users while Firestore account synchronization is unavailable", () => {
+  it("keeps Firebase login during a transient sync outage without unlocking private routes", () => {
     const login = source("app/login/page.tsx");
-    expect(login).toContain("await syncAccount(result.user)");
-    expect(login).not.toContain('return "deferred"');
-    expect(login).not.toContain('syncStatus === "deferred"');
+    const gate = source("components/AccountAccessGate.tsx");
+    expect(login).toContain('response.status === 503 && body.retryable === true');
+    expect(login).toContain('return "deferred"');
+    expect(login).toContain('syncStatus === "deferred"');
+    expect(login).toContain('mercadito-profile-sync-pending');
     expect(login).toContain("await signOut(auth).catch");
+    expect(gate).toContain("/api/account/session");
+    expect(gate).toContain('setState("unavailable")');
   });
 
   it("gates all private pages on authenticated server eligibility", () => {
