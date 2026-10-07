@@ -29,6 +29,11 @@ export default function GlobalImageViewer() {
   const offsetStartRef = useRef<Point>({ x: 0, y: 0 });
   const pinchDistanceRef = useRef<number | null>(null);
   const pinchScaleRef = useRef(1);
+  const pendingMarketplaceClickRef = useRef<{
+    href: string;
+    timer: number;
+    startedAt: number;
+  } | null>(null);
 
   function resetTransform() {
     setScale(1);
@@ -44,6 +49,54 @@ export default function GlobalImageViewer() {
   }
 
   useEffect(() => {
+    function clearPendingMarketplaceClick() {
+      const pending = pendingMarketplaceClickRef.current;
+      if (!pending) return;
+      window.clearTimeout(pending.timer);
+      pendingMarketplaceClickRef.current = null;
+    }
+
+    function openViewer(src: string, alt: string) {
+      setImage({ src, alt });
+      resetTransform();
+    }
+
+    function handleMarketplaceImageInteraction(
+      event: MouseEvent,
+      src: string,
+      alt: string,
+      href: string,
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const now = performance.now();
+      const pending = pendingMarketplaceClickRef.current;
+
+      if (
+        pending &&
+        pending.href === href &&
+        now - pending.startedAt <= 360
+      ) {
+        clearPendingMarketplaceClick();
+        window.location.assign(href);
+        return;
+      }
+
+      clearPendingMarketplaceClick();
+
+      const timer = window.setTimeout(() => {
+        pendingMarketplaceClickRef.current = null;
+        openViewer(src, alt);
+      }, 280);
+
+      pendingMarketplaceClickRef.current = {
+        href,
+        timer,
+        startedAt: now,
+      };
+    }
+
     function openFromContentImage(event: MouseEvent) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -52,15 +105,24 @@ export default function GlobalImageViewer() {
       if (explicitTarget instanceof HTMLElement || explicitTarget instanceof SVGElement) {
         const src = explicitTarget.getAttribute("data-image-zoom-src")?.trim() ?? "";
         if (src) {
-          event.preventDefault();
-          event.stopPropagation();
-          setImage({
-            src,
-            alt:
-              explicitTarget.getAttribute("data-image-zoom-alt")?.trim() ||
-              "Imagen ampliada",
-          });
-          resetTransform();
+          const alt =
+            explicitTarget.getAttribute("data-image-zoom-alt")?.trim() ||
+            "Imagen ampliada";
+          const doubleHref =
+            explicitTarget.getAttribute("data-image-double-href")?.trim() ?? "";
+
+          if (doubleHref) {
+            handleMarketplaceImageInteraction(
+              event,
+              src,
+              alt,
+              doubleHref,
+            );
+          } else {
+            event.preventDefault();
+            event.stopPropagation();
+            openViewer(src, alt);
+          }
           return;
         }
       }
@@ -75,11 +137,20 @@ export default function GlobalImageViewer() {
       const src = img.currentSrc || img.src;
       if (!src) return;
 
-      setImage({
-        src,
-        alt: img.alt || "Imagen ampliada",
-      });
-      resetTransform();
+      const doubleHref = img.dataset.imageDoubleHref?.trim() ?? "";
+      const alt = img.alt || "Imagen ampliada";
+
+      if (doubleHref) {
+        handleMarketplaceImageInteraction(
+          event,
+          src,
+          alt,
+          doubleHref,
+        );
+        return;
+      }
+
+      openViewer(src, alt);
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -90,6 +161,7 @@ export default function GlobalImageViewer() {
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
+      clearPendingMarketplaceClick();
       document.removeEventListener("click", openFromContentImage);
       window.removeEventListener("keydown", onKeyDown);
     };

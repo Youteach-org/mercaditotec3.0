@@ -283,6 +283,7 @@ function StoreCard({
   const reviewCount = demo?.demoReviewCount ?? null;
   const ribbonLabel = store.marketplaceLabel.trim() || store.name;
   const note = store.marketplaceNote.trim();
+  const storeHref = `/marketplace/stores/${store.slug}`;
 
   const body = (
     <article className={`mkt-store-card mkt-store-card-${slotIndex} mkt-store-variant-${variantIndex}`}>
@@ -291,6 +292,7 @@ function StoreCard({
           variantIndex={variantIndex}
           imageUrl={store.coverUrl}
           fallbackLabel="TIENDA"
+          storeHref={!previewMode && !demo ? storeHref : undefined}
         />
       </div>
 
@@ -303,6 +305,7 @@ function StoreCard({
             src={store.logoUrl}
             alt={`Logo de ${store.name}`}
             data-force-image-zoom="true"
+            data-image-double-href={!previewMode && !demo ? storeHref : undefined}
           />
         ) : (
           <DemoLogo index={variantIndex} name={store.name} />
@@ -348,7 +351,7 @@ function StoreCard({
   }
 
   return (
-    <Link href={`/marketplace/stores/${store.slug}`} className={className}>
+    <Link href={storeHref} className={className}>
       {body}
     </Link>
   );
