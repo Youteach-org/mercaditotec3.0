@@ -70,7 +70,7 @@ export function assertStudentMayEnter(
   const eligibility = studentAccessEligibility({
     email,
     emailVerified,
-    profile: profile ?? claims,
+    profile,
     now,
   });
 
@@ -97,7 +97,13 @@ export async function requireFirebaseUser(
   try {
     const claims = await getAdminAuth().verifyIdToken(token, true);
     const profile = await loadProfile(claims.uid);
-    if (profile?.isActive === false) {
+    // Firebase Authentication alone is NOT Mercadito authorization.
+    // A direct Firebase signup, an incomplete bootstrap, or a deleted
+    // profile must never gain access via token claims alone.
+    if (!profile) {
+      throw new ApiAuthError(403, "Tu cuenta no está habilitada para entrar al Mercadito.");
+    }
+    if (profile.isActive === false) {
       throw new ApiAuthError(403, "Tu cuenta está desactivada.");
     }
     assertStudentMayEnter(
