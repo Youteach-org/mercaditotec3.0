@@ -89,11 +89,32 @@ describe("listActiveCommunityPosts", () => {
       throw new Error(`Unexpected request: ${init?.method} ${url.pathname}`);
     });
 
-    const all = await listActiveCommunityPosts({ limit: 2 });
+    const all = await listActiveCommunityPosts({ limit: 2, now: new Date("2026-10-07T13:00:00Z") });
     expect(all.map((post) => post.id)).toEqual(["new-quick", "new-found"]);
 
-    const found = await listActiveCommunityPosts({ type: "found_item", limit: 10 });
+    const found = await listActiveCommunityPosts({ type: "found_item", limit: 10, now: new Date("2026-10-07T13:00:00Z") });
     expect(found.map((post) => post.id)).toEqual(["new-found", "old-found"]);
+  });
+
+  it("expires quick notices after seven days but keeps found items until resolved", async () => {
+    vi.stubGlobal("fetch", async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url);
+      if (init?.method === "POST" && url.pathname.endsWith("/documents:runQuery")) {
+        return Response.json([
+          { document: postDocument({ id: "expired-quick", authorUid: "a", type: "quick_notice", title: "Aviso viejo", createdAt: "2026-09-29T12:00:00Z" }) },
+          { document: postDocument({ id: "recent-quick", authorUid: "b", type: "quick_notice", title: "Aviso reciente", createdAt: "2026-10-02T12:00:00Z" }) },
+          { document: postDocument({ id: "old-found", authorUid: "c", type: "found_item", title: "Objeto viejo", createdAt: "2026-09-01T12:00:00Z" }) },
+        ]);
+      }
+      throw new Error(`Unexpected request: ${init?.method} ${url.pathname}`);
+    });
+
+    const posts = await listActiveCommunityPosts({
+      limit: 10,
+      now: new Date("2026-10-07T12:00:00Z"),
+    });
+
+    expect(posts.map((post) => post.id)).toEqual(["recent-quick", "old-found"]);
   });
 });
 
