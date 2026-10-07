@@ -1,54 +1,37 @@
 import { NextResponse } from "next/server";
-
-import { DEMO_MARKETPLACE_STORES } from "@/lib/store/demoMarketplace";
-import { getMarketplaceContent } from "@/lib/store/marketplaceContentRepository";
-import { listPublicStores } from "@/lib/store/publicMarketplaceRepository";
-import {
-  listActiveCategories,
-  serializeCategory,
-} from "@/lib/store/categoryRepository";
+import { getPublicMarketplaceSnapshot } from "@/lib/store/publicMarketplaceSnapshot";
+import { FirestoreRestError } from "@/lib/firestoreRest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// The public storefront is eventually consistent. A short shared response
+// cache prevents repeat visitors from consuming Firestore's read quota.
 const HEADERS = {
-  "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-  "CDN-Cache-Control": "no-store",
+  "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
+  "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=120",
 };
 
 export async function GET() {
   try {
-    const [liveStores, content, categories] = await Promise.all([
-      listPublicStores(),
-      getMarketplaceContent(),
-      listActiveCategories(),
-    ]);
-
-    const temporaryExamples = DEMO_MARKETPLACE_STORES
-      .filter((demoStore) => !liveStores.some((liveStore) => liveStore.id === demoStore.id))
-      .slice(0, Math.max(0, 6 - liveStores.length));
-
-    const stores = [...liveStores, ...temporaryExamples];
-
+    const data = await getPublicMarketplaceSnapshot();
     return NextResponse.json(
-      {
-        stores,
-        content,
-        categories: categories.map(serializeCategory),
-        temporaryExamplesEnabled: true,
-        realStoreCount: liveStores.length,
-        exampleStoreCount: temporaryExamples.length,
-        totalStoreCount: stores.length,
-        revision: "marketplace-demo-v2",
-      },
+      { ...data, revision: "marketplace-demo-v2" },
       { headers: HEADERS },
     );
   } catch (error) {
-    console.error("Marketplace v2 load error:", error);
+    if (error instanceof FirestoreRestError && error.status === 429) {
+      console.error("PUBLIC_MARKETPLACE_V2_DATA_THROTTLED", error.status);
+      return NextResponse.json(
+        { error: "El Mercadito está temporalmente saturado. Vuelve a intentarlo en un momento.", retryable: true },
+        { status: 503, headers: { "Retry-After": "60", "Cache-Control": "no-store" } },
+      );
+    }
+    console.error("Marketplace v2 load error:", error instanceof Error ? error.name : "UnknownError");
     return NextResponse.json(
       { error: "No se pudo cargar el Mercadito." },
-      { status: 500, headers: HEADERS },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
