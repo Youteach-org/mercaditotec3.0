@@ -15,10 +15,12 @@ export default function MarketplaceCloudMedia({
   variantIndex,
   imageUrl,
   fallbackLabel = "TIENDA",
+  storeHref,
 }: {
   variantIndex: number;
   imageUrl: string | null;
   fallbackLabel?: string;
+  storeHref?: string;
 }) {
   const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const patternId = `mkt-cloud-pattern-${rawId}`;
@@ -31,6 +33,7 @@ export default function MarketplaceCloudMedia({
       className={`mkt-store-photo-svg mkt-store-photo-svg-${normalizedVariant}`}
       data-image-zoom-src={imageUrl || undefined}
       data-image-zoom-alt={imageUrl ? "Portada completa de la tienda" : undefined}
+      data-image-double-href={imageUrl && storeHref ? storeHref : undefined}
       viewBox="0 0 1000 700"
       preserveAspectRatio="none"
       aria-hidden="true"
