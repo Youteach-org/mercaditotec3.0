@@ -96,6 +96,10 @@ export default function LoginPage() {
     try {
       setLoadingLogin(true);
 
+      // A prior admin session must never survive an unsuccessful login
+      // attempt as though the newly entered credentials were accepted.
+      await signOut(auth);
+      window.sessionStorage.removeItem("mercadito-profile-sync-pending");
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
@@ -118,6 +122,9 @@ export default function LoginPage() {
 
       router.replace("/marketplace");
     } catch (err: any) {
+      // If Firebase accepted the credentials but account validation failed
+      // for a non-retryable reason, remove that partially signed-in state.
+      await signOut(auth).catch(() => undefined);
       console.error("LOGIN_ERROR", err);
       setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo iniciar sesión."));
     } finally {
@@ -157,6 +164,8 @@ export default function LoginPage() {
     try {
       setLoadingResendVerification(true);
 
+      await signOut(auth);
+      window.sessionStorage.removeItem("mercadito-profile-sync-pending");
       await setPersistence(auth, browserLocalPersistence);
 
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
@@ -172,6 +181,7 @@ export default function LoginPage() {
       await signOut(auth);
       setSuccess("Se reenvió el correo de verificación a tu cuenta institucional.");
     } catch (err: any) {
+      await signOut(auth).catch(() => undefined);
       console.error("RESEND_ERROR", err);
       setError(getFriendlyAuthError(err?.code));
     } finally {
