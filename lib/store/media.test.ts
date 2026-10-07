@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertProductImageUrlsForStore,
   buildStoreMediaPath,
+  parseImageUploadPath,
   validateMediaFileMeta,
   validateStoreMediaUrl,
 } from "./media";
@@ -147,5 +148,22 @@ describe("assertProductImageUrlsForStore", () => {
     ).toThrow(
       "Una imagen no pertenece a este producto.",
     );
+  });
+});
+
+
+describe("community post upload paths", () => {
+  it("accepts only the current user's flat community-post path", () => {
+    expect(
+      parseImageUploadPath("community-posts/user-1/abc.png", "user-1"),
+    ).toEqual({ path: "community-posts/user-1/abc.png" });
+
+    expect(() =>
+      parseImageUploadPath("community-posts/user-1/abc.png", "user-2"),
+    ).toThrow("La ruta de imagen no pertenece al usuario.");
+
+    expect(() =>
+      parseImageUploadPath("community-posts/user-1/nested/abc.png", "user-1"),
+    ).toThrow("Ruta de imagen inválida.");
   });
 });
