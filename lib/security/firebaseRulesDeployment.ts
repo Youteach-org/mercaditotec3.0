@@ -84,9 +84,12 @@ async function publishRelease(
 ): Promise<void> {
   const name = `projects/${projectId}/releases/${releaseId}`;
   const path = releasePath(projectId, releaseId);
-  const patch = await apiFetch(`${path}?updateMask=rulesetName`, token, {
+  const patch = await apiFetch(path, token, {
     method: "PATCH",
-    body: JSON.stringify({ name, rulesetName }),
+    body: JSON.stringify({
+      release: { name, rulesetName },
+      updateMask: "rulesetName",
+    }),
   });
   if (patch.ok) return;
   if (patch.status !== 404) {
