@@ -12,17 +12,40 @@ service firebase.storage {
         && request.auth.token.get('email', '').matches('^[^@]+@morelia[.]tecnm[.]mx$');
     }
 
-    function mayMutate() {
+    function studentMayEnter() {
       let profile = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
-      let until = profile.get('blockedUntil', null);
       let year = request.time.year() - 2000;
       let years = string(year) + '|' + string(year - 1) + '|' + string(year - 2)
-        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5);
+        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5)
+        + '|' + string(year - 6) + '|' + string(year - 7) + '|' + string(year - 8);
       return verifiedInstitution()
         && profile.get('isActive', true) != false
         && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
           || profile.get('isAdmin', false) == true || profile.get('admin', false) == true
-          || request.auth.token.email.matches('^[a-z]+(' + years + ')[0-9]{6}@morelia[.]tecnm[.]mx$'))
+          || request.auth.token.email.matches('^[a-z]+(' + years + ')[0-9]{6}@morelia[.]tecnm[.]mx
+
+    match /profile-images/{uid}/{fileName} {
+      allow read: if studentMayEnter();
+      allow create, update: if signedIn() && mayMutate()
+        && request.auth.uid == uid
+        && request.resource.size > 0
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
+      allow delete: if signedIn() && mayMutate() && request.auth.uid == uid;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+));
+    }
+
+    function mayMutate() {
+      let profile = firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+      let until = profile.get('blockedUntil', null);
+      return studentMayEnter()
         && (profile.get('blocked', false) != true
           || (until is timestamp && until <= request.time));
     }
