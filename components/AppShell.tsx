@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import GlobalImageViewer from "@/components/GlobalImageViewer";
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { isAdminRole } from "@/lib/security/domain";
@@ -352,6 +353,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
       )}
       <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}>{children}</div>
+      <GlobalImageViewer />
     </div>
   );
 }
