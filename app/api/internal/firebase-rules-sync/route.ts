@@ -18,12 +18,26 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
-    console.error(
-      "FIREBASE_RULES_SYNC_ERROR",
-      error instanceof Error ? error.message : "UnknownError",
-    );
+    const message = error instanceof Error ? error.message : "UnknownError";
+    console.error("FIREBASE_RULES_SYNC_ERROR", message);
+
+    const reason =
+      message.includes("HTTP 403")
+        ? "permission-denied"
+        : message.includes("HTTP 404")
+          ? "resource-not-found"
+          : message.includes("HTTP 400")
+            ? "invalid-request"
+            : message.includes("unexpected project")
+              ? "project-mismatch"
+              : "sync-error";
+
     return NextResponse.json(
-      { ok: false, error: "No se pudieron sincronizar las reglas de Firebase." },
+      {
+        ok: false,
+        error: "No se pudieron sincronizar las reglas de Firebase.",
+        reason,
+      },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
   }
