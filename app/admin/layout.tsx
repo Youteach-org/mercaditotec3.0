@@ -22,6 +22,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { firebaseUser, appUser, loading } = useSession();
   const [access, setAccess] = useState<AccessState>("checking");
+  const [verified, setVerified] = useState<{ uid: string; path: string; retry: number } | null>(null);
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           const body = await response.json().catch(() => ({}));
           if (cancelled) return;
           if (body.role === "superadmin" || body.role === "subadmin") {
+            setVerified({ uid: firebaseUser.uid, path: pathname, retry });
             setAccess("allowed");
           } else {
             setAccess("denied");
@@ -84,7 +86,13 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     };
   }, [firebaseUser, loading, pathname, retry, router]);
 
-  if (access === "allowed" && isAdminRole(appUser)) {
+  if (
+    access === "allowed" &&
+    verified?.uid === firebaseUser?.uid &&
+    verified.path === pathname &&
+    verified.retry === retry &&
+    isAdminRole(appUser)
+  ) {
     return <>{children}</>;
   }
 
