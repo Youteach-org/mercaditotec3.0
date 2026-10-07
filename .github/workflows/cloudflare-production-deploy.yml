@@ -5,6 +5,9 @@ on:
     branches:
       - feature/student-stores
   workflow_dispatch:
+  push:
+    branches:
+      - feature/student-stores
 permissions:
   contents: read
 
