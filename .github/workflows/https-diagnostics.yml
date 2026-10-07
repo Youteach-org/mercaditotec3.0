@@ -1,0 +1,45 @@
+name: Diagnose public HTTPS and mixed content
+
+on:
+  push:
+    branches:
+      - fix/https-brave-security-warning
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose-https:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Inspect public HTTP redirects and HTTPS certificate
+        shell: bash
+        run: |
+          set -u
+          for url in "http://mercaditotec.store/chat" "https://mercaditotec.store/chat" "https://mercaditotec3-0.youteach-tk.workers.dev/chat"; do
+            echo "===== $url ====="
+            curl --max-time 25 --connect-timeout 10 -sSL -o /dev/null \
+              -w 'http_code=%{http_code} redirect_count=%{num_redirects} effective_url=%{url_effective} ssl_verify_result=%{ssl_verify_result}\n' \
+              "$url" || true
+            curl --max-time 25 --connect-timeout 10 -sSI "$url" | \
+              grep -Ei '^(HTTP/|location:|content-security-policy:|strict-transport-security:|content-type:|server:|cf-ray:)' || true
+          done
+          echo "===== Certificate ====="
+          timeout 15 openssl s_client -connect mercaditotec.store:443 \
+            -servername mercaditotec.store < /dev/null 2>/dev/null | \
+            openssl x509 -noout -subject -issuer -dates || true
+      - name: Probe secure context and content in real Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROBE_DIR="$(mktemp -d)"
+          printf '{"name":"https-probe","private":true,"type":"module"}' > "$PROBE_DIR/package.json"
+          npm --prefix "$PROBE_DIR" install --no-audit --no-fund --ignore-scripts playwright-core@1.55.1
+          cp "$GITHUB_WORKSPACE/scripts/https-security-probe.mjs" "$PROBE_DIR/probe.mjs"
+          node "$PROBE_DIR/probe.mjs"

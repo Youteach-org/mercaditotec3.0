@@ -102,6 +102,37 @@ jobs:
           echo "Public store names:"
           printf '%s' "$MARKETPLACE_JSON" | jq -r '.stores[]? | " - \(.name) [\(.slug)]"'
 
+          # HTTPS regression: the official domain previously returned HTTP 200
+          # for /chat instead of redirecting. Browsers therefore showed "No es seguro"
+          # even though the HTTPS certificate was valid.
+          CUSTOM_DOMAIN="mercaditotec.store"
+          HTTP_RESULT="$(curl -sS --connect-timeout 15 --max-time 45 -o /dev/null \
+            -w '%{http_code} %{redirect_url}' \
+            "http://$CUSTOM_DOMAIN/chat?https_probe=1")"
+          echo "Plaintext /chat redirect: $HTTP_RESULT"
+          case "$HTTP_RESULT" in
+            "301 https://$CUSTOM_DOMAIN/chat?https_probe=1" | \
+            "302 https://$CUSTOM_DOMAIN/chat?https_probe=1" | \
+            "307 https://$CUSTOM_DOMAIN/chat?https_probe=1" | \
+            "308 https://$CUSTOM_DOMAIN/chat?https_probe=1") ;;
+            *)
+              echo "::error::HTTP traffic was not forced to HTTPS on the official domain"
+              exit 1
+              ;;
+          esac
+
+          HTTPS_HEADERS="$(curl -fsSI --connect-timeout 15 --max-time 45 \
+            "https://$CUSTOM_DOMAIN/chat")"
+          printf '%s\n' "$HTTPS_HEADERS" | grep -qi '^strict-transport-security: max-age=' || {
+            echo "::error::HTTPS page missing HSTS header"
+            exit 1
+          }
+          printf '%s\n' "$HTTPS_HEADERS" | grep -qi 'upgrade-insecure-requests' || {
+            echo "::error::HTTPS page missing mixed-content upgrade CSP"
+            exit 1
+          }
+          echo "Official domain: redirects HTTP to HTTPS and serves HSTS + CSP"
+
           HEALTH="$(curl -fsS "$BASE/__health")"
           printf '%s\n' "$HEALTH"
           printf '%s' "$HEALTH" | grep -q '"ok":true' || {

@@ -24,5 +24,7 @@ describe("production runtime hardening", () => {
     expect(source).toContain("Referrer-Policy");
     expect(source).toContain("Permissions-Policy");
     expect(source).toContain("Content-Security-Policy");
+    expect(source).toContain("Strict-Transport-Security");
+    expect(source).toContain("upgrade-insecure-requests");
   });
 });
