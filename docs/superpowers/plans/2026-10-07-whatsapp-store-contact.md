@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let a user save an optional WhatsApp number in their profile and expose a safe “Contactar por WhatsApp” action only on that user’s active public store.
+**Goal:** Let any user optionally save a WhatsApp number in profile, require it only when acting as a seller and submitting a store for review, and expose a safe “Contactar por WhatsApp” action on that user’s active public store.
 
 **Architecture:** Keep the raw normalized number in `users/{uid}` and validate it server-side through the existing profile update path. Public store detail derives only a `whatsappUrl` from the owner profile on the server; public store summaries and owner identity remain unchanged.
 
@@ -15,7 +15,9 @@
 - No new runtime dependency.
 - Profile changes continue through `PATCH /api/profile` guarded by `requireUnblockedUser`.
 - Do not expose `ownerUid`, email, role, block state, or the complete user profile in public store payloads.
-- Store only normalized WhatsApp numbers; an empty value removes the contact.
+- Store only normalized WhatsApp numbers; an empty value removes the contact for users who are not submitting a store.
+- Do not require WhatsApp for account registration or ordinary Mercadito use.
+- Require a valid WhatsApp number in both the store editor flow and server-side store submission.
 - A 10-digit Mexican number is normalized to `+52XXXXXXXXXX`.
 - `52XXXXXXXXXX` and `+52XXXXXXXXXX` normalize to `+52XXXXXXXXXX`.
 - Public links use `https://wa.me/<digits-only>`.
@@ -281,3 +283,18 @@ Expected: PASS.
 - [ ] **Step 4: Commit any verification-only fixes separately**
 
 Use a focused commit message if a defect is found; do not fold unrelated changes into this feature.
+
+### Task 5: Profile edit mode and seller-only WhatsApp requirement
+
+**Decision added 2026-10-07**
+
+- [x] Keep WhatsApp optional for users without a store.
+- [x] Add an explicit **Editar perfil** mode.
+- [x] Allow changing or removing the profile photo from edit mode.
+- [x] Allow adding, changing, or clearing WhatsApp from edit mode.
+- [x] Add **WhatsApp de contacto** to the store builder.
+- [x] Reuse an existing profile WhatsApp when available.
+- [x] Persist a WhatsApp entered during store setup back to the user's profile.
+- [x] Block store submission in `submitCompleteStore` when the owner has no valid WhatsApp.
+- [x] Add tests covering profile edit controls and the seller WhatsApp requirement.
+- [x] Fix the nullable-user TypeScript error in `app/cosas-perdidas/page.tsx` that was blocking the Cloudflare build.
