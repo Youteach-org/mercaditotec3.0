@@ -18,6 +18,7 @@ const TRUST_LABEL: Record<StudentTrustStatus, string> = {
 function ProfileContent() {
   const { firebaseUser, appUser, logout } = useSession();
   const [displayName, setDisplayName] = useState(appUser?.displayName ?? "");
+  const [whatsappNumber, setWhatsappNumber] = useState(appUser?.whatsappNumber ?? "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -28,7 +29,7 @@ function ProfileContent() {
   const isAdmin = isAdminRole(appUser);
   const blocked = Boolean(appUser && isAdministrativeBlockActive(appUser));
 
-  async function saveProfilePatch(payload: { displayName?: string; photoURL?: string }) {
+  async function saveProfilePatch(payload: { displayName?: string; photoURL?: string; whatsappNumber?: string }) {
     if (!firebaseUser) throw new Error("Debes iniciar sesión.");
 
     const token = await firebaseUser.getIdToken(true);
@@ -56,6 +57,7 @@ function ProfileContent() {
     try {
       await saveProfilePatch({
         displayName: displayName.trim() || (firebaseUser.email?.split("@")[0] ?? "usuario"),
+        whatsappNumber: whatsappNumber.trim(),
       });
       setMessage("Perfil actualizado.");
     } catch (error) {
@@ -156,6 +158,24 @@ function ProfileContent() {
             className="w-full border border-gray-300 rounded-xl p-3 text-gray-900"
             placeholder="Tu nombre visible"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-800 mb-2">
+            Número de WhatsApp
+          </label>
+          <input
+            type="tel"
+            inputMode="tel"
+            value={whatsappNumber}
+            onChange={(event) => setWhatsappNumber(event.target.value)}
+            className="w-full border border-gray-300 rounded-xl p-3 text-gray-900"
+            placeholder="443 123 4567"
+            autoComplete="tel"
+          />
+          <p className="mt-2 text-xs leading-relaxed text-gray-500">
+            Se usará como contacto público en tus tiendas. Puedes dejarlo vacío si no quieres mostrar contacto por WhatsApp.
+          </p>
         </div>
 
         <div className="space-y-1 text-sm text-gray-700">
