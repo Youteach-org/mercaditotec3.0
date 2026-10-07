@@ -143,6 +143,48 @@ async function runSync(): Promise<SyncResult> {
   return { firestore, storage };
 }
 
+
+export async function diagnoseFirebaseRulesIam(): Promise<{
+  rulesWrite: boolean;
+  setIamPolicy: boolean;
+  enableServices: boolean;
+}> {
+  const projectId = getFirebaseProjectId();
+  const token = await getAdminAccessToken();
+  const response = await fetch(
+    `https://cloudresourcemanager.googleapis.com/v1/projects/${encodeURIComponent(projectId)}:testIamPermissions`,
+    {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        permissions: [
+          "firebaserules.rulesets.create",
+          "firebaserules.releases.update",
+          "resourcemanager.projects.setIamPolicy",
+          "serviceusage.services.enable",
+        ],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    return { rulesWrite: false, setIamPolicy: false, enableServices: false };
+  }
+
+  const body = (await response.json()) as { permissions?: string[] };
+  const permissions = new Set(body.permissions ?? []);
+  return {
+    rulesWrite:
+      permissions.has("firebaserules.rulesets.create") &&
+      permissions.has("firebaserules.releases.update"),
+    setIamPolicy: permissions.has("resourcemanager.projects.setIamPolicy"),
+    enableServices: permissions.has("serviceusage.services.enable"),
+  };
+}
+
 export async function syncProductionFirebaseRules(): Promise<SyncResult> {
   const now = Date.now();
   if (cachedSync && cachedSync.expiresAt > now) return cachedSync.result;
