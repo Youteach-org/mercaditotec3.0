@@ -73,7 +73,7 @@ function productSource(id: string, data: Record<string, unknown>): PublicProduct
   };
 }
 
-export async function listPublicStores(): Promise<PublicStoreSummary[]> {
+export async function listPublicStores(activeCategoriesRequest?: ReturnType<typeof listActiveCategories>): Promise<PublicStoreSummary[]> {
   const db = getAdminDb();
   const [storeSnapshot, productSnapshot, activeCategories] = await Promise.all([
     db.collection("stores")
@@ -83,7 +83,7 @@ export async function listPublicStores(): Promise<PublicStoreSummary[]> {
     db.collection("products")
       .where("visibility", "==", "published")
       .get(),
-    listActiveCategories(),
+    activeCategoriesRequest ?? listActiveCategories(),
   ]);
 
   const activeCategoryIds = new Set(activeCategories.map((category) => category.id));
