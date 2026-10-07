@@ -28,6 +28,26 @@ describe("student access wiring", () => {
     expect(login).not.toContain("profileData");
   });
 
+  it("revalidates protected pages against the backend and explains access denials", () => {
+    const guard = source("components/AuthGuard.tsx");
+    const login = source("app/login/page.tsx");
+    expect(guard).toContain("/api/account/access");
+    expect(guard).toContain("getIdToken(true)");
+    expect(guard).toContain("mercaditoAccessError");
+    expect(guard).toContain("await logout()");
+    expect(login).toContain("mercaditoAccessError");
+  });
+
+  it("warns students not to reuse their institutional email password", () => {
+    const register = source("app/register/page.tsx");
+    expect(register).toContain("No uses la contraseña de tu correo institucional.");
+  });
+
+  it("keeps Firestore and Storage aligned with the eight-year backend window", () => {
+    expect(source("firestore.rules")).toContain("string(year - 8)");
+    expect(source("storage.rules")).toContain("string(year - 8)");
+  });
+
   it("enforces the same rule in server authentication", () => {
     const auth = source("lib/store/auth.ts");
     expect(auth).toContain("assertStudentMayEnter");
