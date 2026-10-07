@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -58,6 +58,13 @@ export default function LoginPage() {
   const cleanLocalPart = useMemo(() => normalizeLocalPart(localPart), [localPart]);
   const fullEmail = useMemo(() => buildInstitutionalEmail(cleanLocalPart), [cleanLocalPart]);
 
+  useEffect(() => {
+    const accessError = window.sessionStorage.getItem("mercaditoAccessError");
+    if (!accessError) return;
+    window.sessionStorage.removeItem("mercaditoAccessError");
+    setError(accessError);
+  }, []);
+
   async function syncAccount(user: import("firebase/auth").User) {
     const token = await user.getIdToken(true);
     const response = await fetch("/api/account/sync", {
@@ -102,7 +109,12 @@ export default function LoginPage() {
         return;
       }
 
-      await syncAccount(result.user);
+      try {
+        await syncAccount(result.user);
+      } catch (accessError) {
+        await signOut(auth).catch(() => undefined);
+        throw accessError;
+      }
 
       router.replace("/marketplace");
     } catch (err: any) {
@@ -150,7 +162,12 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
 
       if (result.user.emailVerified) {
-        await syncAccount(result.user);
+        try {
+          await syncAccount(result.user);
+        } catch (accessError) {
+          await signOut(auth).catch(() => undefined);
+          throw accessError;
+        }
         setSuccess("Tu correo ya estaba verificado. Ya puedes entrar.");
         await signOut(auth);
         return;
@@ -161,7 +178,7 @@ export default function LoginPage() {
       setSuccess("Se reenvió el correo de verificación a tu cuenta institucional.");
     } catch (err: any) {
       console.error("RESEND_ERROR", err);
-      setError(getFriendlyAuthError(err?.code));
+      setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo validar tu cuenta."));
     } finally {
       setLoadingResendVerification(false);
     }
