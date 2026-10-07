@@ -259,7 +259,7 @@ function PersonalChatContent() {
         </div>
 
         <footer className="border-t border-gray-200 p-3">
-          <div className="flex gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input
               value={text}
               onChange={(event) => setText(event.target.value)}
@@ -277,7 +277,7 @@ function PersonalChatContent() {
               type="button"
               disabled={sending || !text.trim()}
               onClick={() => void sendMessage()}
-              className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white disabled:opacity-40"
+              className="rounded-xl bg-slate-900 px-5 py-3 font-bold text-white disabled:opacity-40 max-[420px]:px-3"
             >
               {sending ? "Enviando..." : "Enviar"}
             </button>

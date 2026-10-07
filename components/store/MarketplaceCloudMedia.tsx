@@ -29,6 +29,8 @@ export default function MarketplaceCloudMedia({
   return (
     <svg
       className={`mkt-store-photo-svg mkt-store-photo-svg-${normalizedVariant}`}
+      data-image-zoom-src={imageUrl || undefined}
+      data-image-zoom-alt={imageUrl ? "Portada completa de la tienda" : undefined}
       viewBox="0 0 1000 700"
       preserveAspectRatio="none"
       aria-hidden="true"

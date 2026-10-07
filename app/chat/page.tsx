@@ -300,9 +300,6 @@ function ChatContent() {
   const [sendingImages, setSendingImages] = useState(false);
   const [imageReuseMode, setImageReuseMode] =
     useState<"shared" | "product">("shared");
-  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
-  const zoomTouchStartYRef = useRef<number | null>(null);
-
   const [senderRole, setSenderRole] = useState<SenderRole>("buyer");
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -519,28 +516,6 @@ function ChatContent() {
       cancelled = true;
     };
   }, [firebaseUser?.uid]);
-
-  useEffect(() => {
-    if (!zoomImageUrl) return;
-
-    function handleZoomKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setZoomImageUrl(null);
-      }
-    }
-
-    window.addEventListener(
-      "keydown",
-      handleZoomKeyDown
-    );
-
-    return () => {
-      window.removeEventListener(
-        "keydown",
-        handleZoomKeyDown
-      );
-    };
-  }, [zoomImageUrl]);
 
   useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
@@ -1566,8 +1541,7 @@ function ChatContent() {
                           <button
                             key={url}
                             type="button"
-                            onClick={() => setZoomImageUrl(url)}
-                            title="Haz clic para ampliar"
+                            title="Toca para ampliar"
                             className={
                               (msg.imageUrls?.length ?? 0) === 1
                                 ? "flex w-full justify-center overflow-hidden rounded-xl"
@@ -1579,6 +1553,7 @@ function ChatContent() {
                               alt="Imagen del mensaje"
                               loading="lazy"
                               decoding="async"
+                              data-force-image-zoom="true"
                               className={
                                 (msg.imageUrls?.length ?? 0) === 1
                                   ? "w-full max-w-[520px] max-h-[360px] h-auto object-contain rounded-xl border border-gray-300"
@@ -1789,7 +1764,7 @@ function ChatContent() {
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="flex gap-2 pb-[env(safe-area-inset-bottom)] mb-3"
+            className="grid grid-cols-[auto_auto_auto_auto_minmax(0,1fr)_auto] items-stretch gap-2 pb-[env(safe-area-inset-bottom)] mb-3 max-[620px]:grid-cols-3"
           >
             <button
               onClick={() => setTemplatesOpen((prev) => !prev)}
@@ -1837,7 +1812,7 @@ function ChatContent() {
               </svg>
             </button>
 
-            <div className={darkMode ? "flex shrink-0 rounded-xl border border-slate-600 bg-slate-800 p-1" : "flex shrink-0 rounded-xl border border-gray-300 bg-gray-100 p-1"}>
+            <div className={darkMode ? "flex shrink-0 rounded-xl border border-slate-600 bg-slate-800 p-1 max-[620px]:col-span-3 max-[620px]:grid max-[620px]:grid-cols-2" : "flex shrink-0 rounded-xl border border-gray-300 bg-gray-100 p-1 max-[620px]:col-span-3 max-[620px]:grid max-[620px]:grid-cols-2"}>
               <button
                 type="button"
                 onClick={() => setSenderRole("buyer")}
@@ -1871,7 +1846,7 @@ function ChatContent() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleTextKeyDown}
-              className={darkMode ? "flex-1 min-w-0 border border-slate-600 bg-slate-800 rounded-xl p-2 md:p-3 text-sm text-slate-100 placeholder:text-slate-400" : "flex-1 min-w-0 border border-gray-300 rounded-xl p-2 md:p-3 text-sm text-gray-900 placeholder:text-gray-700"}
+              className={darkMode ? "min-w-0 w-full border border-slate-600 bg-slate-800 rounded-xl p-2 md:p-3 text-sm text-slate-100 placeholder:text-slate-400 max-[620px]:col-span-2 max-[620px]:min-h-11" : "min-w-0 w-full border border-gray-300 rounded-xl p-2 md:p-3 text-sm text-gray-900 placeholder:text-gray-700 max-[620px]:col-span-2 max-[620px]:min-h-11"}
               placeholder="Escribe un mensaje..."
             />
 
@@ -1886,7 +1861,7 @@ function ChatContent() {
                   selectedSavedUrls.length === 0
                 )
               }
-              className="bg-violet-600 text-white px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="bg-violet-600 text-white px-3 py-2 md:px-4 md:py-3 rounded-xl text-sm font-bold disabled:bg-gray-400 disabled:cursor-not-allowed max-[620px]:min-w-0 max-[620px]:px-3"
             >
               {sendingImages ? "Subiendo..." : "Enviar"}
             </button>
@@ -1951,53 +1926,7 @@ function ChatContent() {
         />
       )}
 
-      {zoomImageUrl && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-4 md:p-8"
-          onClick={() => setZoomImageUrl(null)}
-          onTouchStart={(event) => {
-            zoomTouchStartYRef.current =
-              event.touches[0]?.clientY ?? null;
-          }}
-          onTouchEnd={(event) => {
-            const startY =
-              zoomTouchStartYRef.current;
 
-            const endY =
-              event.changedTouches[0]?.clientY;
-
-            if (
-              startY !== null &&
-              endY !== undefined &&
-              endY - startY > 80
-            ) {
-              setZoomImageUrl(null);
-            }
-
-            zoomTouchStartYRef.current = null;
-          }}
-        >
-          <div className="fixed bottom-5 left-1/2 z-[101] -translate-x-1/2 rounded-full bg-black/65 px-4 py-2 text-xs text-white md:hidden">
-            Desliza hacia abajo para cerrar
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setZoomImageUrl(null)}
-            aria-label="Cerrar imagen ampliada"
-            className="fixed right-4 top-4 z-[101] flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-3xl text-white hover:bg-black"
-          >
-            ×
-          </button>
-
-          <img
-            src={zoomImageUrl}
-            alt="Imagen ampliada"
-            onClick={(e) => e.stopPropagation()}
-            className="max-h-[92vh] max-w-[94vw] object-contain"
-          />
-        </div>
-      )}
 
 </main>
   );
