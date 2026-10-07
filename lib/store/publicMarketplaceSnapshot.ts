@@ -43,7 +43,7 @@ export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
   if (cached && now - cached.createdAt < FRESH_FOR_MS) return cached.snapshot;
   if (pending) return pending;
 
-  const work = readSnapshot()
+  const work: Promise<Snapshot> = readSnapshot()
     .then((snapshot) => {
       cached = { snapshot, createdAt: Date.now() };
       return snapshot;
