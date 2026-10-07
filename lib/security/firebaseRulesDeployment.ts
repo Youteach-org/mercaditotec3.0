@@ -111,10 +111,15 @@ async function syncTarget(projectId: string, target: RuleTarget, token: string):
   return "updated";
 }
 
-export async function syncProductionFirebaseRules(): Promise<{
+type SyncResult = {
   firestore: "current" | "updated";
   storage: "current" | "updated";
-}> {
+};
+
+let cachedSync: { expiresAt: number; result: SyncResult } | null = null;
+let inFlightSync: Promise<SyncResult> | null = null;
+
+async function runSync(): Promise<SyncResult> {
   const projectId = getFirebaseProjectId();
   if (projectId !== "mercadito3-1ff3e") {
     throw new Error("Refusing to deploy Firebase Rules to an unexpected project");
@@ -133,4 +138,21 @@ export async function syncProductionFirebaseRules(): Promise<{
   }, token);
 
   return { firestore, storage };
+}
+
+export async function syncProductionFirebaseRules(): Promise<SyncResult> {
+  const now = Date.now();
+  if (cachedSync && cachedSync.expiresAt > now) return cachedSync.result;
+  if (inFlightSync) return inFlightSync;
+
+  inFlightSync = runSync()
+    .then((result) => {
+      cachedSync = { result, expiresAt: Date.now() + 10 * 60 * 1000 };
+      return result;
+    })
+    .finally(() => {
+      inFlightSync = null;
+    });
+
+  return inFlightSync;
 }
