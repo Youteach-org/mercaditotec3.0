@@ -175,34 +175,47 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+    <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6">
       <form
         onSubmit={handleRegister}
-        className="bg-white p-6 rounded-2xl shadow-md w-full max-w-md space-y-4"
+        className="bg-white p-5 sm:p-6 rounded-2xl shadow-md w-full max-w-md space-y-4 overflow-visible"
       >
-        <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
+          <p className="text-sm leading-relaxed text-gray-700">
+            Usa tu correo institucional del Tec de Morelia.
+          </p>
+        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-gray-800 mb-2">
+        <div className="space-y-2">
+          <label className="block text-sm font-semibold text-gray-800">
             Correo institucional
           </label>
+          <p id="register-email-help" className="text-xs leading-relaxed text-gray-600">
+            Escribe solamente lo que va antes de <strong>{DOMAIN}</strong>. No escribas el dominio.
+          </p>
 
-          <div className="flex rounded-xl border border-gray-300 overflow-hidden">
+          <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-gray-300 sm:grid-cols-[minmax(0,1fr)_auto]">
             <input
               type="text"
-              placeholder="ejemplo: a22121079"
+              placeholder="a22121079"
               value={localPart}
               onChange={(e) => setLocalPart(e.target.value)}
-              className="flex-1 min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-describedby="register-email-help"
+              className="w-full min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
             />
-            <div className="bg-gray-100 px-3 flex items-center text-sm text-gray-700 border-l border-gray-300">
+            <div className="flex items-center justify-center whitespace-nowrap border-t border-gray-300 bg-gray-100 px-3 py-3 text-sm font-semibold text-gray-700 sm:border-l sm:border-t-0">
               {DOMAIN}
             </div>
           </div>
 
-          <p className="mt-2 text-xs text-gray-600 break-all">
-            Correo final: <span className="font-semibold">{previewEmail}</span>
-          </p>
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-gray-700">
+            <span className="font-semibold">Tu correo completo será:</span>{" "}
+            <span className="break-all font-bold">{previewEmail}</span>
+          </div>
         </div>
 
         <div>
@@ -277,8 +290,8 @@ export default function RegisterPage() {
           {loading ? "Creando..." : "Crear cuenta"}
         </button>
 
-        <a href="/login" className="block text-center text-blue-600">
-          Ya tengo cuenta
+        <a href="/login" className="block text-center font-semibold text-blue-600">
+          ¿Ya tienes cuenta? Inicia sesión
         </a>
       </form>
     </main>
