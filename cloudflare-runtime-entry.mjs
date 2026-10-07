@@ -61,6 +61,7 @@ export default {
             ok: false,
             firebaseRules: "sync-failed",
             firebaseRulesReason: rules?.reason || "sync-error",
+            ...(rules?.iam ? { firebaseRulesIam: rules.iam } : {}),
           },
           { status: 503 },
         );
