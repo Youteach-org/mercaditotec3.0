@@ -4,20 +4,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
 import { createOrderRequest } from "@/lib/orders/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
-import { STORE_WEEK_DAYS } from "@/lib/store/schedule";
 import { useSession } from "@/lib/useSession";
-
-const DAY_LABELS: Record<(typeof STORE_WEEK_DAYS)[number], string> = {
-  monday: "Lunes",
-  tuesday: "Martes",
-  wednesday: "Miércoles",
-  thursday: "Jueves",
-  friday: "Viernes",
-  saturday: "Sábado",
-  sunday: "Domingo",
-};
 
 function priceLabel(storeProduct: PublicStoreDetail["products"][number]): string {
   if (storeProduct.priceType === "ask") return "Pregunta por el precio";
@@ -115,7 +105,7 @@ export default function PublicStorePage() {
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-5 sm:px-6 sm:py-7">
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="mx-auto max-w-[1500px] space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link href="/marketplace" className="inline-flex text-sm font-black text-emerald-700 hover:underline">
             ← Volver al Mercadito
@@ -162,8 +152,10 @@ export default function PublicStorePage() {
           </div>
         </header>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_300px]">
-          <div>
+        <section className={store.products.length === 1
+          ? "grid gap-6 lg:grid-cols-2 lg:items-start"
+          : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(350px,440px)] lg:items-start"}>
+          <div className="min-w-0">
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.14em] text-emerald-700">Catálogo</p>
@@ -177,10 +169,10 @@ export default function PublicStorePage() {
                 Esta tienda todavía no tiene productos publicados.
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className={`grid gap-4 ${store.products.length === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
                 {store.products.map((product) => (
                   <article key={product.id} className="overflow-hidden rounded-3xl bg-white shadow-sm">
-                    <div className="h-48 bg-slate-100">
+                    <div className={store.products.length === 1 ? "h-56 bg-slate-100 sm:h-72" : "h-48 bg-slate-100 sm:h-56"}>
                       {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={product.imageUrls[0]} alt={product.title} className="h-full w-full object-cover" />
@@ -242,25 +234,36 @@ export default function PublicStorePage() {
             )}
           </div>
 
-          <aside className="h-fit rounded-3xl bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-black text-slate-950">Horario</h2>
-            <div className="mt-4 space-y-2">
-              {STORE_WEEK_DAYS.map((day) => {
-                const slots = store.schedule[day].slots;
-                return (
-                  <div key={day} className="flex justify-between gap-3 border-b border-slate-100 pb-2 text-sm last:border-0">
-                    <span className="font-bold text-slate-700">{DAY_LABELS[day]}</span>
-                    <span className="text-right text-slate-500">
-                      {store.operationalMode === "manual"
-                        ? "Control manual"
-                        : slots.length > 0
-                          ? slots.join(", ")
-                          : "Cerrado"}
-                    </span>
-                  </div>
-                );
-              })}
+          <aside className="h-fit min-w-0 rounded-3xl bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-black text-slate-950">Horario de atención</h2>
+              {store.operationalMode === "manual" && (
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${store.openNow ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                  {store.openNow ? "Abierta temporalmente" : "Pausada temporalmente"}
+                </span>
+              )}
             </div>
+
+            <p className="mt-1 text-xs font-medium text-slate-500">Horario habitual · 7 a. m. a 9 p. m.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-slate-700">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded border border-blue-700 bg-blue-600" aria-hidden="true" />
+                Disponible
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded border border-slate-200 bg-white" aria-hidden="true" />
+                No disponible
+              </span>
+            </div>
+
+            <div className="mt-3 min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-2 sm:p-3">
+              <StoreScheduleGrid schedule={store.schedule} publicView />
+            </div>
+            {store.operationalMode === "manual" && (
+              <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                El estado temporal de la tienda puede ser distinto al horario semanal mostrado.
+              </p>
+            )}
           </aside>
         </section>
       </div>
