@@ -116,6 +116,18 @@ jobs:
               types = collections.Counter(type(event).__name__ for event in events)
               print("Parsed tail event types:", dict(types))
               print("Raw log fingerprint:", {key: data.count(key) for key in ["PUBLIC_MARKETPLACE_RUNTIME_ERROR", "exception", "Error", "error", "FAILED", "GET /api/marketplace"]})
+              # Tail lines are quoted JSON logs. Inspect only the safe diagnostic fields.
+              for k, line in enumerate(data.splitlines()):
+                  if "PUBLIC_MARKETPLACE_RUNTIME_ERROR" not in line:
+                      continue
+                  import re
+                  start = line.index("PUBLIC_MARKETPLACE_RUNTIME_ERROR")
+                  raw_after = line[start:start + 360]
+                  raw_after = re.sub(r"[A-Za-z0-9_-]{26,}", "[redacted]", raw_after)
+                  print("Runtime error after marker:", raw_after[:360])
+                  print("Sample event prefix:", re.sub(r"[A-Za-z0-9_-]{26,}", "[redacted]", line[:140]))
+                  break
+
               if "PUBLIC_MARKETPLACE_RUNTIME_ERROR" in data:
                   import re
                   start = data.index("PUBLIC_MARKETPLACE_RUNTIME_ERROR")
