@@ -1,7 +1,8 @@
 import { parseImageUploadPath } from "../store/media";
 import type { DecodedIdToken } from "../firebaseAdmin";
 import { getAdminDb, Timestamp } from "../firestoreRest";
-import { isAdminRole, studentControlEligibility } from "./domain";\nimport { normalizeWhatsappNumber, WhatsappNumberError } from "./whatsapp";
+import { isAdminRole, studentControlEligibility } from "./domain";
+import { normalizeWhatsappNumber, WhatsappNumberError } from "./whatsapp";
 
 const INSTITUTIONAL_DOMAIN = "@morelia.tecnm.mx";
 
