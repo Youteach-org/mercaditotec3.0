@@ -109,8 +109,8 @@ function ProfileContent() {
       return;
     }
 
-    if (file.size <= 0 || file.size > 1024 * 1024) {
-      setMessage("La foto debe pesar como máximo 1 MB.");
+    if (file.size <= 0) {
+      setMessage("La foto no es válida.");
       return;
     }
 
