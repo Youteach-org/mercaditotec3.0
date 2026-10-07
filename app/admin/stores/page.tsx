@@ -84,7 +84,7 @@ export default function AdminStoresPage() {
               </Link>
               <h1 className="mt-2 text-3xl font-bold text-gray-900">Administración de tiendas</h1>
               <p className="mt-1 text-gray-600">
-                Revisa solicitudes y controla qué tiendas pueden aparecer públicamente.
+                Abre la ficha íntegra de cada tienda antes de aprobar: categorías, vendedor, fotos, horarios, entrega y todos los productos.
               </p>
             </div>
 
@@ -169,7 +169,7 @@ export default function AdminStoresPage() {
                     href={`/admin/stores/${store.id}`}
                     className="inline-flex rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700"
                   >
-                    Revisar
+                    Revisar tienda completa
                   </Link>
                 </div>
               </article>
