@@ -70,6 +70,7 @@ export interface PublicProduct {
 
 export interface PublicStoreDetail extends PublicStoreSummary {
   products: PublicProduct[];
+  whatsappUrl: string | null;
 }
 
 export function isPublicStoreStatus(status: StoreStatus): boolean {
