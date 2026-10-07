@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { syncProductionFirebaseRules } from "@/lib/security/firebaseRulesDeployment";
+import { diagnoseFirebaseRulesIam, syncProductionFirebaseRules } from "@/lib/security/firebaseRulesDeployment";
 
 export const runtime = "nodejs";
 
@@ -32,11 +32,21 @@ export async function POST(request: Request) {
               ? "project-mismatch"
               : "sync-error";
 
+    const iam =
+      reason === "permission-denied"
+        ? await diagnoseFirebaseRulesIam().catch(() => ({
+            rulesWrite: false,
+            setIamPolicy: false,
+            enableServices: false,
+          }))
+        : undefined;
+
     return NextResponse.json(
       {
         ok: false,
         error: "No se pudieron sincronizar las reglas de Firebase.",
         reason,
+        ...(iam ? { iam } : {}),
       },
       { status: 503, headers: { "Cache-Control": "no-store" } },
     );
