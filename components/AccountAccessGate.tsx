@@ -16,7 +16,7 @@ function isAccountSetupPage(path: string): boolean {
 
 function isProtectedPage(path: string): boolean {
   return [
-    "/admin", "/chat", "/mystore", "/mystores", "/notifications",
+    "/admin", "/chat", "/cosas-perdidas", "/mystore", "/mystores", "/notifications",
     "/orders", "/profile", "/sell", "/verify-student",
   ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
@@ -47,7 +47,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
     }
 
     // A short UI-only cache prevents repeat Firestore reads on every click.
-    // Every protected API still checks the five-year rule independently.
+    // Every protected API still checks the eight-year rule independently.
     const cached = lastVerified.current;
     if (cached?.uid === firebaseUser.uid && Date.now() - cached.checkedAt < 30_000 && attempt === 0) {
       setVerified({ ...cached, path: pathname });
@@ -83,6 +83,12 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
         lastVerified.current = null;
         setVerified(null);
         if (response.status === 401 || response.status === 403) {
+          const deniedBody = await response.json().catch(() => ({}));
+          const deniedMessage =
+            typeof deniedBody.error === "string" && deniedBody.error.trim()
+              ? deniedBody.error
+              : "No tienes acceso a Mercadito.";
+          window.sessionStorage.setItem("mercaditoAccessError", deniedMessage);
           setState("denied");
           await signOut(auth).catch(() => undefined);
           if (!cancelled && protectedPage) router.replace("/login");
