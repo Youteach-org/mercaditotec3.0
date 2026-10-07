@@ -26,7 +26,7 @@ Las publicaciones de Cosas perdidas deben alimentar automáticamente el panel de
 
 ### 3.1 Datos de perfil
 
-Agregar al documento `users/{uid}` un campo opcional:
+Agregar al documento `users/{uid}` un campo opcional para usuarios generales:
 
 - `whatsappNumber: string`
 
@@ -38,17 +38,28 @@ Se almacenará normalizado en formato E.164 cuando sea posible. Para números me
 
 No se inferirá un país distinto automáticamente.
 
+**Regla de obligatoriedad:** un usuario que no tenga tienda puede usar Mercadito sin registrar WhatsApp. El número se vuelve obligatorio únicamente para el flujo de vendedor: antes de enviar una tienda a revisión, el backend debe comprobar que el propietario tenga un WhatsApp válido registrado.
+
 ### 3.2 Edición del perfil
 
-En `/profile` se agrega un campo “Número de WhatsApp”.
+En `/profile` se agrega un botón **“Editar perfil”**. Solo al entrar en modo edición se muestran los controles para cambiar o quitar la foto, editar el nombre y agregar/cambiar/eliminar el “Número de WhatsApp”.
 
 El formulario debe:
 - aceptar números con espacios, guiones, paréntesis o prefijo `+`;
 - mostrar una ayuda breve indicando que ese número podrá ser visible en la tienda del usuario;
-- permitir eliminarlo dejando el campo vacío;
+- permitir eliminarlo dejando el campo vacío cuando el usuario no dependa de él para enviar una tienda;
 - guardar por `PATCH /api/profile`.
 
 `lib/security/accountProfile.ts` será la autoridad de validación y normalización.
+
+### 3.2.1 Requisito al crear una tienda
+
+En el editor de tienda se muestra un campo **“WhatsApp de contacto”** dentro de la información del vendedor. Si ya existe en el perfil, se reutiliza. Si no existe, el vendedor debe capturarlo durante la configuración de la tienda.
+
+- No se exige WhatsApp para crear una cuenta ni para usuarios sin tienda.
+- Sí se exige un WhatsApp válido para enviar una tienda a revisión.
+- El valor capturado en el editor se guarda en `users/{uid}.whatsappNumber` mediante `PATCH /api/profile`.
+- `submitCompleteStore` valida nuevamente el número en backend para impedir que el requisito se omita desde el frontend.
 
 ### 3.3 Exposición pública
 
@@ -320,7 +331,9 @@ También se comprobará el flujo completo:
 
 La función se considera terminada cuando:
 
-- un usuario puede guardar y eliminar su número de WhatsApp;
+- un usuario sin tienda puede guardar, cambiar o eliminar su número de WhatsApp de forma opcional;
+- el perfil permite cambiar o quitar la foto únicamente desde el modo “Editar perfil”;
+- un vendedor debe registrar un WhatsApp válido antes de enviar su tienda a revisión, con validación también en backend;
 - el número se valida y normaliza en backend;
 - una tienda pública muestra el botón de WhatsApp solo cuando corresponde;
 - el recuadro `mkt-bottom-blue` funciona como panel de avisos reales;
