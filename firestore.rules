@@ -20,7 +20,8 @@ service cloud.firestore {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       let year = request.time.year() - 2000;
       let years = string(year) + '|' + string(year - 1) + '|' + string(year - 2)
-        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5);
+        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5)
+        + '|' + string(year - 6) + '|' + string(year - 7) + '|' + string(year - 8);
       return verifiedInstitution() && profile.get('isActive', true) != false
         && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
           || profile.get('isAdmin', false) == true || profile.get('admin', false) == true
