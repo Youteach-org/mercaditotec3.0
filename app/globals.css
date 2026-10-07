@@ -3782,3 +3782,47 @@ img:not([data-no-image-zoom="true"]) {
 [data-image-zoom-src] {
   cursor: zoom-in;
 }
+
+
+/* MOBILE STORE EDITOR CONTROL SAFE AREA — 2026-10-06
+   Decorative torn-paper edges must never clip interactive controls. */
+@media (max-width: 620px) {
+  .store-builder-panel-info {
+    position: relative !important;
+    isolation: isolate;
+    overflow: visible !important;
+    clip-path: none !important;
+    background: transparent !important;
+    filter: none !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .store-builder-panel-info::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: #fffdf7;
+    clip-path: polygon(
+      1% 2%, 16% 0, 31% 2%, 48% 0, 64% 2%, 81% 0, 99% 2%,
+      98% 98%, 82% 96%, 66% 99%, 49% 96%, 32% 99%, 16% 96%, 1% 98%
+    );
+    filter: drop-shadow(0 9px 13px rgba(13,52,121,.10));
+  }
+
+  .store-builder-panel-info > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .store-builder-save-button {
+    position: relative !important;
+    z-index: 5 !important;
+    margin-bottom: .75rem !important;
+  }
+
+  .store-builder-step > .pt-5 > section {
+    padding-bottom: 3rem !important;
+  }
+}
