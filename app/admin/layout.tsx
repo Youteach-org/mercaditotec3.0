@@ -88,7 +88,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   if (
     access === "allowed" &&
-    verified?.uid === firebaseUser?.uid &&
+    verified !== null &&
+    firebaseUser !== null &&
+    verified.uid === firebaseUser.uid &&
     verified.path === pathname &&
     verified.retry === retry &&
     isAdminRole(appUser)
