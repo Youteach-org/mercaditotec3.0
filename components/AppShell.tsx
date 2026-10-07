@@ -151,7 +151,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, loading, pathname]);
 
-  const showAdmin = isAdminRole(appUser);
+  const showAdmin = isAdminRole(appUser) && !syncDeferred && pathname !== "/login" && pathname !== "/register";
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
   const scrapbookShell = true;
