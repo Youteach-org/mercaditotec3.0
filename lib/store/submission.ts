@@ -1,7 +1,12 @@
+import { getAdminDb } from "../firestoreRest";
 import {
   getStudentTrust,
   TrustRepositoryError,
-} from "@/lib/security/trustRepository";
+} from "../security/trustRepository";
+import {
+  normalizeWhatsappNumber,
+  WhatsappNumberError,
+} from "../security/whatsapp";
 
 import {
   CategoryRepositoryError,
@@ -15,6 +20,37 @@ import {
   submitStore,
   type StoreRecord,
 } from "./repository";
+
+export function requireValidStoreWhatsapp(value: unknown): string {
+  try {
+    const normalized = normalizeWhatsappNumber(value);
+    if (!normalized) {
+      throw new StoreRepositoryError(
+        409,
+        "Agrega un número de WhatsApp válido antes de enviar tu tienda a revisión.",
+      );
+    }
+    return normalized;
+  } catch (error) {
+    if (error instanceof StoreRepositoryError) throw error;
+    if (error instanceof WhatsappNumberError) {
+      throw new StoreRepositoryError(
+        409,
+        "Agrega un número de WhatsApp válido antes de enviar tu tienda a revisión.",
+      );
+    }
+    throw error;
+  }
+}
+
+async function requireOwnerWhatsapp(ownerUid: string): Promise<void> {
+  const snapshot = await getAdminDb().collection("users").doc(ownerUid).get();
+  if (!snapshot.exists) {
+    throw new StoreRepositoryError(404, "Usuario no encontrado.");
+  }
+
+  requireValidStoreWhatsapp(snapshot.data()?.whatsappNumber);
+}
 
 export async function submitCompleteStore(
   ownerUid: string,
@@ -39,6 +75,8 @@ export async function submitCompleteStore(
     }
     throw error;
   }
+
+  await requireOwnerWhatsapp(ownerUid);
 
   const products = await listProductsForOwner(ownerUid, storeId);
 

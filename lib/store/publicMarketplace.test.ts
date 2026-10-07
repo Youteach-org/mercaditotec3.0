@@ -51,6 +51,7 @@ describe("public marketplace visibility", () => {
       marketplaceVariant: "cloud-3",
     });
     expect(value).not.toHaveProperty("ownerUid");
+    expect(value).not.toHaveProperty("whatsappNumber");
   });
 
   it("omits owner identity from public product output", () => {

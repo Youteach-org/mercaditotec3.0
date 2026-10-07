@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AccountProfileError,
+  buildOwnProfileUpdate,
   institutionalIdentity,
 } from "./accountProfile";
 
@@ -38,5 +39,35 @@ describe("institutionalIdentity", () => {
       email: "administracion@morelia.tecnm.mx",
       localPart: "administracion",
     });
+  });
+});
+
+describe("buildOwnProfileUpdate", () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+
+  it("normalizes WhatsApp when updating the profile", () => {
+    expect(
+      buildOwnProfileUpdate({ whatsappNumber: "(443) 123-4567" }, now),
+    ).toMatchObject({
+      whatsappNumber: "+524431234567",
+    });
+  });
+
+  it("allows clearing WhatsApp", () => {
+    expect(buildOwnProfileUpdate({ whatsappNumber: "" }, now)).toMatchObject({
+      whatsappNumber: "",
+    });
+  });
+
+  it("rejects invalid WhatsApp", () => {
+    expect(() =>
+      buildOwnProfileUpdate({ whatsappNumber: "123" }, now),
+    ).toThrow(AccountProfileError);
+  });
+
+  it("still rejects arbitrary profile fields", () => {
+    expect(() =>
+      buildOwnProfileUpdate({ role: "superadmin" }, now),
+    ).toThrow("No hay cambios de perfil permitidos.");
   });
 });

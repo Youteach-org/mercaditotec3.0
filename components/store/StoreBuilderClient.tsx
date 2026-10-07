@@ -67,6 +67,7 @@ export default function StoreBuilderClient() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [deliveryLocation, setDeliveryLocation] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState(appUser?.whatsappNumber ?? "");
   const [marketplaceLabel, setMarketplaceLabel] = useState("");
   const [marketplaceNote, setMarketplaceNote] = useState("");
   const [marketplaceTagsText, setMarketplaceTagsText] = useState("");
@@ -79,6 +80,7 @@ export default function StoreBuilderClient() {
   const [sellerName, setSellerName] = useState("");
   const [loading, setLoading] = useState(true);
   const [infoSaving, setInfoSaving] = useState(false);
+  const [whatsappSaving, setWhatsappSaving] = useState(false);
   const [infoSavedMessage, setInfoSavedMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -89,6 +91,10 @@ export default function StoreBuilderClient() {
   useEffect(() => {
     if (!sessionLoading && !firebaseUser) router.replace("/login");
   }, [firebaseUser, router, sessionLoading]);
+
+  useEffect(() => {
+    setWhatsappNumber(appUser?.whatsappNumber ?? "");
+  }, [appUser?.whatsappNumber]);
 
   const applyLoadedStore = useCallback((nextStore: StoreApiRecord) => {
     setStore(nextStore);
@@ -166,6 +172,44 @@ export default function StoreBuilderClient() {
     else setPreviewCover(url);
   }, []);
 
+  async function persistWhatsapp(showError: boolean): Promise<boolean> {
+    if (!firebaseUser) return false;
+
+    const cleanWhatsapp = whatsappNumber.trim();
+    if (!cleanWhatsapp) {
+      if (showError) {
+        setValidationMessage(
+          "Agrega un número de WhatsApp válido para poder enviar tu tienda a revisión.",
+        );
+      }
+      return false;
+    }
+
+    setWhatsappSaving(true);
+    try {
+      const response = await storeApiFetch(firebaseUser, "/api/profile", {
+        method: "PATCH",
+        body: JSON.stringify({ whatsappNumber: cleanWhatsapp }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error ?? "No se pudo guardar el número de WhatsApp.");
+      }
+      return true;
+    } catch (saveError) {
+      if (showError) {
+        setValidationMessage(
+          saveError instanceof Error
+            ? saveError.message
+            : "No se pudo guardar el número de WhatsApp.",
+        );
+      }
+      return false;
+    } finally {
+      setWhatsappSaving(false);
+    }
+  }
+
   async function persistInformation(showError: boolean) {
     if (!firebaseUser || !store) return;
     const cleanName = name.trim();
@@ -217,6 +261,8 @@ export default function StoreBuilderClient() {
       );
       return;
     }
+
+    if (!(await persistWhatsapp(true))) return;
 
     try {
       validateStoreCompleteness(
@@ -354,6 +400,29 @@ export default function StoreBuilderClient() {
                 <span className="mt-1 block text-xs text-gray-400">Indica claramente en qué lugares del Tec acostumbras entregar.</span>
               </label>
 
+              <label className="mt-4 block">
+                <span className="mb-1 block text-sm font-semibold text-gray-700">
+                  WhatsApp de contacto <span className="text-red-600">*</span>
+                </span>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  value={whatsappNumber}
+                  onChange={(event) => setWhatsappNumber(event.target.value)}
+                  onBlur={() => {
+                    if (whatsappNumber.trim()) void persistWhatsapp(false);
+                  }}
+                  disabled={!editable}
+                  autoComplete="tel"
+                  placeholder="443 123 4567"
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                />
+                <span className="mt-1 block text-xs text-gray-500">
+                  Obligatorio solo para vendedores. Se guarda en tu perfil y se usará para el botón “Contactar por WhatsApp” de tu tienda.
+                  {whatsappSaving ? " Guardando…" : ""}
+                </span>
+              </label>
+
               <div className="mt-6 border-t border-gray-200 pt-5">
                 <div className="store-builder-card-kicker text-sm font-bold uppercase tracking-wide text-blue-600">Lo que aparece en Mercadito</div>
                 <p className="mt-1 text-xs text-gray-500">Estos controles corresponden directamente a elementos visibles de tu tarjeta pública. La vista previa usa la misma estructura del Marketplace.</p>
@@ -443,7 +512,7 @@ export default function StoreBuilderClient() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Terminar tienda</h2>
-                    <p className="mt-2 text-gray-700">Al guardar se comprobará nombre, descripción, lugar de entrega, horario y un producto inicial completo con foto, categoría y precio válido.</p>
+                    <p className="mt-2 text-gray-700">Al guardar se comprobará nombre, descripción, lugar de entrega, WhatsApp de contacto, horario y un producto inicial completo con foto, categoría y precio válido.</p>
                     <p className="mt-2 text-sm font-medium text-gray-600">Si está completa, entrará a revisión. La URL pública se generará únicamente después de la aprobación.</p>
                   </div>
                   <button type="button" onClick={() => setApprovalInfoOpen(true)} className="inline-flex items-center gap-2 rounded-full border border-blue-300 bg-white px-3 py-2 text-sm font-bold text-blue-800 hover:bg-blue-100" aria-label="Por qué debe aprobarse mi tienda">

@@ -31,6 +31,7 @@ export type AppUser = {
   nickname?: string;
   nicknameNormalized?: string;
   photoURL?: string;
+  whatsappNumber?: string;
   createdAt?: number;
   studentStatus?: StudentTrustStatus;
   studentEndorsementCount?: number;
