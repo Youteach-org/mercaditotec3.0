@@ -14,15 +14,16 @@ const cloud = readFileSync(
 );
 
 describe("Marketplace image click behavior", () => {
-  it("delays a single Marketplace image click so a second click can still be detected", () => {
+  it("keeps a single image click pending long enough for a real double click", () => {
     expect(viewer).toContain("pendingMarketplaceClickRef");
-    expect(viewer).toContain("now - pending.startedAt <= 360");
-    expect(viewer).toContain("}, 280)");
+    expect(viewer).toContain("event.detail >= 2");
+    expect(viewer).toContain("}, 430)");
   });
 
-  it("navigates to the store on the second click instead of opening the viewer", () => {
-    expect(viewer).toContain("window.location.assign(href)");
+  it("uses the browser dblclick event and cancels pending zoom before navigation", () => {
+    expect(viewer).toContain('document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick)');
     expect(viewer).toContain("clearPendingMarketplaceClick()");
+    expect(viewer).toContain("window.location.assign(href)");
   });
 
   it("annotates both Marketplace cover and logo with their store route", () => {
