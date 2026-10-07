@@ -1,0 +1,51 @@
+name: Diagnose Mercadito session and production API
+
+on:
+  push:
+    branches:
+      - fix/mercadito-session-runtime-diagnostics
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+      PRODUCTION_WORKER_NAME: mercaditotec3-0
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check app APIs without disclosing user data
+        shell: bash
+        run: |
+          set -u
+          for url in \
+            "https://mercaditotec3-0.youteach-tk.workers.dev/api/marketplace" \
+            "https://mercaditotec.store/api/marketplace" \
+            "https://mercaditotec3-0.youteach-tk.workers.dev/__health" \
+            "https://mercaditotec3-0.youteach-tk.workers.dev/api/admin/users"; do
+            status="$(curl -L -sS --connect-timeout 10 --max-time 30 -o /dev/null -w '%{http_code}' "$url" || true)"
+            printf '%s HTTP %s\n' "$url" "$status"
+          done
+      - name: Inspect Cloudflare secret binding metadata only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::CLOUDFLARE_API_TOKEN GitHub secret unavailable"; exit 1; }
+          status="$(curl -sS --connect-timeout 10 --max-time 30 \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -o /tmp/worker-settings.json \
+            -w '%{http_code}' \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$PRODUCTION_WORKER_NAME/settings")"
+          echo "Worker settings HTTP $status"
+          test "$status" = "200" || { echo "::error::Unable to inspect Cloudflare Worker settings"; exit 1; }
+          jq -e '.success == true' /tmp/worker-settings.json >/dev/null
+          # Output only whether secret binding exists. Never print secret payload or other settings.
+          secret_type="$(jq -r '[.result.bindings[]? | select(.name == "FIREBASE_SERVICE_ACCOUNT_JSON") | .type] | first // "absent"' /tmp/worker-settings.json)"
+          case "$secret_type" in
+            secret_text|secret_key) echo "FIREBASE_SERVICE_ACCOUNT_JSON binding: PRESENT ($secret_type)" ;;
+            *) echo "::error::FIREBASE_SERVICE_ACCOUNT_JSON binding missing or wrong type ($secret_type)"; exit 1 ;;
+          esac
