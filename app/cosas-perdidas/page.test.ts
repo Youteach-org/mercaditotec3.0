@@ -22,7 +22,7 @@ describe("Lost and found page", () => {
   });
 
   it("lets only the author render the resolve action", () => {
-    expect(pageSource).toContain("post.authorUid === firebaseUser.uid");
+    expect(pageSource).toContain("post.authorUid === firebaseUser?.uid");
     expect(pageSource).toContain("Marcar como entregado");
     expect(pageSource).toContain("resolveCommunityPostRequest");
   });
