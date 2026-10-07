@@ -89,5 +89,12 @@ jobs:
                       print("API diagnostic:", " | ".join(str(v)[:240] for v in msg[:3])[:500])
                       found = True
           if not found:
-              print("No sanitized diagnostic event captured; see deployment and secret metadata checks.")
+              print("No sanitized diagnostic event captured.")
+              print("Tail file size:", Path("/tmp/tail-output.jsonl").stat().st_size)
+              tail_errors = Path("/tmp/tail-error.log").read_text(errors="replace")
+              safe_errors = [line for line in tail_errors.splitlines() if "Error" in line or "error" in line or "code:" in line]
+              for line in safe_errors[:5]:
+                  import re
+                  print("Tail diagnostic:", re.sub(r"[A-Za-z0-9_-]{26,}", "[redacted]", line)[:300])
+
           PY
