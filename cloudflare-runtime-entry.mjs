@@ -3,6 +3,7 @@ import openNextWorker from "./.open-next/worker.js";
 import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.mjs";
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
+import { enforceHttps } from "./lib/security/enforceHttps.mjs";
 
 const json = (value, init = {}) =>
   new Response(JSON.stringify(value), {
@@ -23,6 +24,11 @@ function getHandler() {
 
 export default {
   async fetch(request, env, ctx) {
+    // The browser can land on http://mercaditotec.store otherwise, despite
+    // a completely valid certificate on the HTTPS version of the site.
+    const httpsRedirect = enforceHttps(request);
+    if (httpsRedirect) return httpsRedirect;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/__health") {
