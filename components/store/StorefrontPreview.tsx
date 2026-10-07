@@ -74,7 +74,7 @@ function StoreIdentity({
   return (
     <>
       <div className="flex items-start gap-3 lg:block">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-24 lg:w-24">
+        <div className="relative z-20 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:h-24 lg:w-24">
           {logoUrl ? (
             <img src={logoUrl} alt="Logo de la tienda" className="h-full w-full object-cover" />
           ) : (
