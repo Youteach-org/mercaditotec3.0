@@ -3938,7 +3938,7 @@ img:not([data-no-image-zoom="true"]) {
   touch-action: pan-y;
 }
 
-.mkt-quick-card:has(.mkt-quick-thumb) {
+.mkt-quick-card-with-image {
   grid-template-columns: 30% minmax(0, 1fr);
 }
 
