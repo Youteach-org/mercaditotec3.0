@@ -28,7 +28,7 @@ service firebase.storage {
     }
 
     match /profile-images/{uid}/{fileName} {
-      allow read: if signedIn();
+      allow read: if signedIn() && mayMutate();
       allow create, update: if signedIn() && mayMutate()
         && request.auth.uid == uid
         && request.resource.size > 0

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import GlobalImageViewer from "@/components/GlobalImageViewer";
+import AccountAccessGate from "@/components/AccountAccessGate";
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { isAdminRole } from "@/lib/security/domain";
@@ -364,7 +365,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           Sesión iniciada. El servicio de datos está temporalmente saturado; algunas funciones podrían no cargar.
         </div>
       )}
-      <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}>{children}</div>
+      <div className={scrapbookShell ? "mercadito-app-content flex-1" : "flex-1"}><AccountAccessGate>{children}</AccountAccessGate></div>
       <GlobalImageViewer />
     </div>
   );

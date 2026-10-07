@@ -58,7 +58,7 @@ export default function LoginPage() {
   const cleanLocalPart = useMemo(() => normalizeLocalPart(localPart), [localPart]);
   const fullEmail = useMemo(() => buildInstitutionalEmail(cleanLocalPart), [cleanLocalPart]);
 
-  async function syncAccount(user: import("firebase/auth").User): Promise<"ok" | "deferred"> {
+  async function syncAccount(user: import("firebase/auth").User): Promise<void> {
     const token = await user.getIdToken(true);
     const response = await fetch("/api/account/sync", {
       method: "POST",
@@ -66,16 +66,9 @@ export default function LoginPage() {
     });
     const body = await response.json().catch(() => ({}));
 
-    if (response.status === 503 && body.retryable === true) {
-      // Firebase already verified these credentials. A temporary Firestore
-      // outage cannot invalidate the login; protected APIs keep enforcing
-      // their own server-side authorization.
-      return "deferred";
-    }
     if (!response.ok) {
       throw new Error(body.error ?? "No se pudo validar tu cuenta.");
     }
-    return "ok";
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -113,12 +106,10 @@ export default function LoginPage() {
         return;
       }
 
-      const syncStatus = await syncAccount(result.user);
-      if (syncStatus === "deferred") {
-        window.sessionStorage.setItem("mercadito-profile-sync-pending", "1");
-      } else {
-        window.sessionStorage.removeItem("mercadito-profile-sync-pending");
-      }
+      // A valid Firebase token does not waive the five-year admission policy.
+      // If the server cannot verify a current profile, login fails closed.
+      await syncAccount(result.user);
+      window.sessionStorage.removeItem("mercadito-profile-sync-pending");
 
       router.replace("/marketplace");
     } catch (err: any) {

@@ -37,6 +37,25 @@ describe("student access wiring", () => {
     expect(auth).not.toContain("profile?.emailVerified === true");
   });
 
+  it("never admits users while Firestore account synchronization is unavailable", () => {
+    const login = source("app/login/page.tsx");
+    expect(login).toContain("await syncAccount(result.user)");
+    expect(login).not.toContain('return "deferred"');
+    expect(login).not.toContain('syncStatus === "deferred"');
+    expect(login).toContain("await signOut(auth).catch");
+  });
+
+  it("gates all private pages on authenticated server eligibility", () => {
+    const gate = source("components/AccountAccessGate.tsx");
+    const shell = source("components/AppShell.tsx");
+    const backend = source("app/api/account/session/route.ts");
+    expect(gate).toContain("/api/account/session");
+    expect(gate).toContain('response.status === 401 || response.status === 403');
+    expect(gate).toContain('setState("unavailable")');
+    expect(shell).toContain("<AccountAccessGate>{children}</AccountAccessGate>");
+    expect(backend).toContain("await requireFirebaseUser(request)");
+  });
+
   it("does not write privileged user fields directly from registration, login or profile UI", () => {
     for (const path of ["app/register/page.tsx", "app/login/page.tsx", "app/profile/page.tsx"]) {
       const code = source(path);

@@ -35,13 +35,15 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if owns(uid);
+      // A Firebase Auth account by itself is insufficient. Expired or
+      // out-of-window student identities must not load a private profile.
+      allow read: if owns(uid) && studentMayEnter();
 
       // Role, verification, trust and moderation fields are server-owned.
       allow create, update, delete: if false;
 
       match /images/{imageId} {
-        allow read: if owns(uid);
+        allow read: if owns(uid) && studentMayEnter();
         allow write: if false;
       }
 

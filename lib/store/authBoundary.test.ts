@@ -9,7 +9,12 @@ vi.mock("../firebaseAdmin", () => ({ getAdminAuth: () => ({ verifyIdToken: async
 vi.mock("../firestoreRest", () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => state.profile }) }) }) }) }));
 const request = () => new Request("https://mercadito.test/api/admin/users", { headers: { authorization: "Bearer verified-test-token" } });
 
-beforeEach(() => { state.profile = { role: "user", isActive: true }; });
+beforeEach(() => {
+  state.profile = { role: "user", isActive: true };
+  state.claims.email = "a22121079@morelia.tecnm.mx";
+  state.claims.email_verified = true;
+  state.claims.role = "superadmin";
+});
 describe("server authorization boundary", () => {
   it("rejects an absent bearer token", async () => {
     await expect(requireFirebaseUser(new Request("https://mercadito.test"))).rejects.toMatchObject({ status: 401 });
@@ -33,6 +38,23 @@ describe("server authorization boundary", () => {
     state.profile = undefined as unknown as Record<string, unknown>;
     await expect(requireAdmin(request())).rejects.toMatchObject({ status: 403 });
     await expect(requireSuperadmin(request())).rejects.toMatchObject({ status: 403 });
+  });
+  it("rejects a verified older student on every authenticated API, despite old admin token claims", async () => {
+    const expiredYear = String((new Date().getUTCFullYear() - 6) % 100).padStart(2, "0");
+    state.claims.email = `a${expiredYear}121079@morelia.tecnm.mx`;
+    await expect(requireFirebaseUser(request())).rejects.toMatchObject({ status: 403 });
+    await expect(requireAdmin(request())).rejects.toMatchObject({ status: 403 });
+  });
+  it("does not give direct Firebase signups access before a server bootstrap profile exists", async () => {
+    state.profile = undefined as unknown as Record<string, unknown>;
+    await expect(requireFirebaseUser(request())).rejects.toMatchObject({ status: 403 });
+  });
+  it("keeps the special exception only for real administrators stored on the server", async () => {
+    state.claims.email = "administracion@morelia.tecnm.mx";
+    state.profile = { role: "superadmin", isActive: true };
+    await expect(requireAdmin(request())).resolves.toMatchObject({ uid: "student-1" });
+    state.profile = { role: "user", isActive: true };
+    await expect(requireFirebaseUser(request())).rejects.toMatchObject({ status: 403 });
   });
   it("subadministrators cannot change administrator roles", async () => {
     state.profile.role = "subadmin";

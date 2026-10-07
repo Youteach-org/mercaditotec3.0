@@ -45,6 +45,18 @@ test("student can read their profile but not another account", async () => {
   await assertSucceeds(getDoc(doc(db, "users", "alice")));
   await assertFails(getDoc(doc(db, "users", "victim")));
 });
+test("over-five-year accounts cannot read private data even with valid Firebase auth", async () => {
+  const expired = env.authenticatedContext("alice", identity(true, "a10121079@morelia.tecnm.mx")).firestore();
+  await assertFails(getDoc(doc(expired, "users", "alice")));
+  await assertFails(getDoc(doc(expired, "messages", "message-1")));
+  await assertFails(getDoc(doc(expired, "direct_chats", "chat-1")));
+  await assertFails(getDoc(doc(expired, "direct_chats", "chat-1", "messages", "message-1")));
+});
+test("missing profile cannot read private data even with a valid institutional identity", async () => {
+  const missing = env.authenticatedContext("no-profile", identity()).firestore();
+  await assertFails(getDoc(doc(missing, "users", "no-profile")));
+  await assertFails(getDoc(doc(missing, "messages", "message-1")));
+});
 test("unverified and external accounts cannot read institutional chat", async () => {
   for (const claims of [identity(false), identity(true, "student@example.com")]) {
     const db = env.authenticatedContext("alice", claims).firestore();
