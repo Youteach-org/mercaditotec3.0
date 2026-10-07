@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { shouldOpenStoreFromImageInteraction } from "@/lib/store/marketplaceImageGesture";
+
 type ViewerImage = {
   src: string;
   alt: string;
@@ -72,7 +74,7 @@ export default function GlobalImageViewer() {
       // Touch browsers may report detail=1 on both taps. Detect two taps on
       // the same store even without a native dblclick event.
       const pending = pendingMarketplaceClickRef.current;
-      if (event.detail >= 2 || pending?.href === href) {
+      if (shouldOpenStoreFromImageInteraction(event.detail, pending?.href ?? null, href)) {
         clearPendingMarketplaceClick();
         window.location.assign(href);
         return;
