@@ -22,12 +22,13 @@ export default function AuthGuard({
       return;
     }
 
+    const currentUser = firebaseUser;
     let cancelled = false;
     setAccessGranted(false);
 
     async function validateAccess() {
       try {
-        const token = await firebaseUser.getIdToken(true);
+        const token = await currentUser.getIdToken(true);
         const response = await fetch("/api/account/access", {
           method: "GET",
           headers: { Authorization: `Bearer ${token}` },
