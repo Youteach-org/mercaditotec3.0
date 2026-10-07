@@ -1,7 +1,7 @@
 import { parseImageUploadPath } from "../store/media";
 import type { DecodedIdToken } from "../firebaseAdmin";
 import { getAdminDb, Timestamp } from "../firestoreRest";
-import { isAdminRole, studentControlEligibility } from "./domain";
+import { isAdminRole, studentControlEligibility } from "./domain";\nimport { normalizeWhatsappNumber, WhatsappNumberError } from "./whatsapp";
 
 const INSTITUTIONAL_DOMAIN = "@morelia.tecnm.mx";
 
@@ -133,14 +133,18 @@ export function validateProfileImageUrl(uid: string, value: string): string {
   return url.toString();
 }
 
-export async function updateOwnProfile(uid: string, input: unknown): Promise<void> {
+export function buildOwnProfileUpdate(
+  input: unknown,
+  now: Date = new Date(),
+  uid?: string,
+): Record<string, unknown> {
   if (!input || typeof input !== "object") {
     throw new AccountProfileError(400, "Datos de perfil inválidos.");
   }
 
   const body = input as Record<string, unknown>;
   const update: Record<string, unknown> = {
-    updatedAt: Timestamp.now(),
+    updatedAt: Timestamp.fromDate(now),
   };
 
   if (Object.prototype.hasOwnProperty.call(body, "displayName")) {
@@ -156,12 +160,36 @@ export async function updateOwnProfile(uid: string, input: unknown): Promise<voi
 
   if (Object.prototype.hasOwnProperty.call(body, "photoURL")) {
     const photoURL = String(body.photoURL ?? "").trim();
-    update.photoURL = photoURL ? validateProfileImageUrl(uid, photoURL) : "";
+    if (photoURL && !uid) {
+      throw new AccountProfileError(400, "Falta el usuario para validar la foto.");
+    }
+    update.photoURL = photoURL ? validateProfileImageUrl(uid!, photoURL) : "";
   }
 
-  if (!("displayName" in update) && !("photoURL" in update)) {
+  if (Object.prototype.hasOwnProperty.call(body, "whatsappNumber")) {
+    try {
+      update.whatsappNumber = normalizeWhatsappNumber(body.whatsappNumber);
+    } catch (error) {
+      if (error instanceof WhatsappNumberError) {
+        throw new AccountProfileError(400, error.message);
+      }
+      throw error;
+    }
+  }
+
+  if (
+    !("displayName" in update) &&
+    !("photoURL" in update) &&
+    !("whatsappNumber" in update)
+  ) {
     throw new AccountProfileError(400, "No hay cambios de perfil permitidos.");
   }
+
+  return update;
+}
+
+export async function updateOwnProfile(uid: string, input: unknown): Promise<void> {
+  const update = buildOwnProfileUpdate(input, new Date(), uid);
 
   const reference = getAdminDb().collection("users").doc(uid);
   const snapshot = await reference.get();
