@@ -9,6 +9,23 @@ import { createOrderRequest } from "@/lib/orders/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
 import { useSession } from "@/lib/useSession";
 
+function WhatsAppIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0"
+      fill="none"
+    >
+      <circle cx="12" cy="12" r="9" fill="currentColor" />
+      <path
+        d="M8.4 7.7c.3-.5.6-.5.9-.5h.5c.2 0 .4.1.5.4l.7 1.6c.1.3.1.5-.1.7l-.5.7c-.1.2-.1.3 0 .5.6 1.1 1.6 2 2.8 2.6.2.1.4.1.5-.1l.7-.8c.2-.2.4-.3.7-.2l1.6.8c.3.1.4.3.4.5 0 .7-.3 1.4-.8 1.9-.6.6-1.5.9-2.4.8-1.5-.2-3.5-1-5.3-2.8-1.6-1.6-2.5-3.5-2.7-4.9-.1-.9.1-1.8.5-2.6Z"
+        fill="white"
+      />
+    </svg>
+  );
+}
+
 function priceLabel(storeProduct: PublicStoreDetail["products"][number]): string {
   if (storeProduct.priceType === "ask") return "Pregunta por el precio";
   if (storeProduct.priceAmount === null) return "Precio no disponible";
@@ -152,9 +169,12 @@ export default function PublicStorePage() {
                     href={store.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700"
+                    aria-label="Contactar por WhatsApp"
+                    title="Contactar por WhatsApp"
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"
                   >
-                    Contactar por WhatsApp
+                    <WhatsAppIcon />
+                    <span>Contactar</span>
                   </a>
                 )}
               </div>
