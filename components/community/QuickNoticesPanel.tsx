@@ -331,7 +331,7 @@ export default function QuickNoticesPanel({
             </div>
 
             <article
-              className="mkt-quick-card"
+              className={`mkt-quick-card ${currentPost.imageUrl ? "mkt-quick-card-with-image" : ""}`}
               tabIndex={0}
               aria-live="polite"
               onTouchStart={handleTouchStart}
