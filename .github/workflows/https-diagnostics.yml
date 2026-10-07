@@ -37,5 +37,9 @@ jobs:
       - name: Probe secure context and content in real Chromium
         shell: bash
         run: |
-          npm install --no-save --package-lock=false --ignore-scripts playwright-core@1.55.1
-          node scripts/https-security-probe.mjs
+          set -euo pipefail
+          PROBE_DIR="$(mktemp -d)"
+          printf '{"name":"https-probe","private":true,"type":"module"}' > "$PROBE_DIR/package.json"
+          npm --prefix "$PROBE_DIR" install --no-audit --no-fund --ignore-scripts playwright-core@1.55.1
+          cp "$GITHUB_WORKSPACE/scripts/https-security-probe.mjs" "$PROBE_DIR/probe.mjs"
+          node "$PROBE_DIR/probe.mjs"
