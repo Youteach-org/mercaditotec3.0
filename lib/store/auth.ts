@@ -23,6 +23,8 @@ export class ApiAuthError extends Error {
 export interface AuthenticatedUser {
   uid: string;
   claims: DecodedIdToken;
+  /** Server-read profile, never trust role claims when the record is missing. */
+  profile?: Record<string, unknown>;
 }
 
 export function isAdminProfile(profile: unknown): boolean {
@@ -106,7 +108,7 @@ export async function requireFirebaseUser(
       assertUserMayMutate(profile);
       await consumeMutationBudget(claims.uid);
     }
-    return { uid: claims.uid, claims };
+    return { uid: claims.uid, claims, profile };
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
     if (error instanceof ApiAuthError) throw error;
@@ -126,7 +128,7 @@ export async function requireUnblockedUser(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  assertUserMayMutate(await loadProfile(user.uid));
+  assertUserMayMutate(user.profile);
   return user;
 }
 
@@ -134,20 +136,13 @@ export async function requireAdmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  const profile = await loadProfile(user.uid);
-  assertUserMayMutate(profile);
-
-  if (profile) {
-    if (!isAdminRole(profile)) {
-      throw new ApiAuthError(403, "No tienes permisos de administrador.");
-    }
-    return user;
-  }
-
-  if (!isAdminRole(user.claims)) {
+  const profile = user.profile;
+  // Fail closed: a missing Firestore record cannot grant privilege from
+  // stale Firebase custom claims or local browser state.
+  if (!profile || !isAdminRole(profile)) {
     throw new ApiAuthError(403, "No tienes permisos de administrador.");
   }
-
+  assertUserMayMutate(profile);
   return user;
 }
 
@@ -155,28 +150,16 @@ export async function requireSuperadmin(
   request: Request,
 ): Promise<AuthenticatedUser> {
   const user = await requireFirebaseUser(request);
-  const profile = await loadProfile(user.uid);
-  assertUserMayMutate(profile);
-
-  if (profile) {
-    if (!isSuperadminRole(profile)) {
-      throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
-    }
-    return user;
-  }
-
-  if (!isSuperadminRole(user.claims)) {
+  const profile = user.profile;
+  if (!profile || !isSuperadminRole(profile)) {
     throw new ApiAuthError(403, "Solo el superadmin puede realizar esta acción.");
   }
-
+  assertUserMayMutate(profile);
   return user;
 }
 
 export async function getAuthenticatedAdminRole(
   user: AuthenticatedUser,
 ) {
-  const profile = await loadProfile(user.uid);
-  if (profile) return effectiveAdminRole(profile);
-
-  return effectiveAdminRole(user.claims);
+  return effectiveAdminRole(user.profile);
 }
