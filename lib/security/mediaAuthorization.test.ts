@@ -34,3 +34,17 @@ describe("server upload resource ownership", () => {
     await expect(authorizeImageUpload("student-1", "stores/student-1/store-1/products/product-1/x.png")).rejects.toMatchObject({ status: 404 });
   });
 });
+
+it("allows owner-bound community image uploads without store lookup", async () => {
+  vi.stubGlobal("fetch", async () => {
+    throw new Error("community upload must not query Firestore");
+  });
+
+  await expect(
+    authorizeImageUpload("student-1", "community-posts/student-1/x.png"),
+  ).resolves.toBeUndefined();
+
+  await expect(
+    authorizeImageUpload("student-1", "community-posts/victim/x.png"),
+  ).rejects.toThrow();
+});
