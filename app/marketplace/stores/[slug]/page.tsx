@@ -147,6 +147,16 @@ export default function PublicStorePage() {
                 {store.deliveryLocation && (
                   <p className="mt-4 font-semibold text-slate-800">📍 Entrega: {store.deliveryLocation}</p>
                 )}
+                {store.whatsappUrl && (
+                  <a
+                    href={store.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black text-white hover:bg-emerald-700"
+                  >
+                    Contactar por WhatsApp
+                  </a>
+                )}
               </div>
             </div>
           </div>

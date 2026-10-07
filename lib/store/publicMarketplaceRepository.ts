@@ -1,4 +1,5 @@
 import { getAdminDb } from "../firestoreRest";
+import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
 import { listActiveCategories } from "./categoryRepository";
 import {
@@ -111,7 +112,7 @@ export async function listPublicStores(activeCategoriesRequest?: ReturnType<type
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 
-export async function getPublicStoreBySlug(slug: string): Promise<PublicStoreSummary> {
+async function getPublicStoreSourceBySlug(slug: string): Promise<PublicStoreSource> {
   const cleanSlug = slug.trim();
   if (!cleanSlug) throw new PublicMarketplaceError(404, "Tienda no encontrada.");
 
@@ -128,7 +129,22 @@ export async function getPublicStoreBySlug(slug: string): Promise<PublicStoreSum
     throw new PublicMarketplaceError(404, "Tienda no encontrada.");
   }
 
-  return serializePublicStore(storeSource(document.id, data));
+  return storeSource(document.id, data);
+}
+
+export async function getPublicStoreBySlug(slug: string): Promise<PublicStoreSummary> {
+  return serializePublicStore(await getPublicStoreSourceBySlug(slug));
+}
+
+async function getPublicWhatsappUrl(ownerUid: string | undefined): Promise<string | null> {
+  if (!ownerUid) return null;
+
+  const snapshot = await getAdminDb().collection("users").doc(ownerUid).get();
+  if (!snapshot.exists) return null;
+
+  const data = snapshot.data();
+  const number = typeof data?.whatsappNumber === "string" ? data.whatsappNumber : "";
+  return whatsappUrlFromNumber(number);
 }
 
 export async function listPublicProducts(storeId: string): Promise<PublicProduct[]> {
@@ -145,7 +161,11 @@ export async function listPublicProducts(storeId: string): Promise<PublicProduct
 }
 
 export async function getPublicStoreDetail(slug: string): Promise<PublicStoreDetail> {
-  const store = await getPublicStoreBySlug(slug);
-  const products = await listPublicProducts(store.id);
-  return { ...store, products };
+  const source = await getPublicStoreSourceBySlug(slug);
+  const store = serializePublicStore(source);
+  const [products, whatsappUrl] = await Promise.all([
+    listPublicProducts(store.id),
+    getPublicWhatsappUrl(source.ownerUid),
+  ]);
+  return { ...store, products, whatsappUrl };
 }
