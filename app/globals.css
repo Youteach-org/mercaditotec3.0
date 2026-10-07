@@ -3772,3 +3772,13 @@ body {
     font-size: clamp(10px, 3.1vw, 12px) !important;
   }
 }
+
+
+/* GLOBAL CONTENT IMAGE ZOOM — 2026-10-06 */
+img:not([data-no-image-zoom="true"]) {
+  cursor: zoom-in;
+}
+
+[data-image-zoom-src] {
+  cursor: zoom-in;
+}
