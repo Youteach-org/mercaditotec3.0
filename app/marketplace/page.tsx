@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
 
 import {
@@ -22,6 +23,7 @@ import {
 } from "@/lib/store/marketplacePresentation";
 import { shouldUseMarketplaceDemo } from "@/lib/store/marketplacePreview";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
+import { useSession } from "@/lib/useSession";
 
 type CategoryId = "all" | DemoMarketplaceCategory;
 
@@ -349,6 +351,7 @@ function StoreCard({
 }
 
 export default function MarketplacePage() {
+  const { firebaseUser } = useSession();
   const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -516,9 +519,7 @@ export default function MarketplacePage() {
         {!effectiveLoading && !effectiveError && (
           <>
             <div className="mkt-bottom-blue">
-              <div className="mkt-bottom-blue-photo" />
-              <div className="mkt-bottom-blue-copy"><MultilineText text={marketplaceContent.bottomBlueNote} /></div>
-              <span className="mkt-bottom-heart">♡</span>
+              <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
             </div>
 
             <div className="mkt-bottom-campus" aria-hidden="true" />
