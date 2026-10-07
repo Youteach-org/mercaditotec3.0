@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 // Firebase Authentication confirms the password, not Mercadito eligibility.
 // This endpoint checks the currently signed token, the persisted profile and
-// the five-year student rule on the server. No cached or client-supplied role.
+// the eight-year student rule on the server. No cached or client-supplied role.
 export async function GET(request: Request) {
   try {
     await requireFirebaseUser(request);

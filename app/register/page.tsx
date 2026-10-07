@@ -245,21 +245,44 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl p-3 pr-20 text-gray-900 placeholder:text-gray-500"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600"
-          >
-            {showPassword ? "Ocultar" : "Ver"}
-          </button>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-800">
+              Contraseña
+            </label>
+            <span className="group relative inline-flex">
+              <button
+                type="button"
+                aria-label="Información de seguridad sobre la contraseña"
+                className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-400 text-xs font-black text-gray-700"
+              >
+                i
+              </button>
+              <span
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 p-3 text-xs font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+              >
+                Por seguridad, crea una contraseña distinta. No uses la contraseña de tu correo institucional.
+              </span>
+            </span>
+          </div>
+
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-xl p-3 pr-20 text-gray-900 placeholder:text-gray-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-blue-600"
+            >
+              {showPassword ? "Ocultar" : "Ver"}
+            </button>
+          </div>
         </div>
 
         <div className="relative">

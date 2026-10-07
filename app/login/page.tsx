@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   sendEmailVerification,
   sendPasswordResetEmail,
@@ -57,6 +57,13 @@ export default function LoginPage() {
 
   const cleanLocalPart = useMemo(() => normalizeLocalPart(localPart), [localPart]);
   const fullEmail = useMemo(() => buildInstitutionalEmail(cleanLocalPart), [cleanLocalPart]);
+
+  useEffect(() => {
+    const accessError = window.sessionStorage.getItem("mercaditoAccessError");
+    if (!accessError) return;
+    window.sessionStorage.removeItem("mercaditoAccessError");
+    setError(accessError);
+  }, []);
 
   async function syncAccount(user: import("firebase/auth").User): Promise<"ok" | "deferred"> {
     const token = await user.getIdToken(true);
@@ -115,7 +122,7 @@ export default function LoginPage() {
         return;
       }
 
-      // A valid Firebase token does not waive the five-year admission policy.
+      // A valid Firebase token does not waive the eight-year admission policy.
       // Permanent eligibility failures still sign the user out. Only a server-
       // declared transient data outage may defer profile synchronization.
       const syncStatus = await syncAccount(result.user);
@@ -188,7 +195,7 @@ export default function LoginPage() {
     } catch (err: any) {
       await signOut(auth).catch(() => undefined);
       console.error("RESEND_ERROR", err);
-      setError(getFriendlyAuthError(err?.code));
+      setError(err?.code ? getFriendlyAuthError(err.code) : (err?.message ?? "No se pudo validar tu cuenta."));
     } finally {
       setLoadingResendVerification(false);
     }

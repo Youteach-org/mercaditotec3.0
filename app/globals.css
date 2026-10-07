@@ -3826,3 +3826,783 @@ img:not([data-no-image-zoom="true"]) {
     padding-bottom: 3rem !important;
   }
 }
+
+/* COMMUNITY QUICK NOTICES + LOST & FOUND — 2026-10-07 */
+.mkt-quick-notices {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: 9% 8% 6% 9%;
+  color: #fff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.mkt-quick-notices-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mkt-quick-notices-head span {
+  display: block;
+  color: #ffd54c;
+  font-size: clamp(7px, .55vw, 10px);
+  font-weight: 1000;
+  letter-spacing: .12em;
+}
+
+.mkt-quick-notices-head h2 {
+  margin: 1px 0 0;
+  color: #fff;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: clamp(16px, 1.55vw, 24px);
+  font-weight: 1000;
+  line-height: .95;
+  transform: rotate(-1deg);
+}
+
+.mkt-quick-notices-head > a {
+  max-width: 43%;
+  border-radius: 999px;
+  background: #ffd54c;
+  padding: 4px 7px;
+  color: #123d84;
+  font-size: clamp(7px, .55vw, 10px);
+  font-weight: 1000;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.mkt-quick-list {
+  min-height: 0;
+  flex: 1;
+  margin-top: 5px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.45) transparent;
+}
+
+.mkt-quick-item {
+  display: block;
+  margin: 0;
+  padding: 4px 2px;
+  border-bottom: 1px dashed rgba(255,255,255,.32);
+  color: #fff;
+  text-decoration: none;
+}
+
+.mkt-quick-item:last-child {
+  border-bottom: 0;
+}
+
+.mkt-quick-item-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+}
+
+.mkt-quick-item-title strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(8px, .72vw, 11px);
+  font-weight: 1000;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-quick-kind {
+  flex: none;
+  border-radius: 999px;
+  background: #f15b32;
+  padding: 2px 5px;
+  color: white;
+  font-size: clamp(6px, .46vw, 8px);
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.mkt-quick-item p {
+  display: -webkit-box;
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: rgba(255,255,255,.9);
+  font-size: clamp(7px, .58vw, 9px);
+  font-weight: 700;
+  line-height: 1.15;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.mkt-quick-item small {
+  display: block;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #ffd966;
+  font-size: clamp(6px, .5vw, 8px);
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-quick-status,
+.mkt-quick-error,
+.mkt-quick-empty {
+  margin: 7px 0 0;
+  color: rgba(255,255,255,.9);
+  font-size: clamp(8px, .65vw, 10px);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.mkt-quick-empty p {
+  margin: 0;
+}
+
+.mkt-quick-empty a {
+  display: inline-block;
+  margin-top: 5px;
+  color: #ffd54c;
+  font-weight: 1000;
+  text-decoration: underline;
+}
+
+.mkt-quick-error {
+  color: #ffd9d0;
+}
+
+.mkt-quick-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.mkt-quick-actions button,
+.mkt-quick-actions a {
+  border: 0;
+  border-radius: 999px;
+  background: #fff9ee;
+  padding: 4px 8px;
+  color: #123d84;
+  font-size: clamp(7px, .58vw, 10px);
+  font-weight: 1000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mkt-quick-modal-backdrop {
+  position: fixed;
+  z-index: 180;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7,29,68,.67);
+  backdrop-filter: blur(5px);
+}
+
+.mkt-quick-modal {
+  position: relative;
+  width: min(520px, 100%);
+  border-radius: 34px 22px 38px 26px;
+  background:
+    radial-gradient(circle at 16% 22%, rgba(255,213,76,.18) 0 2px, transparent 2.5px),
+    #fff9ee;
+  background-size: 29px 29px;
+  padding: 28px;
+  color: #12346f;
+  box-shadow: 0 28px 70px rgba(7,29,68,.34);
+}
+
+.mkt-quick-modal-close {
+  position: absolute;
+  right: 13px;
+  top: 13px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #123d84;
+  color: white;
+  font-size: 25px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.mkt-quick-modal-kicker {
+  margin: 0;
+  color: #f15b32;
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: .13em;
+}
+
+.mkt-quick-modal h2 {
+  margin: 4px 0 0;
+  color: #12346f;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 30px;
+  font-weight: 1000;
+}
+
+.mkt-quick-modal-help {
+  margin: 6px 0 16px;
+  max-width: 420px;
+  color: #59637a;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.mkt-quick-form {
+  display: grid;
+  gap: 12px;
+}
+
+.mkt-quick-form label {
+  color: #12346f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.mkt-quick-form label span {
+  color: #75809a;
+  font-weight: 700;
+}
+
+.mkt-quick-form input,
+.mkt-quick-form textarea {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  border: 2px solid rgba(18,61,132,.17);
+  border-radius: 14px;
+  outline: 0;
+  background: white;
+  padding: 10px 12px;
+  color: #1f2c45;
+  font: inherit;
+  font-weight: 700;
+}
+
+.mkt-quick-form input:focus,
+.mkt-quick-form textarea:focus {
+  border-color: #174db4;
+}
+
+.mkt-quick-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mkt-quick-form-actions button {
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.mkt-quick-form-actions button:first-child {
+  background: #e9edf5;
+  color: #12346f;
+}
+
+.mkt-quick-form-actions button:last-child {
+  background: #174db4;
+  color: white;
+}
+
+.mkt-quick-form-actions button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.lost-found-page {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 17% 23%, rgba(255,213,76,.12) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 77% 48%, rgba(23,77,180,.06) 0 2px, transparent 2.5px),
+    #fff9ee;
+  background-size: 34px 34px, 41px 41px;
+  padding: 40px 20px 70px;
+  color: #12346f;
+}
+
+.lost-found-hero,
+.lost-found-layout {
+  width: min(1180px, 100%);
+  margin-inline: auto;
+}
+
+.lost-found-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 28px;
+}
+
+.lost-found-hero-copy {
+  position: relative;
+  padding: 32px 40px 36px;
+  isolation: isolate;
+}
+
+.lost-found-hero-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: #ffd54c;
+  clip-path: polygon(1% 10%, 8% 2%, 18% 7%, 29% 1%, 41% 6%, 54% 0, 67% 6%, 81% 2%, 94% 7%, 100% 15%, 97% 30%, 100% 48%, 97% 67%, 100% 84%, 92% 97%, 78% 93%, 65% 100%, 50% 94%, 35% 99%, 20% 94%, 6% 100%, 0 88%, 3% 70%, 0 51%, 3% 31%);
+  transform: rotate(-.6deg);
+  filter: drop-shadow(0 11px 14px rgba(13,52,121,.1));
+}
+
+.lost-found-hero-copy > span {
+  color: #f15b32;
+  font-size: 11px;
+  font-weight: 1000;
+  letter-spacing: .15em;
+}
+
+.lost-found-hero-copy h1 {
+  margin: 3px 0 0;
+  color: #103a82;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: clamp(42px, 6vw, 76px);
+  font-weight: 1000;
+  letter-spacing: -.05em;
+  line-height: .9;
+}
+
+.lost-found-hero-copy p {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: #173b77;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.lost-found-hero-note {
+  padding: 24px 22px;
+  background: #123d84;
+  color: white;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 21px;
+  font-weight: 1000;
+  line-height: 1.12;
+  text-align: center;
+  transform: rotate(3deg);
+  clip-path: polygon(4% 2%, 97% 6%, 100% 19%, 96% 88%, 84% 100%, 5% 95%, 0 80%, 3% 14%);
+  filter: drop-shadow(0 9px 12px rgba(13,52,121,.13));
+}
+
+.lost-found-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 26px;
+  align-items: start;
+}
+
+.lost-found-form-card,
+.lost-found-feed {
+  border-radius: 28px 19px 31px 22px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 12px 32px rgba(13,52,121,.08);
+}
+
+.lost-found-form-card {
+  position: sticky;
+  top: 110px;
+  padding: 22px;
+}
+
+.lost-found-feed {
+  padding: 24px;
+}
+
+.lost-found-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.lost-found-section-title > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f15b32;
+  color: white;
+  font-family: var(--font-market-hand), "Segoe Print", cursive;
+  font-size: 18px;
+  font-weight: 1000;
+  transform: rotate(-7deg);
+}
+
+.lost-found-section-title p {
+  margin: 0;
+  color: #f15b32;
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: .14em;
+}
+
+.lost-found-section-title h2 {
+  margin: 0;
+  color: #12346f;
+  font-size: 24px;
+  font-weight: 1000;
+}
+
+.lost-found-form {
+  display: grid;
+  gap: 14px;
+}
+
+.lost-found-form label {
+  color: #173b77;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.lost-found-form label > span {
+  color: #7b8496;
+  font-weight: 700;
+}
+
+.lost-found-form input,
+.lost-found-form textarea {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  border: 2px solid #e4e8ef;
+  border-radius: 14px;
+  outline: 0;
+  background: white;
+  padding: 10px 11px;
+  color: #1e2940;
+  font: inherit;
+  font-weight: 700;
+}
+
+.lost-found-form input:focus,
+.lost-found-form textarea:focus {
+  border-color: #174db4;
+}
+
+.lost-found-form small {
+  display: block;
+  margin-top: 4px;
+  color: #7c8495;
+  font-size: 10px;
+}
+
+.lost-found-form > button {
+  border: 0;
+  border-radius: 999px;
+  background: #174db4;
+  padding: 12px 16px;
+  color: white;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.lost-found-form > button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.lost-found-blocked,
+.lost-found-message {
+  margin: 0 0 14px;
+  border-radius: 15px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.lost-found-blocked {
+  background: #ffe4df;
+  color: #842d1f;
+}
+
+.lost-found-message {
+  margin: 14px 0 0;
+  background: #fff1bf;
+  color: #12346f;
+}
+
+.lost-found-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.lost-found-card {
+  overflow: hidden;
+  border: 1px solid rgba(18,61,132,.08);
+  border-radius: 25px 17px 27px 19px;
+  background: #fff;
+  box-shadow: 0 9px 22px rgba(13,52,121,.08);
+}
+
+.lost-found-image-button {
+  display: block;
+  width: 100%;
+  height: 210px;
+  border: 0;
+  background: #eef1f6;
+  padding: 0;
+  cursor: zoom-in;
+}
+
+.lost-found-image-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lost-found-card-body {
+  padding: 16px;
+}
+
+.lost-found-badge {
+  display: inline-block;
+  border-radius: 999px;
+  background: #f15b32;
+  padding: 4px 8px;
+  color: white;
+  font-size: 9px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.lost-found-card h3 {
+  margin: 8px 0 0;
+  color: #12346f;
+  font-size: 21px;
+  font-weight: 1000;
+}
+
+.lost-found-card p {
+  margin: 6px 0 0;
+  color: #5b6579;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.lost-found-place {
+  color: #174db4 !important;
+  font-weight: 900 !important;
+}
+
+.lost-found-card time {
+  display: block;
+  margin-top: 10px;
+  color: #8a91a0;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.lost-found-resolve {
+  width: 100%;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #ffd54c;
+  padding: 9px 11px;
+  color: #12346f;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.lost-found-resolve:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.lost-found-empty {
+  border: 2px dashed rgba(18,61,132,.2);
+  border-radius: 22px;
+  padding: 36px 20px;
+  color: #6c7587;
+  font-weight: 800;
+  text-align: center;
+}
+
+.lost-found-zoom {
+  position: fixed;
+  z-index: 190;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(5,20,48,.86);
+  cursor: zoom-out;
+}
+
+.lost-found-zoom img {
+  max-width: min(1050px, 94vw);
+  max-height: 88vh;
+  border-radius: 18px;
+  object-fit: contain;
+  box-shadow: 0 25px 70px rgba(0,0,0,.4);
+}
+
+.lost-found-zoom > button {
+  position: fixed;
+  right: 22px;
+  top: 22px;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: white;
+  color: #12346f;
+  font-size: 28px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .mkt-approved-canvas {
+    min-height: 1950px;
+  }
+
+  .mkt-bottom-blue {
+    display: block;
+    left: 2%;
+    top: 1660px;
+    bottom: auto;
+    width: 96%;
+    height: 250px;
+    clip-path: polygon(0 7%, 6% 2%, 14% 6%, 24% 1%, 36% 6%, 49% 2%, 62% 7%, 75% 2%, 88% 6%, 100% 2%, 98% 95%, 88% 91%, 76% 97%, 63% 92%, 49% 98%, 36% 92%, 23% 97%, 10% 92%, 0 97%);
+  }
+
+  .mkt-quick-notices {
+    padding: 28px 34px 20px;
+  }
+
+  .mkt-quick-notices-head span {
+    font-size: 9px;
+  }
+
+  .mkt-quick-notices-head h2 {
+    font-size: 28px;
+  }
+
+  .mkt-quick-notices-head > a,
+  .mkt-quick-actions button,
+  .mkt-quick-actions a {
+    font-size: 11px;
+  }
+
+  .mkt-quick-item-title strong {
+    font-size: 12px;
+  }
+
+  .mkt-quick-item p {
+    font-size: 10px;
+  }
+
+  .mkt-quick-item small {
+    font-size: 9px;
+  }
+
+  .lost-found-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .lost-found-form-card {
+    position: static;
+  }
+
+  .lost-found-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .lost-found-hero-note {
+    width: min(420px, 80%);
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .mkt-approved-canvas {
+    min-height: 3130px;
+  }
+
+  .mkt-bottom-blue {
+    left: 4%;
+    top: 2830px;
+    width: 92%;
+    height: 260px;
+  }
+
+  .mkt-quick-notices {
+    padding: 28px 24px 18px;
+  }
+
+  .mkt-quick-notices-head h2 {
+    font-size: 24px;
+  }
+
+  .lost-found-page {
+    padding: 28px 12px 55px;
+  }
+
+  .lost-found-hero-copy {
+    padding: 28px 24px 32px;
+  }
+
+  .lost-found-hero-copy h1 {
+    font-size: 48px;
+  }
+
+  .lost-found-hero-copy p {
+    font-size: 13px;
+  }
+
+  .lost-found-hero-note {
+    width: 88%;
+    font-size: 18px;
+  }
+
+  .lost-found-form-card,
+  .lost-found-feed {
+    padding: 18px;
+  }
+
+  .lost-found-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lost-found-image-button {
+    height: 230px;
+  }
+
+  .mkt-quick-modal {
+    padding: 24px 18px 20px;
+  }
+}

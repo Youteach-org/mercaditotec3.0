@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/orders", label: "Pedidos", icon: "bag" },
   { href: "/mystore", label: "Mis tiendas", icon: "store" },
   { href: "/chat/personal", label: "Mensajes", icon: "chat" },
+  { href: "/cosas-perdidas", label: "Cosas perdidas", icon: "lost" },
   { href: "/profile", label: "Perfil", icon: "profile" },
 ];
 
@@ -33,6 +34,9 @@ function NavIcon({ icon }: { icon: string }) {
   }
   if (icon === "chat") {
     return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-9 8.5 9 9 0 0 1-4-.9L3 21l1.8-4.3A8.5 8.5 0 1 1 21 11.5Z" /></svg>;
+  }
+  if (icon === "lost") {
+    return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" /><path d="m14.5 14.5 5 5M8.5 8.2a2.4 2.4 0 0 1 4.4 1.3c0 1.8-2.4 2-2.4 3.5M10.5 16h.01" /></svg>;
   }
   return <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true"><circle cx="12" cy="7" r="3.2" /><path d="M5.5 21c.6-5 2.9-7.5 6.5-7.5s5.9 2.5 6.5 7.5" /></svg>;
 }

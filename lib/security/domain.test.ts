@@ -106,7 +106,7 @@ describe("student control number eligibility", () => {
     };
   }
 
-  it("accepts a letter plus an 8-digit control number from the current five-year window", () => {
+  it("accepts a letter plus an 8-digit control number from the current eight-year window", () => {
     const validate = validator();
     expect(validate("a22121079", new Date("2026-10-01T12:00:00Z"))).toEqual({
       allowed: true,
@@ -115,16 +115,16 @@ describe("student control number eligibility", () => {
     });
   });
 
-  it("includes the five-year boundary", () => {
+  it("includes the eight-year boundary", () => {
     const validate = validator();
-    expect(validate("x21123456", new Date("2026-10-01T12:00:00Z")).allowed).toBe(true);
+    expect(validate("x18123456", new Date("2026-10-01T12:00:00Z")).allowed).toBe(true);
   });
 
-  it("rejects control numbers older than five years", () => {
+  it("rejects control numbers older than eight years", () => {
     const validate = validator();
-    const result = validate("a20123456", new Date("2026-10-01T12:00:00Z"));
+    const result = validate("a17123456", new Date("2026-10-01T12:00:00Z"));
     expect(result.allowed).toBe(false);
-    expect(result.reason).toContain("últimos 5 años");
+    expect(result.reason).toContain("más de 8 años");
   });
 
   it("rejects future entry years", () => {
@@ -165,13 +165,13 @@ describe("student application access eligibility", () => {
   it("rejects ordinary users whose control year is too old", () => {
     const validate = accessValidator();
     const result = validate({
-      email: "a20123456@morelia.tecnm.mx",
+      email: "a17123456@morelia.tecnm.mx",
       emailVerified: true,
       profile: { role: "user" },
       now: new Date("2026-10-01T12:00:00Z"),
     });
     expect(result.allowed).toBe(false);
-    expect(result.reason).toContain("últimos 5 años");
+    expect(result.reason).toContain("más de 8 años");
   });
 
   it("keeps email verification as a required condition", () => {

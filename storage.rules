@@ -17,7 +17,8 @@ service firebase.storage {
       let until = profile.get('blockedUntil', null);
       let year = request.time.year() - 2000;
       let years = string(year) + '|' + string(year - 1) + '|' + string(year - 2)
-        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5);
+        + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5)
+        + '|' + string(year - 6) + '|' + string(year - 7) + '|' + string(year - 8);
       return verifiedInstitution()
         && profile.get('isActive', true) != false
         && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
