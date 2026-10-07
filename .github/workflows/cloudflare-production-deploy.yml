@@ -1,9 +1,6 @@
 name: Deploy Mercadito production to Cloudflare
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 permissions:
   contents: read
