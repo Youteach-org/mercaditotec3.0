@@ -181,8 +181,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-6 space-y-5">
+    <main className="min-h-screen bg-gray-100 p-4 sm:p-6 flex items-center justify-center">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-5 sm:p-6 space-y-5 overflow-visible">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-gray-900">Iniciar sesión</h1>
           <p className="text-sm text-gray-700">
@@ -196,20 +196,25 @@ export default function LoginPage() {
               Usuario institucional
             </label>
 
-            <div className="flex rounded-xl border border-gray-300 overflow-hidden">
+            <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-gray-300 sm:grid-cols-[minmax(0,1fr)_auto]">
               <input
                 type="text"
-                placeholder="ejemplo: a22121079"
+                placeholder="a22121079"
                 value={localPart}
                 onChange={(e) => setLocalPart(e.target.value)}
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="flex-1 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
+                spellCheck={false}
+                aria-describedby="login-email-help"
+                className="w-full min-w-0 p-3 text-gray-900 placeholder:text-gray-500 outline-none"
               />
-              <div className="bg-gray-100 px-3 flex items-center text-sm text-gray-700 border-l border-gray-300">
+              <div className="flex items-center justify-center whitespace-nowrap border-t border-gray-300 bg-gray-100 px-3 py-3 text-sm font-semibold text-gray-700 sm:border-l sm:border-t-0">
                 {DOMAIN}
               </div>
             </div>
+            <p id="login-email-help" className="text-xs leading-relaxed text-gray-600">
+              Escribe solo tu usuario; <strong>{DOMAIN}</strong> se agrega automáticamente.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -235,9 +240,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-xs text-gray-600 break-all">
-            Correo detectado: <span className="font-semibold">{fullEmail}</span>
-          </p>
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-gray-700">
+            <span className="font-semibold">Correo completo:</span>{" "}
+            <span className="break-all font-bold">{fullEmail}</span>
+          </div>
 
           {error && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-3">
