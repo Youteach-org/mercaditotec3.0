@@ -62,13 +62,22 @@ describe("student entry authorization", () => {
     )).not.toThrow();
   });
 
-  it("rejects an ordinary user outside the five-year control window", () => {
+  it("includes the eight-year boundary for ordinary users", () => {
     const assertMayEnter = assertEntry();
     expect(() => assertMayEnter(
       { role: "user" },
-      { email: "a20123456@morelia.tecnm.mx", email_verified: true },
+      { email: "a18123456@morelia.tecnm.mx", email_verified: true },
       new Date("2026-10-01T12:00:00Z"),
-    )).toThrow("últimos 5 años");
+    )).not.toThrow();
+  });
+
+  it("rejects an ordinary user older than the eight-year control window", () => {
+    const assertMayEnter = assertEntry();
+    expect(() => assertMayEnter(
+      { role: "user" },
+      { email: "a17123456@morelia.tecnm.mx", email_verified: true },
+      new Date("2026-10-01T12:00:00Z"),
+    )).toThrow("más de 8 años");
   });
 
   it("allows an existing admin with verified institutional email even without a student control format", () => {
