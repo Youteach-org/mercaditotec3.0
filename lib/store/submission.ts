@@ -1,4 +1,4 @@
-import { getAdminDb } from "@/lib/firestoreRest";
+import { getAdminDb } from "../firestoreRest";
 import {
   getStudentTrust,
   TrustRepositoryError,
