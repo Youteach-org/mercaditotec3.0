@@ -31,8 +31,44 @@ export default {
 
     const url = new URL(request.url);
 
+    if (url.pathname === "/api/internal/firebase-rules-sync") {
+      return new Response("Not Found", {
+        status: 404,
+        headers: {
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      });
+    }
+
     if (url.pathname === "/__health") {
-      return json({ ok: true });
+      const internalUrl = new URL("/api/internal/firebase-rules-sync", request.url);
+      const rulesResponse = await getHandler().fetch(
+        new Request(internalUrl, {
+          method: "POST",
+          headers: {
+            "x-mercadito-internal-runtime": "firebase-rules-sync-v1",
+          },
+        }),
+        env,
+        ctx,
+      );
+      const rules = await rulesResponse.json().catch(() => ({ ok: false }));
+
+      if (!rulesResponse.ok || rules?.ok !== true) {
+        return json(
+          { ok: false, firebaseRules: "sync-failed" },
+          { status: 503 },
+        );
+      }
+
+      return json({
+        ok: true,
+        firebaseRules: {
+          firestore: rules.firestore,
+          storage: rules.storage,
+        },
+      });
     }
 
     if (url.pathname === "/__probe") {
