@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import AuthGuard from "@/components/AuthGuard";
-import { uploadImageFile } from "@/lib/imageStorage";
+import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
 import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
