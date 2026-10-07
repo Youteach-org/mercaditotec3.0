@@ -47,6 +47,7 @@ interface Props {
   editable?: boolean;
   compact?: boolean;
   mini?: boolean;
+  publicView?: boolean;
   onToggle?: (day: StoreWeekDay, hour: StoreHour) => void;
 }
 
@@ -55,16 +56,17 @@ export default function StoreScheduleGrid({
   editable = false,
   compact = false,
   mini = false,
+  publicView = false,
   onToggle,
 }: Props) {
-  const labelColumn = mini ? "22px" : compact ? "30px" : "30px";
+  const labelColumn = mini ? "22px" : publicView ? "54px" : compact ? "30px" : "30px";
 
   return (
     <div className="w-full max-w-full overflow-hidden">
       <div
         className={[
           "grid w-full min-w-0",
-          mini ? "gap-[2px]" : "gap-1 sm:gap-0.5",
+          mini ? "gap-[2px]" : publicView ? "gap-[3px] sm:gap-1" : "gap-1 sm:gap-0.5",
         ].join(" ")}
         style={{ gridTemplateColumns: `${labelColumn} repeat(7, minmax(0, 1fr))` }}
       >
@@ -77,6 +79,8 @@ export default function StoreScheduleGrid({
               "flex min-w-0 items-center justify-center bg-slate-900 font-bold text-white",
               mini
                 ? "h-4 rounded-[3px] text-[7px]"
+                : publicView
+                  ? "h-8 rounded-md text-[10px] sm:text-xs"
                 : compact
                   ? "h-7 rounded-md text-[10px] sm:h-6 md:h-5 md:text-[9px]"
                   : "h-9 rounded-md text-xs sm:h-7 sm:text-[10px] md:h-6",
@@ -84,6 +88,8 @@ export default function StoreScheduleGrid({
           >
             {mini ? (
               MOBILE_DAY_LABELS[day]
+            ) : publicView ? (
+              DAY_LABELS[day]
             ) : (
               <>
                 <span className="sm:hidden">{MOBILE_DAY_LABELS[day]}</span>
@@ -100,6 +106,8 @@ export default function StoreScheduleGrid({
                 "flex min-w-0 items-center justify-end font-semibold text-gray-500",
                 mini
                   ? "h-[9px] pr-[2px] text-[6px] leading-none"
+                  : publicView
+                    ? "h-8 pr-1 text-[10px] sm:text-xs"
                   : compact
                     ? "h-9 pr-1 text-[10px] sm:h-7 sm:text-[9px] md:h-6"
                     : "h-11 pr-1 text-[10px] sm:h-8 sm:text-[10px] md:h-7",
@@ -107,6 +115,8 @@ export default function StoreScheduleGrid({
             >
               {mini ? (
                 Number(hour.slice(0, 2)) % 3 === 1 ? formatCompactHour(hour) : ""
+              ) : publicView ? (
+                hour
               ) : (
                 <>
                   <span className="sm:hidden">{formatCompactHour(hour)}</span>
@@ -134,6 +144,8 @@ export default function StoreScheduleGrid({
                     "min-w-0 touch-manipulation select-none border transition-none",
                     mini
                       ? "h-[9px] rounded-[2px]"
+                      : publicView
+                        ? "h-8 rounded-md"
                       : compact
                         ? "h-9 rounded-md sm:h-7 sm:rounded-[5px] md:h-6"
                         : "h-11 rounded-md sm:h-8 md:h-7",
