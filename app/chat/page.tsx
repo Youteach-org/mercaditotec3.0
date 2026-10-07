@@ -518,28 +518,6 @@ function ChatContent() {
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!zoomImageUrl) return;
-
-    function handleZoomKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setZoomImageUrl(null);
-      }
-    }
-
-    window.addEventListener(
-      "keydown",
-      handleZoomKeyDown
-    );
-
-    return () => {
-      window.removeEventListener(
-        "keydown",
-        handleZoomKeyDown
-      );
-    };
-  }, [zoomImageUrl]);
-
-  useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
   }, [darkMode]);
 
