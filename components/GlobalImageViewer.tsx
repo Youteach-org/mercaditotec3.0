@@ -69,9 +69,10 @@ export default function GlobalImageViewer() {
       event.preventDefault();
       event.stopPropagation();
 
-      // Let the browser's real dblclick event win. A single click waits long
-      // enough that the viewer can never mount between click #1 and click #2.
-      if (event.detail >= 2) {
+      // Touch browsers may report detail=1 on both taps. Detect two taps on
+      // the same store even without a native dblclick event.
+      const pending = pendingMarketplaceClickRef.current;
+      if (event.detail >= 2 || pending?.href === href) {
         clearPendingMarketplaceClick();
         window.location.assign(href);
         return;
@@ -79,10 +80,12 @@ export default function GlobalImageViewer() {
 
       clearPendingMarketplaceClick();
 
+      // Do not mount the modal during the double-click/tap recognition window:
+      // that would steal the second click before it can reach the store image.
       const timer = window.setTimeout(() => {
         pendingMarketplaceClickRef.current = null;
         openViewer(src, alt);
-      }, 430);
+      }, 550);
 
       pendingMarketplaceClickRef.current = {
         href,
@@ -113,9 +116,50 @@ export default function GlobalImageViewer() {
       window.location.assign(href);
     }
 
+    // Capture-phase handling is essential: Next.js <Link> processes its own
+    // onClick during React's delegated bubble phase, before document bubble.
+    // By then the app has already navigated even if we call preventDefault.
+    function captureMarketplaceImageClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element) || event.button !== 0) return;
+
+      const cloud = target.closest("[data-image-double-href][data-image-zoom-src]");
+      if (cloud) {
+        const href = cloud.getAttribute("data-image-double-href")?.trim() ?? "";
+        const src = cloud.getAttribute("data-image-zoom-src")?.trim() ?? "";
+        if (href && src) {
+          handleMarketplaceImageInteraction(
+            event,
+            src,
+            cloud.getAttribute("data-image-zoom-alt")?.trim() || "Portada de la tienda",
+            href,
+          );
+          return;
+        }
+      }
+
+      const logo = target.closest("img[data-image-double-href]");
+      if (logo instanceof HTMLImageElement && logo.dataset.noImageZoom !== "true") {
+        const href = logo.dataset.imageDoubleHref?.trim() ?? "";
+        const src = logo.currentSrc || logo.src;
+        if (href && src) {
+          handleMarketplaceImageInteraction(
+            event,
+            src,
+            logo.alt || "Logo de la tienda",
+            href,
+          );
+        }
+      }
+    }
+
     function openFromContentImage(event: MouseEvent) {
       const target = event.target;
       if (!(target instanceof Element)) return;
+
+      // Marketplace images are already handled in document capture before
+      // a parent Next.js Link can navigate; don't handle them twice here.
+      if (target.closest("[data-image-double-href]")) return;
 
       const explicitTarget = target.closest("[data-image-zoom-src]");
       if (explicitTarget instanceof HTMLElement || explicitTarget instanceof SVGElement) {
@@ -173,14 +217,16 @@ export default function GlobalImageViewer() {
       if (event.key === "Escape") close();
     }
 
+    document.addEventListener("click", captureMarketplaceImageClick, true);
     document.addEventListener("click", openFromContentImage);
-    document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick);
+    document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick, true);
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       clearPendingMarketplaceClick();
+      document.removeEventListener("click", captureMarketplaceImageClick, true);
       document.removeEventListener("click", openFromContentImage);
-      document.removeEventListener("dblclick", openMarketplaceStoreFromDoubleClick);
+      document.removeEventListener("dblclick", openMarketplaceStoreFromDoubleClick, true);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, []);
