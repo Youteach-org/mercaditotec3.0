@@ -32,7 +32,6 @@ export default function GlobalImageViewer() {
   const pendingMarketplaceClickRef = useRef<{
     href: string;
     timer: number;
-    startedAt: number;
   } | null>(null);
 
   function resetTransform() {
@@ -70,14 +69,9 @@ export default function GlobalImageViewer() {
       event.preventDefault();
       event.stopPropagation();
 
-      const now = performance.now();
-      const pending = pendingMarketplaceClickRef.current;
-
-      if (
-        pending &&
-        pending.href === href &&
-        now - pending.startedAt <= 360
-      ) {
+      // Let the browser's real dblclick event win. A single click waits long
+      // enough that the viewer can never mount between click #1 and click #2.
+      if (event.detail >= 2) {
         clearPendingMarketplaceClick();
         window.location.assign(href);
         return;
@@ -88,13 +82,35 @@ export default function GlobalImageViewer() {
       const timer = window.setTimeout(() => {
         pendingMarketplaceClickRef.current = null;
         openViewer(src, alt);
-      }, 280);
+      }, 430);
 
       pendingMarketplaceClickRef.current = {
         href,
         timer,
-        startedAt: now,
       };
+    }
+
+    function openMarketplaceStoreFromDoubleClick(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const destinationTarget = target.closest("[data-image-double-href]");
+      if (
+        !(destinationTarget instanceof HTMLElement) &&
+        !(destinationTarget instanceof SVGElement)
+      ) {
+        return;
+      }
+
+      const href =
+        destinationTarget.getAttribute("data-image-double-href")?.trim() ?? "";
+      if (!href) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      clearPendingMarketplaceClick();
+      close();
+      window.location.assign(href);
     }
 
     function openFromContentImage(event: MouseEvent) {
@@ -158,11 +174,13 @@ export default function GlobalImageViewer() {
     }
 
     document.addEventListener("click", openFromContentImage);
+    document.addEventListener("dblclick", openMarketplaceStoreFromDoubleClick);
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       clearPendingMarketplaceClick();
       document.removeEventListener("click", openFromContentImage);
+      document.removeEventListener("dblclick", openMarketplaceStoreFromDoubleClick);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, []);
