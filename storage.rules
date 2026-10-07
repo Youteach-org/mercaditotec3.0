@@ -22,24 +22,7 @@ service firebase.storage {
         && profile.get('isActive', true) != false
         && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
           || profile.get('isAdmin', false) == true || profile.get('admin', false) == true
-          || request.auth.token.email.matches('^[a-z]+(' + years + ')[0-9]{6}@morelia[.]tecnm[.]mx
-
-    match /profile-images/{uid}/{fileName} {
-      allow read: if studentMayEnter();
-      allow create, update: if signedIn() && mayMutate()
-        && request.auth.uid == uid
-        && request.resource.size > 0
-        && request.resource.size <= 2 * 1024 * 1024
-        && request.resource.contentType.matches('image/(jpeg|png|webp|gif)');
-      allow delete: if signedIn() && mayMutate() && request.auth.uid == uid;
-    }
-
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}
-));
+          || request.auth.token.email.matches('^[a-z]+(' + years + ')[0-9]{6}@morelia[.]tecnm[.]mx$'));
     }
 
     function mayMutate() {
@@ -51,7 +34,7 @@ service firebase.storage {
     }
 
     match /profile-images/{uid}/{fileName} {
-      allow read: if signedIn();
+      allow read: if studentMayEnter();
       allow create, update: if signedIn() && mayMutate()
         && request.auth.uid == uid
         && request.resource.size > 0
