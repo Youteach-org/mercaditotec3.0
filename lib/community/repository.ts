@@ -5,6 +5,8 @@ import type {
   CommunityPostType,
 } from "./domain";
 
+export const QUICK_NOTICE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+
 export class CommunityRepositoryError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -55,6 +57,7 @@ export async function createCommunityPost(
 export async function listActiveCommunityPosts(options: {
   type?: CommunityPostType;
   limit: number;
+  now?: Date;
 }): Promise<CommunityPostRecord[]> {
   const snapshot = await getAdminDb()
     .collection("community_posts")
@@ -62,9 +65,16 @@ export async function listActiveCommunityPosts(options: {
     .limit(100)
     .get();
 
+  const nowMs = (options.now ?? new Date()).getTime();
+  const quickNoticeCutoffMs = nowMs - QUICK_NOTICE_LIFETIME_MS;
+
   return snapshot.docs
     .map((document) => toRecord(document.id, document.data()))
-    .filter((post) => !options.type || post.type === options.type)
+    .filter((post) => {
+      if (options.type && post.type !== options.type) return false;
+      if (post.type === "found_item") return true;
+      return post.createdAt.toMillis() >= quickNoticeCutoffMs;
+    })
     .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
     .slice(0, Math.max(1, Math.min(50, Math.floor(options.limit))));
 }
