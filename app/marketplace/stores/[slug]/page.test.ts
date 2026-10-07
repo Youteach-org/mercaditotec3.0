@@ -9,7 +9,9 @@ const pageSource = readFileSync(join(currentDirectory, "page.tsx"), "utf8");
 describe("Public store WhatsApp CTA", () => {
   it("renders the WhatsApp CTA only from the public derived URL", () => {
     expect(pageSource).toContain("store.whatsappUrl");
-    expect(pageSource).toContain("Contactar por WhatsApp");
+    expect(pageSource).toContain('aria-label="Contactar por WhatsApp"');
+    expect(pageSource).toContain("<WhatsAppIcon />");
+    expect(pageSource).toContain("<span>Contactar</span>");
     expect(pageSource).toContain('target="_blank"');
     expect(pageSource).toContain('rel="noopener noreferrer"');
   });
