@@ -2,7 +2,7 @@ import { getAdminDb } from "../firestoreRest";
 import {
   getStudentTrust,
   TrustRepositoryError,
-} from "@/lib/security/trustRepository";
+} from "../security/trustRepository";
 import {
   normalizeWhatsappNumber,
   WhatsappNumberError,
