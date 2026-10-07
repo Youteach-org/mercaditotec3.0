@@ -1,0 +1,70 @@
+import { FirestoreRestError } from "../firestoreRest";
+import { DEMO_MARKETPLACE_STORES } from "./demoMarketplace";
+import { getMarketplaceContent } from "./marketplaceContentRepository";
+import { listPublicStores } from "./publicMarketplaceRepository";
+import { listActiveCategories, serializeCategory } from "./categoryRepository";
+
+// Public data may be slightly delayed; privileged data and authorization
+// checks never use this cache.
+const FRESH_FOR_MS = 60_000;
+const STALE_ON_THROTTLE_FOR_MS = 180_000;
+
+async function readSnapshot() {
+  // Deduplicate the categories query across the store/category serializers.
+  const categoriesRequest = listActiveCategories();
+  const [liveStores, content, categories] = await Promise.all([
+    listPublicStores(categoriesRequest),
+    getMarketplaceContent(),
+    categoriesRequest,
+  ]);
+
+  const temporaryExamples = DEMO_MARKETPLACE_STORES
+    .filter((demoStore) => !liveStores.some((store) => store.id === demoStore.id))
+    .slice(0, Math.max(0, 6 - liveStores.length));
+
+  const stores = [...liveStores, ...temporaryExamples];
+  return {
+    stores,
+    content,
+    categories: categories.map(serializeCategory),
+    temporaryExamplesEnabled: true,
+    realStoreCount: liveStores.length,
+    exampleStoreCount: temporaryExamples.length,
+    totalStoreCount: stores.length,
+  };
+}
+
+type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
+let cached: { snapshot: Snapshot; createdAt: number } | null = null;
+let pending: Promise<Snapshot> | null = null;
+
+export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
+  const now = Date.now();
+  if (cached && now - cached.createdAt < FRESH_FOR_MS) return cached.snapshot;
+  if (pending) return pending;
+
+  const work = readSnapshot()
+    .then((snapshot) => {
+      cached = { snapshot, createdAt: Date.now() };
+      return snapshot;
+    })
+    .catch((error: unknown) => {
+      // Only tolerate a short-lived stale *public* snapshot under provider
+      // saturation. Do not invent stores, reveal private data or bypass auth.
+      if (
+        error instanceof FirestoreRestError &&
+        error.status === 429 &&
+        cached &&
+        Date.now() - cached.createdAt < STALE_ON_THROTTLE_FOR_MS
+      ) {
+        return cached.snapshot;
+      }
+      throw error;
+    })
+    .finally(() => {
+      if (pending === work) pending = null;
+    });
+
+  pending = work;
+  return work;
+}
