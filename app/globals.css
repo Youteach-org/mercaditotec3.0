@@ -5201,3 +5201,32 @@ img:not([data-no-image-zoom="true"]) {
     padding: 0 !important;
   }
 }
+
+/* Keep the featured ribbon entirely in the free left column, never over shop icons. */
+@media (min-width: 1101px) {
+  .mkt-featured-heading {
+    left: 1.2% !important;
+    top: 63.3% !important;
+    width: 22.5% !important;
+    height: 5.2% !important;
+    z-index: 15 !important;
+  }
+  .mkt-featured-brush {
+    left: 0 !important;
+    width: 100% !important;
+    top: 13% !important;
+    height: 74% !important;
+  }
+  .mkt-featured-heading h2 {
+    font-size: clamp(19px, 1.64vw, 25px) !important;
+    letter-spacing: -.045em !important;
+    white-space: nowrap !important;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .mkt-featured-heading .mkt-star {
+    right: 2% !important;
+    top: -14% !important;
+    font-size: clamp(19px, 1.6vw, 26px) !important;
+  }
+}
