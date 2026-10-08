@@ -5198,6 +5198,16 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-bottom-blue .mkt-quick-carousel {
   overflow: hidden;
   min-height: 0 !important;
+  height: 100%;
+  align-self: stretch;
+}
+/* Use the vertical space released above the heading for the notice itself. */
+.mkt-bottom-blue .mkt-quick-notices-head {
+  min-height: 0 !important;
+}
+.mkt-bottom-blue .mkt-quick-card {
+  height: 100% !important;
+  align-self: stretch;
 }
 .mkt-bottom-blue .mkt-quick-carousel-bar {
   top: -31px !important;
