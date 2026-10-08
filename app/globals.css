@@ -5138,8 +5138,8 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-quick-actions button { font-size: 12px !important; padding: 8px 12px !important; }
 }
 
-/* Notice controls are outside the decorative blue sheet, never inside its clipping.
-   Keep the clickable area independent from the paper silhouette. */
+/* Notices v5: compact panel with a clear buffer below the main banner.
+   Blue cut-paper effect is background-only; controls and copy are not clipped. */
 .mkt-bottom-blue {
   overflow: visible !important;
   clip-path: none !important;
@@ -5156,29 +5156,28 @@ img:not([data-no-image-zoom="true"]) {
   clip-path: polygon(0 0, 12% 1.5%, 25% 0, 39% 1.2%, 54% 0, 69% 1.3%, 83% 0, 100% 1.5%, 100% 98%, 84% 100%, 64% 98.5%, 45% 100%, 25% 98%, 0 100%);
 }
 .mkt-bottom-blue::after,
-.mkt-bottom-blue-photo {
-  display: none !important;
-}
+.mkt-bottom-blue-photo { display: none !important; }
 .mkt-bottom-blue .mkt-quick-notices {
   position: relative;
   z-index: 1;
   overflow: visible !important;
-  padding-top: 44px !important;
-  padding-bottom: 18px !important;
+  padding: 39px 13px 14px !important;
+  gap: 6px !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
 }
 .mkt-bottom-blue .mkt-quick-actions {
   position: absolute !important;
   z-index: 40 !important;
   top: 0;
   left: 50%;
+  transform: translate(-50%, -46%);
   width: max-content;
-  max-width: 100%;
-  transform: translate(-50%, -50%);
+  max-width: calc(100% + 12px);
   display: flex !important;
   align-items: center;
   justify-content: center !important;
   flex-wrap: nowrap !important;
-  gap: 8px !important;
+  gap: 7px !important;
   margin: 0 !important;
   pointer-events: auto;
 }
@@ -5187,35 +5186,68 @@ img:not([data-no-image-zoom="true"]) {
   position: relative;
   z-index: 41;
   border-radius: 999px;
-  padding: 9px 15px !important;
-  font-size: clamp(10px, .92vw, 14px) !important;
-  line-height: 1.2;
+  padding: 8px 12px !important;
+  font-size: clamp(10px, .8vw, 12px) !important;
+  line-height: 1.1;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(7, 29, 68, .18);
+  box-shadow: 0 3px 8px rgba(7, 29, 68, .14);
+}
+.mkt-bottom-blue .mkt-quick-carousel {
+  overflow: hidden;
+  min-height: 0 !important;
 }
 .mkt-bottom-blue .mkt-quick-carousel-bar {
+  top: -31px !important;
   z-index: 5;
 }
+.mkt-bottom-blue .mkt-quick-card {
+  min-height: 0 !important;
+  padding: 10px 11px !important;
+}
+.mkt-bottom-blue .mkt-quick-card-copy {
+  min-height: 0 !important;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mkt-bottom-blue .mkt-quick-item-title strong {
+  font-size: clamp(12px, 1.07vw, 16px) !important;
+}
+.mkt-bottom-blue .mkt-quick-card p {
+  font-size: clamp(10px, .86vw, 13px) !important;
+  line-height: 1.3 !important;
+  -webkit-line-clamp: unset !important;
+  display: block !important;
+  overflow: visible !important;
+}
 @media (min-width: 1101px) {
-  .mkt-bottom-blue { width: 23% !important; }
-  .mkt-bottom-blue .mkt-quick-notices {
-    padding: 44px 15px 19px !important;
-    gap: 8px !important;
+  .mkt-bottom-blue {
+    left: 0 !important;
+    top: 29.8% !important;
+    width: 22% !important;
+    height: 28.5% !important;
+    min-height: 0 !important;
+    z-index: 24 !important;
   }
-  .mkt-bottom-blue .mkt-quick-card {
-    padding: 13px 11px !important;
-  }
-  .mkt-bottom-blue .mkt-quick-item-title strong { font-size: clamp(13px, 1.22vw, 17px) !important; }
-  .mkt-bottom-blue .mkt-quick-card p { font-size: clamp(11px, 1vw, 14px) !important; }
 }
 @media (min-width: 621px) and (max-width: 1100px) {
-  .mkt-bottom-blue { width: 24% !important; }
-  .mkt-bottom-blue .mkt-quick-notices { padding: 37px 10px 13px !important; }
+  .mkt-bottom-blue {
+    top: 420px !important;
+    left: 0 !important;
+    width: 27% !important;
+    height: 225px !important;
+    min-height: 0 !important;
+  }
+  .mkt-bottom-blue .mkt-quick-notices { padding: 36px 9px 12px !important; }
   .mkt-bottom-blue .mkt-quick-actions { gap: 4px !important; }
-  .mkt-bottom-blue .mkt-quick-actions button { padding: 7px 9px !important; font-size: 10px !important; }
+  .mkt-bottom-blue .mkt-quick-actions button { padding: 7px 8px !important; font-size: 10px !important; }
 }
 @media (max-width: 620px) {
-  .mkt-bottom-blue .mkt-quick-notices { padding: 46px 18px 16px !important; }
-  .mkt-bottom-blue .mkt-quick-actions { gap: 8px !important; }
-  .mkt-bottom-blue .mkt-quick-actions button { padding: 9px 12px !important; font-size: 12px !important; }
+  .mkt-bottom-blue {
+    top: 2850px !important;
+    height: 270px !important;
+    min-height: 0 !important;
+  }
+  .mkt-bottom-blue .mkt-quick-notices { padding: 42px 18px 13px !important; }
+  .mkt-bottom-blue .mkt-quick-actions button { padding: 8px 11px !important; font-size: 12px !important; }
 }
