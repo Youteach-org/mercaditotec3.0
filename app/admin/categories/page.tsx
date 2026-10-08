@@ -18,6 +18,56 @@ import {
 } from "@/lib/store/categoryClient";
 import { useSession } from "@/lib/useSession";
 
+const ICON_PREVIEW: Record<CategoryIconKey, string> = {
+  food: "🍔",
+  drinks: "🥤",
+  desserts: "🧁",
+  crafts: "🧶",
+  stationery: "✏️",
+  entertainment: "🎬",
+  clothing: "👕",
+  electronics: "📱",
+  beauty: "💄",
+  services: "🛠️",
+  books: "📚",
+  sports: "⚽",
+  other: "🛍️",
+};
+
+function IconPicker({
+  value,
+  onChange,
+  disabled = false,
+  label,
+}: {
+  value: CategoryIconKey | "";
+  onChange: (next: CategoryIconKey) => void;
+  disabled?: boolean;
+  label: string;
+}) {
+  return (
+    <fieldset className="min-w-0">
+      <legend className="mb-2 text-sm font-bold text-gray-700">{label}</legend>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+        {CATEGORY_ICON_KEYS.map((key) => (
+          <button
+            key={key}
+            type="button"
+            disabled={disabled}
+            aria-label={`Seleccionar icono: ${CATEGORY_ICON_LABELS[key]}`}
+            aria-pressed={value === key}
+            onClick={() => onChange(key)}
+            className={`flex min-h-24 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-3 text-center transition disabled:opacity-50 ${value === key ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 bg-white hover:border-gray-400"}`}
+          >
+            <span aria-hidden="true" className="text-4xl leading-none">{ICON_PREVIEW[key]}</span>
+            <span className="text-xs font-semibold leading-tight text-gray-700">{CATEGORY_ICON_LABELS[key]}</span>
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 export default function AdminCategoriesPage() {
   const router = useRouter();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
@@ -203,34 +253,24 @@ export default function AdminCategoriesPage() {
 
         <form onSubmit={createCategory} className="rounded-2xl bg-white p-6 shadow-md">
           <h2 className="text-xl font-bold text-gray-900">Nueva categoría</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_240px_auto]">
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
-              minLength={2}
-              maxLength={60}
-              placeholder="Ej. Alimentos y bebidas"
-              className="min-w-0 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
-            />
-            <select
-              value={iconKey}
-              required
-              onChange={(event) => setIconKey(event.target.value as CategoryIconKey | "")}
-              className="rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-900 outline-none focus:border-blue-500"
-              aria-label="Icono de la categoría"
-            >
-              <option value="">Elige icono…</option>
-              {CATEGORY_ICON_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {CATEGORY_ICON_LABELS[key]}
-                </option>
-              ))}
-            </select>
+          <div className="mt-4 space-y-4">
+            <label className="block text-sm font-bold text-gray-700">
+              Nombre
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required
+                minLength={2}
+                maxLength={60}
+                placeholder="Ej. Alimentos y bebidas"
+                className="mt-2 block w-full min-w-0 rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500"
+              />
+            </label>
+            <IconPicker label="Selecciona un icono (vista previa)" value={iconKey} onChange={setIconKey} />
             <button
               type="submit"
-              disabled={creating}
-              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:bg-blue-400"
+              disabled={creating || !iconKey}
+              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-50"
             >
               {creating ? "Creando..." : "Agregar categoría"}
             </button>
@@ -239,64 +279,44 @@ export default function AdminCategoriesPage() {
 
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <h2 className="text-xl font-bold text-gray-900">Categorías oficiales</h2>
-
           {loading ? (
             <p className="mt-4 text-gray-600">Cargando...</p>
           ) : categories.length === 0 ? (
             <p className="mt-4 text-gray-600">Todavía no hay categorías. Crea la primera arriba.</p>
           ) : (
-            <div className="mt-4 divide-y divide-gray-200">
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
               {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-gray-900">{category.name}</div>
-                    <div
-                      className={
-                        category.active
-                          ? "mt-1 text-sm font-medium text-green-700"
-                          : "mt-1 text-sm font-medium text-gray-500"
-                      }
-                    >
-                      {category.active ? "Activa" : "Inactiva"}
-                    </div>
-                    <label className="mt-2 block max-w-xs">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">
-                        Icono
+                <article key={category.id} className="min-w-0 rounded-2xl border-2 border-gray-200 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-amber-50 text-4xl" aria-hidden="true">
+                        {ICON_PREVIEW[category.iconKey]}
                       </span>
-                      <select
-                        value={category.iconKey}
-                        onChange={(event) =>
-                          void changeCategoryIcon(
-                            category,
-                            event.target.value as CategoryIconKey,
-                          )
-                        }
-                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-900"
-                      >
-                        {CATEGORY_ICON_KEYS.map((key) => (
-                          <option key={key} value={key}>
-                            {CATEGORY_ICON_LABELS[key]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                      <div className="min-w-0">
+                        <h3 className="break-words text-lg font-bold text-gray-900">{category.name}</h3>
+                        <p className={category.active ? "mt-1 font-semibold text-green-700" : "mt-1 font-semibold text-gray-500"}>
+                          {category.active ? "Activa" : "Inactiva"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void toggleCategory(category)}
+                      className={category.active
+                        ? "shrink-0 rounded-xl border border-red-200 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
+                        : "shrink-0 rounded-xl border border-green-200 px-4 py-2 font-semibold text-green-700 hover:bg-green-50"}
+                    >
+                      {category.active ? "Desactivar" : "Activar"}
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => void toggleCategory(category)}
-                    className={
-                      category.active
-                        ? "rounded-xl border border-red-200 px-4 py-2 font-semibold text-red-700 hover:bg-red-50"
-                        : "rounded-xl border border-green-200 px-4 py-2 font-semibold text-green-700 hover:bg-green-50"
-                    }
-                  >
-                    {category.active ? "Desactivar" : "Activar"}
-                  </button>
-                </div>
+                  <div className="mt-5 border-t border-gray-200 pt-4">
+                    <IconPicker
+                      label="Cambiar icono"
+                      value={category.iconKey}
+                      onChange={(key) => void changeCategoryIcon(category, key)}
+                    />
+                  </div>
+                </article>
               ))}
             </div>
           )}

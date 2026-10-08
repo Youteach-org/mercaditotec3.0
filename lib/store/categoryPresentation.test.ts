@@ -29,7 +29,9 @@ describe("marketplace category presentation", () => {
 
   it("requires an explicit icon when creating a new category", () => {
     expect(adminCategories).toContain("Selecciona el icono que corresponde a la categoría.");
-    expect(adminCategories).toContain('Elige icono…');
+    expect(adminCategories).toContain("IconPicker");
+    expect(adminCategories).toContain("ICON_PREVIEW[key]");
+    expect(adminCategories).toContain("aria-pressed={value === key}");
     expect(adminCategories).toContain("changeCategoryIcon");
   });
 });
