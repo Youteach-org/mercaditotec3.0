@@ -61,10 +61,23 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
 
     void (async () => {
       try {
-        const response = await storeApiFetch(firebaseUser, "/api/account/session", {
-          signal: controller.signal,
-          cache: "no-store",
-        });
+        // Retry only transient backend outages. Never retry an explicit
+        // account denial, and never grant access while verification is pending.
+        let response: Response;
+        for (let retry = 0; ; retry += 1) {
+          response = await storeApiFetch(firebaseUser, "/api/account/session", {
+            signal: controller.signal,
+            cache: "no-store",
+          });
+          if (![429, 502, 503, 504].includes(response.status) || retry >= 2) break;
+          await new Promise<void>((resolve, reject) => {
+            const delay = window.setTimeout(resolve, 500 * (retry + 1));
+            controller.signal.addEventListener("abort", () => {
+              window.clearTimeout(delay);
+              reject(new DOMException("Aborted", "AbortError"));
+            }, { once: true });
+          });
+        }
         if (cancelled) return;
         if (response.ok) {
           const result = await response.json().catch(() => ({}));
