@@ -4833,3 +4833,42 @@ img:not([data-no-image-zoom="true"]) {
     font-size: 10px;
   }
 }
+
+/* Relocate announcements to the former campus-photo position. */
+@media (min-width: 981px) {
+  .mkt-bottom-blue {
+    left: 0;
+    top: 23.7%;
+    bottom: auto;
+    width: 24.1%;
+    height: 19.9%;
+    min-height: 0;
+  }
+  .mkt-quick-notices {
+    padding: 9% 7% 7%;
+    gap: 4px;
+  }
+  .mkt-quick-notices-head h2 { font-size: clamp(15px, 1.3vw, 22px); }
+  .mkt-quick-carousel { min-height: 0; }
+  .mkt-quick-card { min-height: 0; padding: 6px 8px; gap: 5px; }
+  .mkt-quick-item-title strong { font-size: clamp(10px, .85vw, 14px); }
+  .mkt-quick-card p { font-size: clamp(9px, .72vw, 12px); }
+  .mkt-quick-actions button { padding: 4px 6px; font-size: clamp(8px, .65vw, 10px); }
+}
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-bottom-blue {
+    left: 0;
+    top: 370px;
+    bottom: auto;
+    width: 28%;
+    height: 240px;
+    min-height: 0;
+  }
+  .mkt-quick-notices { padding: 23px 12px 14px; gap: 4px; }
+  .mkt-quick-notices-head h2 { font-size: 17px; }
+  .mkt-quick-carousel { min-height: 0; }
+  .mkt-quick-card { min-height: 0; padding: 6px; gap: 5px; }
+  .mkt-quick-item-title strong { font-size: 11px; }
+  .mkt-quick-card p { font-size: 10px; }
+  .mkt-quick-actions button { padding: 4px 5px; font-size: 9px; }
+}
