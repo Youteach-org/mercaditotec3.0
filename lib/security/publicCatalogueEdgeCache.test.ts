@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { serveCachedPublicCatalogue } from "./publicCatalogueEdgeCache.mjs";
+import { serveCachedPublicCatalogue, affectsPublicCatalogue, evictPublicCatalogueCache } from "./publicCatalogueEdgeCache.mjs";
 
 function memoryCache() {
   const cache = new Map<string, Response>();
@@ -74,4 +74,41 @@ describe("Cloudflare public catalogue cache", () => {
     expect(cache.match).not.toHaveBeenCalled();
     expect(cache.put).not.toHaveBeenCalled();
   });
+  it("detects only authorized successful catalogue-changing mutations", () => {
+    const successful = new Response(null, { status: 200 });
+    const created = new Response(null, { status: 201 });
+    const rejected = new Response(null, { status: 403 });
+    const changed = [
+      ["POST", "/api/admin/stores/s1/status"],
+      ["PATCH", "/api/stores/s1"],
+      ["PATCH", "/api/stores/s1/media"],
+      ["PATCH", "/api/stores/s1/schedule"],
+      ["POST", "/api/stores/s1/submit"],
+      ["POST", "/api/stores/s1/withdraw"],
+      ["POST", "/api/stores/s1/products"],
+      ["PATCH", "/api/stores/s1/products/p2"],
+      ["DELETE", "/api/stores/s1/products/p2"],
+      ["POST", "/api/admin/categories"],
+      ["PATCH", "/api/admin/categories/c3"],
+      ["PATCH", "/api/admin/marketplace-content"],
+    ];
+    for (const [method, path] of changed) {
+      const request = new Request("https://mercaditotec.store" + path, { method });
+      expect(affectsPublicCatalogue(request, successful)).toBe(true);
+      expect(affectsPublicCatalogue(request, rejected)).toBe(false);
+    }
+    expect(affectsPublicCatalogue(new Request("https://mercaditotec.store/api/orders", { method: "POST" }), created)).toBe(false);
+    expect(affectsPublicCatalogue(new Request("https://mercaditotec.store/api/marketplace-v2"), successful)).toBe(false);
+  });
+
+  it("evicts both public paths and no private endpoints after refresh", async () => {
+    const deleted: string[] = [];
+    const fakeCache = { delete: vi.fn(async (key: Request) => { deleted.push(new URL(key.url).pathname); return true; }) };
+    await evictPublicCatalogueCache(
+      new Request("https://mercaditotec.store/api/admin/categories", { method: "POST" }),
+      fakeCache,
+    );
+    expect(deleted.sort()).toEqual(["/api/marketplace", "/api/marketplace-v2"].sort());
+  });
+
 });
