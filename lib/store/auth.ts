@@ -123,7 +123,7 @@ export async function requireFirebaseUser(
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
     if (error instanceof ApiAuthError) throw error;
-    if (error instanceof FirestoreRestError && (error.status === 429 || error.status >= 500)) {
+    if (error instanceof FirestoreRestError && (error.status === 403 || error.status === 429 || error.status >= 500)) {
       // Database saturation must not be presented as an expired login.
       console.error("AUTH_PROFILE_DATA_UNAVAILABLE", error.status);
       throw new ApiAuthError(503, "El servicio de datos está temporalmente saturado. Inténtalo más tarde.");
