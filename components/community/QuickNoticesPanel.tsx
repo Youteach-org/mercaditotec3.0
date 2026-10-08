@@ -67,6 +67,22 @@ export default function QuickNoticesPanel({
     void refresh();
   }, [refresh]);
 
+  // Cycle through active posts automatically; refresh so expired or resolved
+  // notices disappear without requiring a page reload.
+  useEffect(() => {
+    if (posts.length < 2 || composerMode) return;
+    const interval = window.setInterval(() => {
+      setCurrentIndex((index) => (index + 1) % posts.length);
+    }, 7000);
+    return () => window.clearInterval(interval);
+  }, [posts.length, composerMode]);
+
+  useEffect(() => {
+    if (!user || visualPreview) return;
+    const interval = window.setInterval(() => { void refresh(); }, 60000);
+    return () => window.clearInterval(interval);
+  }, [user, visualPreview, refresh]);
+
   const currentPost = posts[currentIndex] ?? null;
 
   function moveNotice(direction: -1 | 1) {
