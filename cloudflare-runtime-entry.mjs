@@ -4,7 +4,9 @@ import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.m
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
 import { enforceHttps } from "./lib/security/enforceHttps.mjs";
-import { serveCachedPublicCatalogue } from "./lib/security/publicCatalogueEdgeCache.mjs";
+import {
+  serveCachedPublicCatalogue, affectsPublicCatalogue, evictPublicCatalogueCache,
+} from "./lib/security/publicCatalogueEdgeCache.mjs";
 
 const json = (value, init = {}) =>
   new Response(JSON.stringify(value), {
@@ -32,7 +34,10 @@ export default {
 
     const url = new URL(request.url);
 
-    if (url.pathname === "/api/internal/firebase-rules-sync") {
+    if (
+      url.pathname === "/api/internal/firebase-rules-sync" ||
+      url.pathname === "/api/internal/marketplace-catalog-refresh"
+    ) {
       return new Response("Not Found", {
         status: 404,
         headers: {
@@ -91,11 +96,38 @@ export default {
       const limited = await enforceEdgeBudget(request, env);
       if (limited) return limited;
       const bounded = await boundApiRequest(request);
-      return await serveCachedPublicCatalogue(
+      const response = await serveCachedPublicCatalogue(
         bounded,
         ctx,
         () => getHandler().fetch(bounded, env, ctx),
       );
+
+      if (affectsPublicCatalogue(request, response)) {
+        // Once an authorized mutation completes, rebuild the shared public
+        // snapshot off the response path, then evict this datacenter's cache.
+        const refresh = (async () => {
+          try {
+            const internalUrl = new URL("/api/internal/marketplace-catalog-refresh", request.url);
+            const result = await getHandler().fetch(
+              new Request(internalUrl, {
+                method: "POST",
+                headers: { "x-mercadito-internal-runtime": "materialized-marketplace-refresh-v1" },
+              }),
+              env,
+              ctx,
+            );
+            if (!result.ok) console.error("PUBLIC_CATALOGUE_REFRESH_RESPONSE", result.status);
+          } catch (error) {
+            console.error("PUBLIC_CATALOGUE_REFRESH_EXCEPTION",
+              error instanceof Error ? error.name : "UnknownError");
+          } finally {
+            await evictPublicCatalogueCache(request);
+          }
+        })();
+        if (typeof ctx?.waitUntil === "function") ctx.waitUntil(refresh);
+        else await refresh;
+      }
+      return response;
     } catch (error) {
       if (error instanceof ApiBodyLimitError) return json({ error: error.message }, { status: 413 });
       console.error(
