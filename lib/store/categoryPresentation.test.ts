@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..", "..");
 const marketplace = readFileSync(join(root, "app", "marketplace", "page.tsx"), "utf8");
+const sharedIcons = readFileSync(join(root, "components", "store", "CategoryIcon.tsx"), "utf8");
 const css = readFileSync(join(root, "app", "globals.css"), "utf8");
 const adminCategories = readFileSync(
   join(root, "app", "admin", "categories", "page.tsx"),
@@ -15,7 +16,8 @@ const adminCategories = readFileSync(
 describe("marketplace category presentation", () => {
   it("uses official iconKey from approved categories", () => {
     expect(marketplace).toContain("visualId: item.iconKey");
-    expect(marketplace).toContain('id === "entertainment"');
+    expect(sharedIcons).toContain('id === "entertainment"');
+    expect(marketplace).toContain('import CategoryIcon from "@/components/store/CategoryIcon"');
     expect(marketplace).not.toContain("categoryVisualId(name");
   });
 
@@ -30,7 +32,9 @@ describe("marketplace category presentation", () => {
   it("requires an explicit icon when creating a new category", () => {
     expect(adminCategories).toContain("Selecciona el icono que corresponde a la categoría.");
     expect(adminCategories).toContain("IconPicker");
-    expect(adminCategories).toContain("ICON_PREVIEW[key]");
+    expect(adminCategories).toContain("<CategoryIcon id={key} />");
+    expect(adminCategories).toContain("<CategoryIcon id={category.iconKey} />");
+    expect(adminCategories).not.toContain("ICON_PREVIEW");
     expect(adminCategories).toContain("aria-pressed={value === key}");
     expect(adminCategories).toContain("changeCategoryIcon");
   });
