@@ -83,6 +83,7 @@ export async function listPublicStores(activeCategoriesRequest?: ReturnType<type
       .get(),
     db.collection("products")
       .where("visibility", "==", "published")
+      .limit(300)
       .get(),
     activeCategoriesRequest ?? listActiveCategories(),
   ]);
