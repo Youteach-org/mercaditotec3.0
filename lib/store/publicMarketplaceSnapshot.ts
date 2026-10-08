@@ -6,8 +6,10 @@ import { listActiveCategories, serializeCategory } from "./categoryRepository";
 
 // Public data may be slightly delayed; privileged data and authorization
 // checks never use this cache.
-const FRESH_FOR_MS = 60_000;
-const STALE_ON_THROTTLE_FOR_MS = 180_000;
+const FRESH_FOR_MS = 5 * 60_000;
+const STALE_ON_THROTTLE_FOR_MS = 15 * 60_000;
+const BACKOFF_ON_THROTTLE_MS = 60_000;
+let throttleUntil = 0;
 
 async function readSnapshot() {
   // Deduplicate the categories query across the store/category serializers.
@@ -42,13 +44,21 @@ export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
   const now = Date.now();
   if (cached && now - cached.createdAt < FRESH_FOR_MS) return cached.snapshot;
   if (pending) return pending;
+  if (now < throttleUntil && cached && now - cached.createdAt < STALE_ON_THROTTLE_FOR_MS) {
+    return cached.snapshot;
+  }
 
   const work: Promise<Snapshot> = readSnapshot()
     .then((snapshot) => {
       cached = { snapshot, createdAt: Date.now() };
+      throttleUntil = 0;
       return snapshot;
     })
     .catch((error: unknown) => {
+      if (error instanceof FirestoreRestError && error.status === 429) {
+        throttleUntil = Date.now() + BACKOFF_ON_THROTTLE_MS;
+        console.error("PUBLIC_MARKETPLACE_FIRESTORE_QUOTA", JSON.stringify({status: error.status, message: error.message.slice(0, 300)}));
+      }
       // Only tolerate a short-lived stale *public* snapshot under provider
       // saturation. Do not invent stores, reveal private data or bypass auth.
       if (
