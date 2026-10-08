@@ -17,22 +17,8 @@ import {
   type StoreCategoryApiRecord,
 } from "@/lib/store/categoryClient";
 import { useSession } from "@/lib/useSession";
+import CategoryIcon from "@/components/store/CategoryIcon";
 
-const ICON_PREVIEW: Record<CategoryIconKey, string> = {
-  food: "🍔",
-  drinks: "🥤",
-  desserts: "🧁",
-  crafts: "🧶",
-  stationery: "✏️",
-  entertainment: "🎬",
-  clothing: "👕",
-  electronics: "📱",
-  beauty: "💄",
-  services: "🛠️",
-  books: "📚",
-  sports: "⚽",
-  other: "🛍️",
-};
 
 function IconPicker({
   value,
@@ -59,7 +45,7 @@ function IconPicker({
             onClick={() => onChange(key)}
             className={`flex min-h-24 min-w-0 flex-col items-center justify-center gap-1 rounded-xl border-2 px-2 py-3 text-center transition disabled:opacity-50 ${value === key ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-200" : "border-gray-200 bg-white hover:border-gray-400"}`}
           >
-            <span aria-hidden="true" className="text-4xl leading-none">{ICON_PREVIEW[key]}</span>
+            <span aria-hidden="true" className="mkt-category-icon-wrap !h-12 !w-12 !min-h-0 !min-w-0"><CategoryIcon id={key} /></span>
             <span className="text-xs font-semibold leading-tight text-gray-700">{CATEGORY_ICON_LABELS[key]}</span>
           </button>
         ))}
@@ -289,8 +275,8 @@ export default function AdminCategoriesPage() {
                 <article key={category.id} className="min-w-0 rounded-2xl border-2 border-gray-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-amber-50 text-4xl" aria-hidden="true">
-                        {ICON_PREVIEW[category.iconKey]}
+                      <span className="mkt-category-icon-wrap !h-16 !w-16 shrink-0" aria-hidden="true">
+                        <CategoryIcon id={category.iconKey} />
                       </span>
                       <div className="min-w-0">
                         <h3 className="break-words text-lg font-bold text-gray-900">{category.name}</h3>
