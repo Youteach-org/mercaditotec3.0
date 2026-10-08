@@ -28,8 +28,8 @@ describe("Marketplace image click behavior", () => {
 
   it("annotates both Marketplace cover and logo with their store route", () => {
     expect(cloud).toContain("data-image-double-href");
-    expect(marketplace).toContain("storeHref={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}");
-    expect(marketplace).toContain("data-image-double-href={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}");
+    expect(marketplace).toContain('storeHref={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}');
+    expect(marketplace).toContain('data-image-double-href={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}');
   });
 
   it("keeps normal card navigation available outside the zoomable image", () => {
