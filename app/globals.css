@@ -5174,3 +5174,30 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-quick-notices { padding-bottom: 41px !important; }
   .mkt-quick-actions { position: relative; z-index: 10; }
 }
+
+/* Maximize the actual notice text area: short heading, large card, safe footer. */
+@media (min-width: 1101px) {
+  .mkt-quick-notices {
+    display: grid !important;
+    grid-template-rows: 44px minmax(0, 1fr) 42px !important;
+    padding: 16px 13px 44px !important;
+    row-gap: 4px !important;
+    height: 100% !important;
+  }
+  .mkt-quick-notices-head { min-height: 0 !important; align-self: start; }
+  .mkt-quick-notices-head h2 { font-size: clamp(20px, 1.6vw, 25px) !important; }
+  .mkt-quick-carousel {
+    min-height: 0 !important;
+    height: 100% !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+  .mkt-quick-carousel-bar { top: -31px !important; }
+  .mkt-quick-card { height: 100% !important; padding: 13px 12px !important; }
+  .mkt-quick-card p { -webkit-line-clamp: 10 !important; }
+  .mkt-quick-actions {
+    height: 42px !important;
+    align-self: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
