@@ -263,6 +263,7 @@ function StoreCard({
   store,
   slotIndex,
   previewMode,
+  requiresLogin,
   onPreview,
   gallery = false,
   categoryLabels,
@@ -270,6 +271,7 @@ function StoreCard({
   store: PublicStoreSummary;
   slotIndex: number;
   previewMode: boolean;
+  requiresLogin: boolean;
   onPreview: (store: PublicStoreSummary) => void;
   gallery?: boolean;
   categoryLabels: MarketplaceContent["categoryLabels"];
@@ -294,7 +296,7 @@ function StoreCard({
           variantIndex={variantIndex}
           imageUrl={store.coverUrl}
           fallbackLabel="TIENDA"
-          storeHref={!previewMode && !demo ? storeHref : undefined}
+          storeHref={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}
         />
       </div>
 
@@ -307,7 +309,7 @@ function StoreCard({
             src={store.logoUrl}
             alt={`Logo de ${store.name}`}
             data-force-image-zoom="true"
-            data-image-double-href={!previewMode && !demo ? storeHref : undefined}
+            data-image-double-href={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}
           />
         ) : (
           <DemoLogo index={variantIndex} name={store.name} />
@@ -354,7 +356,7 @@ function StoreCard({
 
   return (
     <Link
-      href={storeHref}
+      href={requiresLogin ? "/login" : storeHref}
       className={className}
       onClickCapture={(event) => {
         // The image has its own 1-tap zoom / 2-tap navigation gesture.
@@ -375,7 +377,7 @@ function StoreCard({
 }
 
 export default function MarketplacePage() {
-  const { firebaseUser } = useSession();
+  const { firebaseUser, loading: sessionLoading } = useSession();
   const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -594,9 +596,11 @@ export default function MarketplacePage() {
 
         {!effectiveLoading && !effectiveError && (
           <>
-            <div className="mkt-bottom-blue">
-              <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
-            </div>
+            {!sessionLoading && firebaseUser && (
+              <div className="mkt-bottom-blue">
+                <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
+              </div>
+            )}
 
             <div className="mkt-bottom-campus" aria-hidden="true" />
 
@@ -606,6 +610,7 @@ export default function MarketplacePage() {
                 store={store}
                 slotIndex={index}
                 previewMode={previewMode}
+                requiresLogin={!firebaseUser || sessionLoading}
                 onPreview={setPreviewStore}
                 categoryLabels={marketplaceContent.categoryLabels}
               />
@@ -636,6 +641,7 @@ export default function MarketplacePage() {
                 slotIndex={index % 6}
                 gallery
                 previewMode={previewMode}
+                requiresLogin={!firebaseUser || sessionLoading}
                 onPreview={setPreviewStore}
                 categoryLabels={marketplaceContent.categoryLabels}
               />
