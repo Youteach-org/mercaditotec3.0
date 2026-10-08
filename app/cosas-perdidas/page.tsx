@@ -109,7 +109,7 @@ function LostAndFoundContent() {
     try {
       await resolveCommunityPostRequest(firebaseUser, postId);
       setPosts((current) => current.filter((post) => post.id !== postId));
-      setMessage("Marcado como entregado.");
+      setMessage("Dueño encontrado. La publicación ya no aparece entre los objetos pendientes.");
     } catch (resolveError) {
       setMessage(
         resolveError instanceof Error
@@ -264,7 +264,7 @@ function LostAndFoundContent() {
                       >
                         {resolvingId === post.id
                           ? "Marcando..."
-                          : "Marcar como entregado"}
+                          : "Dueño encontrado"}
                       </button>
                     )}
                   </div>
