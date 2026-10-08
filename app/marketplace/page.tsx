@@ -438,10 +438,8 @@ export default function MarketplacePage() {
   const previewMode = forceDemo || (!loading && !error && liveStores.length === 0);
   const temporaryExamples = useMemo(() => {
     if (!SHOW_TEMPORARY_EXAMPLE_STORES || previewMode) return [];
-    const needed = Math.max(0, 6 - liveStores.length);
     return DEMO_MARKETPLACE_STORES
-      .filter((demoStore) => !liveStores.some((liveStore) => liveStore.id === demoStore.id))
-      .slice(0, needed);
+      .filter((demoStore) => !liveStores.some((liveStore) => liveStore.id === demoStore.id));
   }, [liveStores, previewMode]);
   const sourceStores: PublicStoreSummary[] = previewMode
     ? DEMO_MARKETPLACE_STORES
