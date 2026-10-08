@@ -35,7 +35,7 @@ function priceLabel(storeProduct: PublicStoreDetail["products"][number]): string
 export default function PublicStorePage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
-  const { firebaseUser } = useSession();
+  const { firebaseUser, loading: sessionLoading } = useSession();
   const slug = String(params.slug ?? "");
   const [store, setStore] = useState<PublicStoreDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -46,9 +46,18 @@ export default function PublicStorePage() {
   const [feedback, setFeedback] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    if (sessionLoading) return;
+    if (!firebaseUser) {
+      router.replace("/login");
+      return;
+    }
     let cancelled = false;
+    setLoading(true);
 
-    void fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}`)
+    void firebaseUser.getIdToken().then((token) => fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }))
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar la tienda.");
@@ -66,7 +75,7 @@ export default function PublicStorePage() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, firebaseUser, sessionLoading, router]);
 
   async function requestProduct(productId: string) {
     if (!store) return;
@@ -100,7 +109,7 @@ export default function PublicStorePage() {
     }
   }
 
-  if (loading) {
+  if (sessionLoading || !firebaseUser || loading) {
     return <main className="min-h-screen bg-slate-100 p-5">Cargando tienda...</main>;
   }
 
