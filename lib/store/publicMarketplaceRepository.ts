@@ -1,4 +1,4 @@
-import { getAdminDb } from "../firestoreRest";
+import { FirestoreRestError, getAdminDb } from "../firestoreRest";
 import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
 import { listActiveCategories } from "./categoryRepository";
@@ -12,6 +12,22 @@ import {
   type PublicStoreSource,
   type PublicStoreSummary,
 } from "./publicMarketplace";
+
+// Log only query names and statuses; never log profile data or Firestore documents.
+async function observePublicQuery<T>(name: "stores" | "products", request: Promise<T>): Promise<T> {
+  try {
+    return await request;
+  } catch (error) {
+    if (error instanceof FirestoreRestError) {
+      console.error("PUBLIC_MARKETPLACE_QUERY_FAILURE", {
+        query: name,
+        httpStatus: error.status,
+        message: error.message.slice(0, 250),
+      });
+    }
+    throw error;
+  }
+}
 
 export class PublicMarketplaceError extends Error {
   constructor(public readonly status: number, message: string) {
@@ -77,16 +93,22 @@ function productSource(id: string, data: Record<string, unknown>): PublicProduct
 export async function listPublicStores(activeCategoriesRequest?: ReturnType<typeof listActiveCategories>): Promise<PublicStoreSummary[]> {
   const db = getAdminDb();
   const [storeSnapshot, productSnapshot, activeCategories] = await Promise.all([
-    db.collection("stores")
+    observePublicQuery("stores", db.collection("stores")
       .where("status", "==", "active")
       .limit(50)
-      .get(),
-    db.collection("products")
+      .get()),
+    observePublicQuery("products", db.collection("products")
       .where("visibility", "==", "published")
       .limit(300)
-      .get(),
+      .get()),
     activeCategoriesRequest ?? listActiveCategories(),
   ]);
+
+  console.info("PUBLIC_MARKETPLACE_QUERY_COUNTS", {
+    storesRead: storeSnapshot.docs.length,
+    productsRead: productSnapshot.docs.length,
+    activeCategories: activeCategories.length,
+  });
 
   const activeCategoryIds = new Set(activeCategories.map((category) => category.id));
   const categoriesByStore = new Map<string, Set<string>>();

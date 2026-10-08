@@ -12,13 +12,33 @@ const BACKOFF_ON_THROTTLE_MS = 60_000;
 let throttleUntil = 0;
 
 async function readSnapshot() {
+  const startedAt = Date.now();
   // Deduplicate the categories query across the store/category serializers.
-  const categoriesRequest = listActiveCategories();
+  const observe = async <T>(query: "categories" | "site_config", promise: Promise<T>): Promise<T> => {
+    try {
+      return await promise;
+    } catch (error) {
+      if (error instanceof FirestoreRestError) {
+        console.error("PUBLIC_MARKETPLACE_QUERY_FAILURE", {
+          query,
+          httpStatus: error.status,
+          message: error.message.slice(0, 250),
+        });
+      }
+      throw error;
+    }
+  };
+  const categoriesRequest = observe("categories", listActiveCategories());
   const [liveStores, content, categories] = await Promise.all([
     listPublicStores(categoriesRequest),
-    getMarketplaceContent(),
+    observe("site_config", getMarketplaceContent()),
     categoriesRequest,
   ]);
+  console.info("PUBLIC_MARKETPLACE_SNAPSHOT_REFRESHED", {
+    durationMs: Date.now() - startedAt,
+    realStores: liveStores.length,
+    categories: categories.length,
+  });
 
   const temporaryExamples = DEMO_MARKETPLACE_STORES
     .filter((demoStore) => !liveStores.some((store) => store.id === demoStore.id))
