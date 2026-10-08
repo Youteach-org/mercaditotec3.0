@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ApiAuthError, requireFirebaseUser } from "@/lib/store/auth";
 
 import {
   getPublicStoreDetail,
@@ -7,19 +8,19 @@ import {
 
 export const runtime = "nodejs";
 
-const PUBLIC_CACHE_HEADERS = {
-  "Cache-Control": "public, s-maxage=30, stale-while-revalidate=30",
-};
-
 export async function GET(
-  _request: Request,
+  request: Request,
   context: RouteContext<"/api/marketplace/stores/[slug]">,
 ) {
   try {
+    await requireFirebaseUser(request);
     const { slug } = await context.params;
     const store = await getPublicStoreDetail(slug);
-    return NextResponse.json({ store }, { headers: PUBLIC_CACHE_HEADERS });
+    return NextResponse.json({ store }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
+    if (error instanceof ApiAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    }
     if (error instanceof PublicMarketplaceError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
