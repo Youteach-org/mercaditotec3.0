@@ -4700,3 +4700,136 @@ img:not([data-no-image-zoom="true"]) {
     padding: 24px 18px 20px;
   }
 }
+
+/* QUICK NOTICES READABILITY — give the notice, not empty chrome, the space. */
+.mkt-bottom-blue {
+  min-height: 300px;
+}
+.mkt-quick-notices {
+  padding: 24px 26px 20px;
+  gap: 9px;
+}
+.mkt-quick-notices-head {
+  flex: 0 0 auto;
+  align-items: center;
+}
+.mkt-quick-carousel {
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-height: 116px;
+  gap: 5px;
+}
+.mkt-quick-carousel-bar {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+}
+.mkt-quick-card {
+  min-height: 110px;
+  padding: 13px 15px;
+  gap: 12px;
+  align-items: center;
+  overflow-y: auto;
+}
+.mkt-quick-card-copy {
+  align-self: center;
+}
+.mkt-quick-item-title {
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.mkt-quick-item-title strong {
+  font-size: clamp(13px, 1.05vw, 18px);
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+}
+.mkt-quick-kind {
+  font-size: 10px;
+  padding: 3px 8px;
+}
+.mkt-quick-card p {
+  font-size: clamp(11px, .9vw, 14px);
+  line-height: 1.35;
+  -webkit-line-clamp: 3;
+}
+.mkt-quick-card small,
+.mkt-quick-open-found {
+  font-size: 11px;
+  line-height: 1.3;
+}
+.mkt-quick-thumb {
+  height: 100%;
+  min-height: 90px;
+}
+.mkt-quick-thumb img {
+  min-height: 0;
+}
+.mkt-quick-nav {
+  width: 28px;
+  height: 28px;
+}
+.mkt-quick-counter {
+  font-size: 11px;
+}
+.mkt-quick-swipe-hint {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 10px;
+}
+.mkt-quick-actions {
+  flex: 0 0 auto;
+  margin-top: 0;
+  flex-wrap: wrap;
+}
+.mkt-quick-actions button,
+.mkt-quick-actions a {
+  font-size: 11px;
+  padding: 7px 12px;
+}
+@media (max-width: 980px) {
+  .mkt-bottom-blue {
+    top: 1600px;
+    height: 325px;
+    min-height: 325px;
+  }
+  .mkt-quick-notices {
+    padding: 29px 30px 20px;
+  }
+  .mkt-quick-card {
+    min-height: 125px;
+  }
+  .mkt-quick-item-title strong {
+    font-size: 16px;
+  }
+  .mkt-quick-card p {
+    font-size: 13px;
+  }
+}
+@media (max-width: 620px) {
+  .mkt-bottom-blue {
+    top: 2775px;
+    height: 335px;
+    min-height: 335px;
+  }
+  .mkt-quick-notices {
+    padding: 27px 19px 19px;
+    gap: 7px;
+  }
+  .mkt-quick-notices-head h2 {
+    font-size: 22px;
+  }
+  .mkt-quick-card {
+    padding: 10px 12px;
+    min-height: 125px;
+  }
+  .mkt-quick-item-title strong {
+    font-size: 14px;
+  }
+  .mkt-quick-card p {
+    font-size: 12px;
+  }
+  .mkt-quick-actions button {
+    font-size: 10px;
+  }
+}
