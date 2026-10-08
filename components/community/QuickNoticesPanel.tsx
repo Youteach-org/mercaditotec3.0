@@ -290,7 +290,7 @@ export default function QuickNoticesPanel({
             <span>COMUNIDAD</span>
             <h2>Avisos rápidos</h2>
           </div>
-          <Link href="/cosas-perdidas">Cosas perdidas →</Link>
+
         </div>
 
         {!user || visualPreview ? (
