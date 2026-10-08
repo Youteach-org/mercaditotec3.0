@@ -4,6 +4,7 @@ import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.m
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
 import { enforceHttps } from "./lib/security/enforceHttps.mjs";
+import { serveCachedPublicCatalogue } from "./lib/security/publicCatalogueEdgeCache.mjs";
 
 const json = (value, init = {}) =>
   new Response(JSON.stringify(value), {
@@ -90,7 +91,11 @@ export default {
       const limited = await enforceEdgeBudget(request, env);
       if (limited) return limited;
       const bounded = await boundApiRequest(request);
-      return await getHandler().fetch(bounded, env, ctx);
+      return await serveCachedPublicCatalogue(
+        bounded,
+        ctx,
+        () => getHandler().fetch(bounded, env, ctx),
+      );
     } catch (error) {
       if (error instanceof ApiBodyLimitError) return json({ error: error.message }, { status: 413 });
       console.error(
