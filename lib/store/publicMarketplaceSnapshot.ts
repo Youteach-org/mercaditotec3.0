@@ -20,7 +20,7 @@ async function readSnapshot() {
 
   const temporaryExamples = DEMO_MARKETPLACE_STORES
     .filter((demoStore) => !liveStores.some((store) => store.id === demoStore.id))
-    .slice(0, Math.max(0, 6 - liveStores.length));
+;
 
   const stores = [...liveStores, ...temporaryExamples];
   return {
