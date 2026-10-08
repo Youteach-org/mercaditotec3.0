@@ -4936,3 +4936,72 @@ img:not([data-no-image-zoom="true"]) {
   cursor: default;
   opacity: .35;
 }
+
+/* Repair compressed notices card and separate it from the Featured heading. */
+@media (min-width: 981px) {
+  .mkt-bottom-blue {
+    top: 23.7%;
+    height: 17.15%;
+    overflow: hidden;
+    z-index: 8;
+  }
+  .mkt-featured-heading { z-index: 30; }
+  .mkt-quick-notices {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding: 20px 16px 15px;
+    gap: 5px;
+    box-sizing: border-box;
+    min-height: 0;
+  }
+  .mkt-quick-notices-head { min-height: 30px; }
+  .mkt-quick-notices-head h2 { font-size: clamp(17px, 1.55vw, 24px); }
+  .mkt-quick-carousel {
+    display: grid;
+    grid-template-rows: 28px minmax(0, 1fr);
+    min-height: 0;
+    margin: 0;
+    gap: 4px;
+  }
+  .mkt-quick-carousel-bar { align-self: center; margin: 0; }
+  .mkt-quick-card {
+    min-height: 0;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 10px 11px;
+    overflow: hidden;
+    align-items: start;
+    gap: 7px;
+  }
+  .mkt-quick-card-copy { align-self: start; }
+  .mkt-quick-card p {
+    display: -webkit-box;
+    font-size: clamp(11px, .88vw, 13px);
+    line-height: 1.25;
+    -webkit-line-clamp: 2;
+    margin-top: 4px;
+  }
+  .mkt-quick-item-title strong {
+    font-size: clamp(12px, .95vw, 15px);
+    line-height: 1.12;
+  }
+  .mkt-quick-thumb { min-height: 0; max-height: 100%; }
+  .mkt-quick-swipe-hint { display: none; }
+  .mkt-quick-actions { align-items: center; justify-content: center; gap: 7px; }
+  .mkt-quick-actions button { font-size: clamp(10px, .75vw, 12px); padding: 6px 10px; }
+}
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-bottom-blue { top: 370px; height: 250px; }
+  .mkt-quick-notices { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 4px; padding: 20px 10px 14px; }
+  .mkt-quick-carousel { display: grid; grid-template-rows: 26px minmax(0, 1fr); gap: 3px; }
+  .mkt-quick-card { height: 100%; min-height: 0; overflow: hidden; }
+  .mkt-quick-card-copy { align-self: start; }
+  .mkt-quick-swipe-hint { display: none; }
+}
+@media (max-width: 620px) {
+  .mkt-quick-notices { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+  .mkt-quick-carousel { display: grid; grid-template-rows: 29px minmax(0, 1fr); min-height: 0; }
+  .mkt-quick-card { min-height: 0; height: 100%; overflow: hidden; box-sizing: border-box; }
+  .mkt-quick-card-copy { align-self: start; }
+  .mkt-quick-swipe-hint { display: none; }
+}
