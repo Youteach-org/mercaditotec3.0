@@ -382,6 +382,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
+  const [storePage, setStorePage] = useState(0);
   const [category, setCategory] = useState("all");
   const [approvedCategories, setApprovedCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
@@ -521,6 +522,16 @@ export default function MarketplacePage() {
 
   const featured = filteredStores.slice(0, 6);
   const additionalStores = filteredStores.slice(6);
+  const storesPerPage = 12;
+  const pageCount = Math.max(1, Math.ceil(additionalStores.length / storesPerPage));
+  const currentStorePage = Math.min(storePage, pageCount - 1);
+  const visibleAdditionalStores = additionalStores.slice(currentStorePage * storesPerPage, (currentStorePage + 1) * storesPerPage);
+
+  function showNextStores() {
+    if (additionalStores.length === 0) return;
+    setStorePage((current) => (current + 1) % pageCount);
+    window.setTimeout(() => document.getElementById("more-stores")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
 
   return (
     <main className="mkt-page">
@@ -549,8 +560,11 @@ export default function MarketplacePage() {
         <Doodle className="mkt-heart-title">♡</Doodle>
         <Doodle className="mkt-rays-search">///</Doodle>
 
-        <div className="mkt-campus-photo" aria-hidden="true" />
-        <div className="mkt-campus-note"><MultilineText text={marketplaceContent.campusNote} /></div>
+        {!effectiveLoading && !effectiveError && !sessionLoading && firebaseUser && (
+          <div className="mkt-bottom-blue">
+            <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
+          </div>
+        )}
 
         <form className="mkt-search" onSubmit={(event) => event.preventDefault()}>
           <SearchIcon />
@@ -596,12 +610,6 @@ export default function MarketplacePage() {
 
         {!effectiveLoading && !effectiveError && (
           <>
-            {!sessionLoading && firebaseUser && (
-              <div className="mkt-bottom-blue">
-                <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
-              </div>
-            )}
-
             <div className="mkt-bottom-campus" aria-hidden="true" />
 
             {featured.map((store, index) => (
@@ -616,7 +624,7 @@ export default function MarketplacePage() {
               />
             ))}
 
-            <div className="mkt-discover-note" aria-hidden="true">{marketplaceContent.discoverLabel} <span>→</span></div>
+            <button type="button" className="mkt-discover-note" onClick={showNextStores} disabled={additionalStores.length === 0} aria-label="Descubre más tiendas">{marketplaceContent.discoverLabel} <span>→</span></button>
             <div className="mkt-future-note"><MultilineText text={marketplaceContent.futureNote} /></div>
           </>
         )}
@@ -628,13 +636,13 @@ export default function MarketplacePage() {
       </section>
 
       {!effectiveLoading && !effectiveError && additionalStores.length > 0 && (
-        <section className="mkt-more-section" aria-label="Más tiendas de la comunidad">
+        <section id="more-stores" className="mkt-more-section" aria-label="Más tiendas de la comunidad">
           <div className="mkt-more-heading">
             <span>{marketplaceContent.moreStoresHeading}</span>
             <b aria-hidden="true">↘</b>
           </div>
           <div className="mkt-more-stores">
-            {additionalStores.map((store, index) => (
+            {visibleAdditionalStores.map((store, index) => (
               <StoreCard
                 key={store.id}
                 store={store}
@@ -647,6 +655,7 @@ export default function MarketplacePage() {
               />
             ))}
           </div>
+          {pageCount > 1 && <div className="mkt-store-pagination" aria-label="Páginas de tiendas"><button type="button" disabled={currentStorePage === 0} onClick={() => setStorePage(currentStorePage - 1)}>← Anterior</button><span>Página {currentStorePage + 1} de {pageCount}</span><button type="button" disabled={currentStorePage + 1 >= pageCount} onClick={() => setStorePage(currentStorePage + 1)}>Siguiente →</button></div>}
         </section>
       )}
 
