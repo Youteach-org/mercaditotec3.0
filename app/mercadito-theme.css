@@ -505,3 +505,22 @@ section[class*="grid-cols-2"] > button[class*="bg-white"]:nth-child(odd) {
     transform: none !important;
   }
 }
+
+/* Administration is functional UI: paper-cut decoration must never clip data,
+   interactive controls, card text, focus rings or buttons. */
+.mercadito-admin-shell .mercadito-app-content main:not(.mkt-page)
+:is(section, article, aside, header, form, button, a, div[class*="bg-red-50"], div[class*="bg-amber-50"], div[class*="bg-emerald-50"]) {
+  clip-path: none !important;
+}
+.mercadito-admin-shell .mercadito-app-content main:not(.mkt-page)
+:is(section, article, aside, header, form) {
+  overflow: visible;
+}
+.mercadito-admin-shell .mercadito-app-content main:not(.mkt-page)
+article[class*="rounded-2xl"][class*="bg-white"] {
+  border: 2px solid rgba(18,61,130,.12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 14px rgba(18,61,130,.08) !important;
+  filter: none !important;
+  transform: none !important;
+}
