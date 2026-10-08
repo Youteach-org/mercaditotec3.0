@@ -5137,3 +5137,96 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-quick-card small { font-size: 12px !important; }
   .mkt-quick-actions button { font-size: 12px !important; padding: 8px 12px !important; }
 }
+
+/* Keep interactive controls safely above the irregular painted lower edge. */
+@media (min-width: 1101px) {
+  .mkt-quick-notices {
+    padding-bottom: 59px !important;
+    gap: 8px !important;
+  }
+  .mkt-quick-actions {
+    position: relative;
+    z-index: 10;
+    align-self: center;
+    margin-bottom: 0 !important;
+  }
+  .mkt-featured-heading {
+    left: 1.6% !important;
+    top: 63.0% !important;
+    width: 24% !important;
+    height: 5.8% !important;
+    z-index: 19 !important;
+  }
+  .mkt-featured-heading h2 {
+    font-size: clamp(24px, 2.25vw, 34px) !important;
+    letter-spacing: -.035em !important;
+  }
+  .mkt-store-slot-0 {
+    top: 71.0% !important;
+  }
+}
+@media (min-width: 621px) and (max-width: 1100px) {
+  .mkt-quick-notices { padding-bottom: 36px !important; }
+  .mkt-quick-actions { position: relative; z-index: 10; }
+  .mkt-featured-heading { z-index: 18 !important; }
+}
+@media (max-width: 620px) {
+  .mkt-quick-notices { padding-bottom: 41px !important; }
+  .mkt-quick-actions { position: relative; z-index: 10; }
+}
+
+/* Maximize the actual notice text area: short heading, large card, safe footer. */
+@media (min-width: 1101px) {
+  .mkt-quick-notices {
+    display: grid !important;
+    grid-template-rows: 44px minmax(0, 1fr) 42px !important;
+    padding: 16px 13px 44px !important;
+    row-gap: 4px !important;
+    height: 100% !important;
+  }
+  .mkt-quick-notices-head { min-height: 0 !important; align-self: start; }
+  .mkt-quick-notices-head h2 { font-size: clamp(20px, 1.6vw, 25px) !important; }
+  .mkt-quick-carousel {
+    min-height: 0 !important;
+    height: 100% !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+  }
+  .mkt-quick-carousel-bar { top: -31px !important; }
+  .mkt-quick-card { height: 100% !important; padding: 13px 12px !important; }
+  .mkt-quick-card p { -webkit-line-clamp: 10 !important; }
+  .mkt-quick-actions {
+    height: 42px !important;
+    align-self: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* Keep the featured ribbon entirely in the free left column, never over shop icons. */
+@media (min-width: 1101px) {
+  .mkt-featured-heading {
+    left: 1.2% !important;
+    top: 63.3% !important;
+    width: 22.5% !important;
+    height: 5.2% !important;
+    z-index: 15 !important;
+  }
+  .mkt-featured-brush {
+    left: 0 !important;
+    width: 100% !important;
+    top: 13% !important;
+    height: 74% !important;
+  }
+  .mkt-featured-heading h2 {
+    font-size: clamp(19px, 1.64vw, 25px) !important;
+    letter-spacing: -.045em !important;
+    white-space: nowrap !important;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .mkt-featured-heading .mkt-star {
+    right: 2% !important;
+    top: -14% !important;
+    font-size: clamp(19px, 1.6vw, 26px) !important;
+  }
+}
