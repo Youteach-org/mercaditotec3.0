@@ -5264,3 +5264,24 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-bottom-blue .mkt-quick-notices { padding: 24px 18px 13px !important; }
   .mkt-bottom-blue .mkt-quick-actions button { padding: 8px 11px !important; font-size: 12px !important; }
 }
+
+/* Featured ribbon fits exclusively in the left column. Keep shop positions,
+   the quick-notices panel and the collage's vertical layout unchanged. */
+@media (min-width: 1101px) {
+  .mkt-featured-heading {
+    width: 21.5% !important;
+  }
+  .mkt-featured-brush {
+    left: -1% !important;
+    width: 100% !important;
+  }
+  .mkt-featured-heading h2 {
+    font-size: clamp(20px, 1.75vw, 30px) !important;
+    letter-spacing: -.055em !important;
+    white-space: nowrap;
+  }
+  .mkt-featured-heading .mkt-star {
+    right: 2% !important;
+    font-size: clamp(20px, 1.7vw, 28px) !important;
+  }
+}
