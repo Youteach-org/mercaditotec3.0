@@ -547,8 +547,11 @@ export default function MarketplacePage() {
         <Doodle className="mkt-heart-title">♡</Doodle>
         <Doodle className="mkt-rays-search">///</Doodle>
 
-        <div className="mkt-campus-photo" aria-hidden="true" />
-        <div className="mkt-campus-note"><MultilineText text={marketplaceContent.campusNote} /></div>
+        {!effectiveLoading && !effectiveError && firebaseUser && (
+          <div className="mkt-bottom-blue">
+            <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
+          </div>
+        )}
 
         <form className="mkt-search" onSubmit={(event) => event.preventDefault()}>
           <SearchIcon />
@@ -594,10 +597,6 @@ export default function MarketplacePage() {
 
         {!effectiveLoading && !effectiveError && (
           <>
-            <div className="mkt-bottom-blue">
-              <QuickNoticesPanel user={firebaseUser} visualPreview={forceDemo} />
-            </div>
-
             <div className="mkt-bottom-campus" aria-hidden="true" />
 
             {featured.map((store, index) => (
