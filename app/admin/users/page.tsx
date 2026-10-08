@@ -39,6 +39,20 @@ const TRUST_CLASS: Record<StudentTrustStatus, string> = {
   revoked: "bg-red-100 text-red-800",
 };
 
+type TrustFilter = "all" | StudentTrustStatus;
+
+const TRUST_FILTER_STORAGE_KEY = "mercadito-admin-users-trust-filter";
+const TRUST_FILTER_VALUES: readonly TrustFilter[] = [
+  "all",
+  "pending",
+  "verified",
+  "revoked",
+];
+
+function isTrustFilter(value: string | null): value is TrustFilter {
+  return value !== null && TRUST_FILTER_VALUES.includes(value as TrustFilter);
+}
+
 export default function AdminUsersPage() {
   const router = useRouter();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
@@ -52,7 +66,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
-  const [trustFilter, setTrustFilter] = useState<"all" | StudentTrustStatus>("all");
+  const [trustFilter, setTrustFilter] = useState<TrustFilter>("all");
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -62,6 +76,18 @@ export default function AdminUsersPage() {
     }
     if (!isAdmin) router.replace("/marketplace");
   }, [firebaseUser, isAdmin, router, sessionLoading]);
+
+  useEffect(() => {
+    const savedFilter = window.sessionStorage.getItem(TRUST_FILTER_STORAGE_KEY);
+    if (isTrustFilter(savedFilter)) {
+      setTrustFilter(savedFilter);
+    }
+  }, []);
+
+  function selectTrustFilter(value: TrustFilter) {
+    setTrustFilter(value);
+    window.sessionStorage.setItem(TRUST_FILTER_STORAGE_KEY, value);
+  }
 
   const loadUsers = useCallback(async () => {
     if (!firebaseUser || !isAdmin) return;
@@ -251,7 +277,7 @@ export default function AdminUsersPage() {
               <button
                 key={value}
                 type="button"
-                onClick={() => setTrustFilter(value)}
+                onClick={() => selectTrustFilter(value)}
                 className={
                   trustFilter === value
                     ? "rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white"

@@ -33,4 +33,11 @@ describe("Admin users card actions", () => {
     expect(pageSource).toContain("Hacer Subadmin");
     expect(pageSource).toContain("Quitar Subadmin");
   });
+
+  it("persists the trust filter across remounts so approving one pending user does not return to Todos", () => {
+    expect(pageSource).toContain("TRUST_FILTER_STORAGE_KEY");
+    expect(pageSource).toContain("window.sessionStorage.getItem");
+    expect(pageSource).toContain("window.sessionStorage.setItem");
+    expect(pageSource).toContain("selectTrustFilter(value)");
+  });
 });
