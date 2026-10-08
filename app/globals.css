@@ -5137,3 +5137,40 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-quick-card small { font-size: 12px !important; }
   .mkt-quick-actions button { font-size: 12px !important; padding: 8px 12px !important; }
 }
+
+/* Keep interactive controls safely above the irregular painted lower edge. */
+@media (min-width: 1101px) {
+  .mkt-quick-notices {
+    padding-bottom: 59px !important;
+    gap: 8px !important;
+  }
+  .mkt-quick-actions {
+    position: relative;
+    z-index: 10;
+    align-self: center;
+    margin-bottom: 0 !important;
+  }
+  .mkt-featured-heading {
+    left: 1.6% !important;
+    top: 63.0% !important;
+    width: 24% !important;
+    height: 5.8% !important;
+    z-index: 19 !important;
+  }
+  .mkt-featured-heading h2 {
+    font-size: clamp(24px, 2.25vw, 34px) !important;
+    letter-spacing: -.035em !important;
+  }
+  .mkt-store-slot-0 {
+    top: 71.0% !important;
+  }
+}
+@media (min-width: 621px) and (max-width: 1100px) {
+  .mkt-quick-notices { padding-bottom: 36px !important; }
+  .mkt-quick-actions { position: relative; z-index: 10; }
+  .mkt-featured-heading { z-index: 18 !important; }
+}
+@media (max-width: 620px) {
+  .mkt-quick-notices { padding-bottom: 41px !important; }
+  .mkt-quick-actions { position: relative; z-index: 10; }
+}
