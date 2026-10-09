@@ -323,6 +323,8 @@ function StoreCard({
 export default function MarketplacePage() {
   const { firebaseUser, loading: sessionLoading } = useSession();
   const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
+  const [activeStores, setActiveStores] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
@@ -361,6 +363,7 @@ export default function MarketplacePage() {
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
         if (!cancelled) {
           setLiveStores(Array.isArray(data.stores) ? data.stores : []);
+          setActiveStores(typeof data.realStoreCount === "number" ? data.realStoreCount : null);
           setApprovedCategories(Array.isArray(data.categories) ? data.categories : []);
           if (data.content) setMarketplaceContent(data.content as MarketplaceContent);
         }
@@ -376,6 +379,36 @@ export default function MarketplacePage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (sessionLoading || !firebaseUser || forceDemo) {
+      setRegisteredUsers(null);
+      return;
+    }
+    let cancelled = false;
+    void firebaseUser.getIdToken()
+      .then((token) => fetch("/api/community-stats", {
+        headers: { authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }))
+      .then(async (response) => {
+        if (!response.ok) throw new Error("No se pudo consultar el contador");
+        return response.json();
+      })
+      .then((data: { registeredUsers?: unknown }) => {
+        if (!cancelled) {
+          setRegisteredUsers(
+            typeof data.registeredUsers === "number" && data.registeredUsers >= 0
+              ? data.registeredUsers
+              : null,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRegisteredUsers(null);
+      });
+    return () => { cancelled = true; };
+  }, [firebaseUser, sessionLoading, forceDemo]);
 
   const effectiveLoading = forceDemo ? false : loading;
   const effectiveError = forceDemo ? "" : error;
@@ -492,6 +525,12 @@ export default function MarketplacePage() {
             <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
           <p><MultilineText text={marketplaceContent.heroSubtitle} /></p>
+          {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
+            <div className="mkt-community-counts" aria-label="Cifras de la comunidad">
+              {registeredUsers !== null && <span><strong>{registeredUsers.toLocaleString("es-MX")}</strong> usuarios registrados</span>}
+              {activeStores !== null && <span><strong>{activeStores.toLocaleString("es-MX")}</strong> tiendas activas</span>}
+            </div>
+          )}
         </div>
 
         <div className="mkt-pink-note"><MultilineText text={marketplaceContent.pinkNote} /></div>
