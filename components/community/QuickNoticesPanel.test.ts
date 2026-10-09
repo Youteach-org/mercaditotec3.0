@@ -10,6 +10,30 @@ const panelSource = readFileSync(
 );
 
 describe("Quick notices mini board", () => {
+  it("automatically rotates every seven seconds but does not refetch posts for each slide", () => {
+    expect(panelSource).toContain("QUICK_NOTICE_ROTATION_INTERVAL_MS");
+    expect(panelSource).toContain("window.setInterval");
+    expect(panelSource).toContain("window.clearInterval");
+    expect(panelSource).toContain("nextQuickNoticeIndex(current, posts.length)");
+    expect(panelSource).toContain('document.visibilityState === "hidden"');
+    expect(panelSource).toContain("posts.length <= 1");
+    expect(panelSource).toContain("rotationPaused || isHovered || hasFocus");
+    const intervalBody = panelSource.split("const timer = window.setInterval(")[1]?.split("}, QUICK_NOTICE_ROTATION_INTERVAL_MS)")[0];
+    expect(intervalBody).toBeDefined();
+    expect(intervalBody).not.toContain("refresh(");
+  });
+
+  it("lets people pause, swipe or use arrows and animates the active notice", () => {
+    expect(panelSource).toContain("Pausar rotación de avisos");
+    expect(panelSource).toContain("Reanudar rotación de avisos");
+    expect(panelSource).toContain("mkt-quick-card-anim-");
+    expect(panelSource).toContain("setManualNavigationVersion");
+    expect(panelSource).toContain("onPointerEnter");
+    expect(panelSource).toContain('event.pointerType === "mouse"');
+    expect(panelSource).toContain(':focus-visible');
+    expect(panelSource).toContain("onFocus");
+  });
+
   it("loads recent community posts and shows only the current post", () => {
     expect(panelSource).toContain("loadCommunityPosts");
     expect(panelSource).toContain("limit: 12");
