@@ -6,7 +6,7 @@ import { listActiveCategories, serializeCategory } from "./categoryRepository";
 
 // Public data may be slightly delayed; privileged data and authorization
 // checks never use this cache.
-const FRESH_FOR_MS = 5 * 60_000;
+const FRESH_FOR_MS = 60_000;
 const STALE_ON_THROTTLE_FOR_MS = 15 * 60_000;
 const BACKOFF_ON_THROTTLE_MS = 60_000;
 let throttleUntil = 0;
@@ -63,7 +63,9 @@ type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
 // Mutation-triggered rebuilds keep it current; a slow safety refresh covers
 // updates made directly in Firebase outside of Mercadito's APIs.
 const SNAPSHOT_COLLECTION = "public_marketplace_cache";
-const SNAPSHOT_ID = "catalog-v1";
+// Version 2 forces a fresh read of stores already approved before this repair.
+const SNAPSHOT_ID = "catalog-v2";
+const PREVIOUS_SNAPSHOT_ID = "catalog-v1";
 const SAFETY_REFRESH_MS = 24 * 60 * 60 * 1000;
 const MAX_STALE_ON_OUTAGE_MS = 48 * 60 * 60 * 1000;
 const MAX_DOCUMENT_BYTES = 700_000;
@@ -84,14 +86,33 @@ function isPublicSnapshot(value: unknown): value is Snapshot {
   );
 }
 
-async function readMaterialized(): Promise<{ snapshot: Snapshot; ageMs: number } | null> {
-  const doc = await materializedReference().get();
-  if (!doc.exists) return null;
-  const data = doc.data();
+type SavedSnapshot = { snapshot: Snapshot; ageMs: number; invalidated: boolean };
+
+function savedSnapshotData(data: Record<string, unknown> | undefined): SavedSnapshot | null {
   const stamp = data?.generatedAt;
   const snapshot = data?.snapshot;
   if (!(stamp instanceof Timestamp) || !isPublicSnapshot(snapshot)) return null;
-  return { snapshot, ageMs: Math.max(0, Date.now() - stamp.toMillis()) };
+  const revision = typeof data?.revision === "string" ? data.revision : "";
+  const processedRevision =
+    typeof data?.processedRevision === "string" ? data.processedRevision : "";
+  return {
+    snapshot,
+    ageMs: Math.max(0, Date.now() - stamp.toMillis()),
+    invalidated: revision !== processedRevision,
+  };
+}
+
+async function readMaterialized(): Promise<SavedSnapshot | null> {
+  const doc = await materializedReference().get();
+  return doc.exists ? savedSnapshotData(doc.data()) : null;
+}
+
+async function readPreviousSnapshot(): Promise<SavedSnapshot | null> {
+  const doc = await getAdminDb()
+    .collection(SNAPSHOT_COLLECTION)
+    .doc(PREVIOUS_SNAPSHOT_ID)
+    .get();
+  return doc.exists ? savedSnapshotData(doc.data()) : null;
 }
 
 /**
@@ -101,13 +122,21 @@ async function readMaterialized(): Promise<{ snapshot: Snapshot; ageMs: number }
  * remains intact; a later mutation or the safety refresh will retry.
  */
 export async function rebuildPublicMarketplaceSnapshot(): Promise<Snapshot> {
+  // Read the revision before querying stores. If an approval happens during
+  // the rebuild, its newer revision will survive our merge and trigger a retry.
+  const baseline = await materializedReference().get();
+  const value = baseline.data()?.revision;
+  const processedRevision = typeof value === "string" ? value : "";
   const result = await readSnapshot();
   const bytes = new TextEncoder().encode(JSON.stringify(result)).length;
   if (bytes > MAX_DOCUMENT_BYTES) {
     console.error("PUBLIC_MARKETPLACE_MATERIALIZATION_TOO_LARGE", { bytes });
     throw new Error("El catálogo público supera el tamaño seguro de un documento.");
   }
-  await materializedReference().set({ snapshot: result, generatedAt: Timestamp.now() });
+  await materializedReference().set(
+    { snapshot: result, generatedAt: Timestamp.now(), processedRevision },
+    { merge: true },
+  );
   cached = { snapshot: result, createdAt: Date.now() };
   throttleUntil = 0;
   console.info("PUBLIC_MARKETPLACE_MATERIALIZED", {
@@ -131,20 +160,26 @@ export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
 
   const work: Promise<Snapshot> = (async () => {
     const stored = await readMaterialized();
-    if (stored && stored.ageMs < SAFETY_REFRESH_MS) {
+    if (stored && !stored.invalidated && stored.ageMs < SAFETY_REFRESH_MS) {
       console.info("PUBLIC_MARKETPLACE_MATERIALIZED_HIT", { ageMinutes: Math.round(stored.ageMs / 60_000) });
       return stored.snapshot;
+    }
+    if (stored?.invalidated) {
+      console.info("PUBLIC_MARKETPLACE_INVALIDATED", { ageMinutes: Math.round(stored.ageMs / 60_000) });
     }
 
     try {
       return await rebuildPublicMarketplaceSnapshot();
     } catch (error) {
-      if (stored && stored.ageMs < MAX_STALE_ON_OUTAGE_MS) {
+      // Keep the old catalogue available if Firestore is throttled during
+      // the one-time v2 migration; never turn a cache refresh into an outage.
+      const fallback = stored ?? await readPreviousSnapshot().catch(() => null);
+      if (fallback && fallback.ageMs < MAX_STALE_ON_OUTAGE_MS) {
         console.warn("PUBLIC_MARKETPLACE_STALE_MATERIALIZATION", {
-          ageMinutes: Math.round(stored.ageMs / 60_000),
+          ageMinutes: Math.round(fallback.ageMs / 60_000),
           error: error instanceof Error ? error.name : "UnknownError",
         });
-        return stored.snapshot;
+        return fallback.snapshot;
       }
       throw error;
     }
