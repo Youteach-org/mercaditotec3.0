@@ -18,7 +18,9 @@ describe("Quick notices mini board", () => {
     expect(panelSource).toContain('document.visibilityState === "hidden"');
     expect(panelSource).toContain("posts.length <= 1");
     expect(panelSource).toContain("rotationPaused || isHovered || hasFocus");
-    expect(panelSource).not.toMatch(/setInterval\([^]*?refresh\(/);
+    const intervalBody = panelSource.split("const timer = window.setInterval(")[1]?.split("}, QUICK_NOTICE_ROTATION_INTERVAL_MS)")[0];
+    expect(intervalBody).toBeDefined();
+    expect(intervalBody).not.toContain("refresh(");
   });
 
   it("lets people pause, swipe or use arrows and animates the active notice", () => {
