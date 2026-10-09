@@ -5308,3 +5308,41 @@ img:not([data-no-image-zoom="true"]) {
     animation: none !important;
   }
 }
+
+/* Real community counters: part of the yellow paper, not an extra square card. */
+.mkt-title-paper .mkt-community-counts {
+  position: absolute;
+  z-index: 4;
+  left: 6%;
+  right: 6%;
+  bottom: 5%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 17px;
+  color: #12346f;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: clamp(8px, .79vw, 12px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  transform: rotate(.4deg);
+}
+.mkt-title-paper .mkt-community-counts span { white-space: nowrap; }
+.mkt-title-paper .mkt-community-counts strong {
+  font-size: 1.35em;
+  font-weight: 1000;
+  margin-right: 3px;
+}
+@media (min-width: 981px) {
+  .mkt-title-paper:has(.mkt-community-counts) p { margin-top: .7%; }
+  .mkt-title-paper .mkt-community-counts { bottom: 5%; }
+}
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-title-paper .mkt-community-counts { bottom: 6%; font-size: 10px; }
+}
+@media (max-width: 620px) {
+  .mkt-title-paper .mkt-community-counts { bottom: 7%; font-size: 10px; gap: 4px 12px; }
+  .mkt-title-paper:has(.mkt-community-counts) p { margin-top: 7px; }
+}
