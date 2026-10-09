@@ -508,6 +508,18 @@ export async function adminSetStoreStatus(
     }
 
     transaction.update(reference, { ...mutation, ...extra, updatedAt: now });
+
+    // Approval, reactivation and suspension must invalidate the shared
+    // catalogue atomically with the store status, not only in a best-effort
+    // Cloudflare waitUntil task. Keep existing snapshot data via merge.
+    if (target === "active" || target === "suspended") {
+      transaction.set(
+        db.collection("public_marketplace_cache").doc("catalog-v2"),
+        { revision: crypto.randomUUID() },
+        { merge: true },
+      );
+    }
+
     result = { ...current, ...mutation, ...extra, updatedAt: now };
   });
 
