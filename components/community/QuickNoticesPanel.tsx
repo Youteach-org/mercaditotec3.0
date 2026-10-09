@@ -10,6 +10,7 @@ import {
   loadCommunityPosts,
 } from "@/lib/community/client";
 import type { CommunityPostApiRecord } from "@/lib/community/http";
+import { QUICK_NOTICE_ROTATION_INTERVAL_MS, nextQuickNoticeIndex } from "@/lib/community/carousel";
 import { buildCommunityPostMediaPath } from "@/lib/community/media";
 import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { validateMediaFileMeta } from "@/lib/store/media";
@@ -25,6 +26,11 @@ export default function QuickNoticesPanel({
 }) {
   const [posts, setPosts] = useState<CommunityPostApiRecord[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [rotationPaused, setRotationPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasFocus, setHasFocus] = useState(false);
+  const [manualNavigationVersion, setManualNavigationVersion] = useState(0);
+  const [slideDirection, setSlideDirection] = useState<"forward" | "backward">("forward");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [composerMode, setComposerMode] = useState<ComposerMode>(null);
@@ -67,16 +73,35 @@ export default function QuickNoticesPanel({
     void refresh();
   }, [refresh]);
 
+  // Advance the posts already in memory. Seven-second rotation does not
+  // trigger new Firestore reads or rerun the community-posts endpoint.
+  // Pauses while the reader is interacting, composing, or away from this tab.
+  useEffect(() => {
+    if (
+      posts.length <= 1 || !user || visualPreview || composerMode !== null ||
+      rotationPaused || isHovered || hasFocus
+    ) return;
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      setSlideDirection("forward");
+      setCurrentIndex((current) => nextQuickNoticeIndex(current, posts.length));
+    }, QUICK_NOTICE_ROTATION_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [
+    posts.length, user, visualPreview, composerMode,
+    rotationPaused, isHovered, hasFocus, manualNavigationVersion,
+  ]);
+
   const currentPost = posts[currentIndex] ?? null;
 
   function moveNotice(direction: -1 | 1) {
     if (posts.length <= 1) return;
-    setCurrentIndex((current) => {
-      const next = current + direction;
-      if (next < 0) return posts.length - 1;
-      if (next >= posts.length) return 0;
-      return next;
-    });
+    setSlideDirection(direction === 1 ? "forward" : "backward");
+    setCurrentIndex((current) => nextQuickNoticeIndex(current, posts.length, direction));
+    // Give people a full seven seconds after a manual change.
+    setManualNavigationVersion((current) => current + 1);
   }
 
   function handleTouchStart(event: React.TouchEvent<HTMLElement>) {
@@ -305,7 +330,15 @@ export default function QuickNoticesPanel({
             <p>Todavía no hay avisos. Puedes publicar el primero.</p>
           </div>
         ) : currentPost ? (
-          <div className="mkt-quick-carousel">
+          <div
+            className="mkt-quick-carousel"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onFocus={() => setHasFocus(true)}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
+            }}
+          >
             <div className="mkt-quick-carousel-bar">
               <button
                 type="button"
@@ -328,10 +361,20 @@ export default function QuickNoticesPanel({
               >
                 ›
               </button>
+              <button
+                type="button"
+                className="mkt-quick-nav mkt-quick-pause"
+                onClick={() => setRotationPaused((paused) => !paused)}
+                aria-label={rotationPaused ? "Reanudar rotación de avisos" : "Pausar rotación de avisos"}
+                title={rotationPaused ? "Reanudar" : "Pausar"}
+              >
+                {rotationPaused ? "▶" : "Ⅱ"}
+              </button>
             </div>
 
             <article
-              className={`mkt-quick-card ${currentPost.imageUrl ? "mkt-quick-card-with-image" : ""}`}
+              key={currentPost.id}
+              className={`mkt-quick-card mkt-quick-card-anim-${slideDirection} ${currentPost.imageUrl ? "mkt-quick-card-with-image" : ""}`}
               tabIndex={0}
               aria-live="polite"
               onTouchStart={handleTouchStart}
