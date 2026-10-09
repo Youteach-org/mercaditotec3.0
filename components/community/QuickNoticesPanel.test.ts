@@ -26,7 +26,9 @@ describe("Quick notices mini board", () => {
     expect(panelSource).toContain("Reanudar rotación de avisos");
     expect(panelSource).toContain("mkt-quick-card-anim-");
     expect(panelSource).toContain("setManualNavigationVersion");
-    expect(panelSource).toContain("onMouseEnter");
+    expect(panelSource).toContain("onPointerEnter");
+    expect(panelSource).toContain('event.pointerType === "mouse"');
+    expect(panelSource).toContain(':focus-visible');
     expect(panelSource).toContain("onFocus");
   });
 
