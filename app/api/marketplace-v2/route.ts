@@ -10,7 +10,7 @@ export const revalidate = 0;
 // cache prevents repeat visitors from consuming Firestore's read quota.
 const HEADERS = {
   "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
-  "CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+  "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=120",
 };
 
 export async function GET() {
