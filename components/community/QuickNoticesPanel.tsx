@@ -332,9 +332,20 @@ export default function QuickNoticesPanel({
         ) : currentPost ? (
           <div
             className="mkt-quick-carousel"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            onFocus={() => setHasFocus(true)}
+            onPointerEnter={(event) => {
+              // Touchscreens do not have a persistent hover state.
+              if (event.pointerType === "mouse") setIsHovered(true);
+            }}
+            onPointerLeave={(event) => {
+              if (event.pointerType === "mouse") setIsHovered(false);
+            }}
+            onFocus={(event) => {
+              // Keyboard focus pauses rotation; tapping a mobile arrow does not
+              // leave the carousel permanently frozen by focus.
+              if (event.target instanceof HTMLElement && event.target.matches(":focus-visible")) {
+                setHasFocus(true);
+              }
+            }}
             onBlur={(event) => {
               if (!event.currentTarget.contains(event.relatedTarget)) setHasFocus(false);
             }}
