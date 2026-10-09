@@ -11,6 +11,7 @@ import {
   type StudentTrustStatus,
 } from "@/lib/security/domain";
 import { storeApiFetch } from "@/lib/store/client";
+import { readAdminUsersResponse } from "./response";
 import { useSession } from "@/lib/useSession";
 
 interface AdminUserSummary {
@@ -61,6 +62,7 @@ export default function AdminUsersPage() {
 
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [usersLoaded, setUsersLoaded] = useState(false);
   const [workingUid, setWorkingUid] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -92,13 +94,14 @@ export default function AdminUsersPage() {
   const loadUsers = useCallback(async () => {
     if (!firebaseUser || !isAdmin) return;
     setLoading(true);
+    setUsersLoaded(false);
     setError("");
 
     try {
-      const response = await storeApiFetch(firebaseUser, "/api/admin/users");
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "No se pudieron cargar los usuarios.");
-      setUsers(Array.isArray(data.users) ? data.users : []);
+      const response = await storeApiFetch(firebaseUser, "/api/admin/users", { cache: "no-store" });
+      const loadedUsers = await readAdminUsersResponse<AdminUserSummary>(response);
+      setUsers(loadedUsers);
+      setUsersLoaded(true);
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "No se pudieron cargar los usuarios.",
@@ -310,13 +313,26 @@ export default function AdminUsersPage() {
               </p>
             </div>
             <span className="text-sm font-bold text-gray-500">
-              {users.filter((user) => user.adminRole).length} cuenta(s) administrativas
+              {loading ? "Cargando administradores..." : usersLoaded ? `${users.filter((user) => user.adminRole).length} cuenta(s) administrativas` : "Administradores no disponibles"}
             </span>
           </div>
         </section>
 
         {loading ? (
           <section className="rounded-2xl bg-white p-6 shadow-md">Cargando usuarios...</section>
+        ) : !usersLoaded ? (
+          <section className="rounded-2xl bg-white p-6 shadow-md">
+            <p className="text-sm text-gray-700">
+              No se pudo obtener la lista. Esto no significa que se hayan eliminado cuentas.
+            </p>
+            <button
+              type="button"
+              onClick={() => void loadUsers()}
+              className="mt-3 rounded-xl bg-[#174db4] px-5 py-2.5 text-sm font-bold text-white hover:opacity-90"
+            >
+              Reintentar carga
+            </button>
+          </section>
         ) : visibleUsers.length === 0 ? (
           <section className="rounded-2xl bg-white p-8 text-center shadow-md">
             No se encontraron usuarios.
