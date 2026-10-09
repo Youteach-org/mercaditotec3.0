@@ -9,7 +9,7 @@ export const revalidate = 0;
 // The public storefront is eventually consistent. A short shared response
 // cache prevents repeat visitors from consuming Firestore's read quota.
 const HEADERS = {
-  "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
+  "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
   "CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=600",
 };
 
