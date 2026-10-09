@@ -524,11 +524,31 @@ export default function MarketplacePage() {
             {marketplaceContent.heroTitle}
             <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
-          <p><MultilineText text={marketplaceContent.heroSubtitle} /></p>
+          <p className="mkt-hero-subtitle"><MultilineText text={marketplaceContent.heroSubtitle} /></p>
           {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
             <div className="mkt-community-counts" aria-label="Cifras de la comunidad">
-              {registeredUsers !== null && <span><strong>{registeredUsers.toLocaleString("es-MX")}</strong> usuarios registrados</span>}
-              {activeStores !== null && <span><strong>{activeStores.toLocaleString("es-MX")}</strong> tiendas activas</span>}
+              {registeredUsers !== null && (
+                <div className="mkt-community-count">
+                  <div className="mkt-community-figure">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M19 14a5 5 0 0 1 2 4v2"/>
+                    </svg>
+                    <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
+                  </div>
+                  <span>Usuarios registrados</span>
+                </div>
+              )}
+              {activeStores !== null && (
+                <div className="mkt-community-count">
+                  <div className="mkt-community-figure">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3 9 5 3h14l2 6v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0V9ZM5 14v7h14v-7M9 21v-7h6v7"/>
+                    </svg>
+                    <strong>{activeStores.toLocaleString("es-MX")}</strong>
+                  </div>
+                  <span>Tiendas activas</span>
+                </div>
+              )}
             </div>
           )}
         </div>

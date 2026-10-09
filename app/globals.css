@@ -5309,40 +5309,87 @@ img:not([data-no-image-zoom="true"]) {
   }
 }
 
-/* Real community counters: part of the yellow paper, not an extra square card. */
+/* On the yellow collage: subtitles above two readable illustrated counters. */
+.mkt-title-paper:has(.mkt-community-counts) h1 {
+  font-size: clamp(32px, 4.55vw, 67px);
+  line-height: .80;
+}
+.mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+  position: absolute !important;
+  top: 65%;
+  left: 24%;
+  right: 9%;
+  width: auto;
+  margin: 0 !important;
+  text-align: center;
+  font-size: clamp(10px, 1.05vw, 16px);
+  line-height: 1.22;
+  transform: rotate(-2deg);
+}
 .mkt-title-paper .mkt-community-counts {
   position: absolute;
   z-index: 4;
-  left: 6%;
-  right: 6%;
-  bottom: 5%;
+  top: 80%;
+  bottom: auto !important;
+  left: 15%;
+  right: 10%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px 17px;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 12px;
+  margin: 0;
   color: #12346f;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: clamp(8px, .79vw, 12px);
-  font-weight: 800;
-  line-height: 1.2;
   text-align: center;
-  transform: rotate(.4deg);
+  transform: none;
 }
-.mkt-title-paper .mkt-community-counts span { white-space: nowrap; }
-.mkt-title-paper .mkt-community-counts strong {
-  font-size: 1.35em;
-  font-weight: 1000;
-  margin-right: 3px;
+.mkt-title-paper .mkt-community-count {
+  min-width: 0;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
 }
-@media (min-width: 981px) {
-  .mkt-title-paper:has(.mkt-community-counts) p { margin-top: .7%; }
-  .mkt-title-paper .mkt-community-counts { bottom: 5%; }
+.mkt-title-paper .mkt-community-figure {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.mkt-title-paper .mkt-community-figure svg {
+  display: block;
+  width: clamp(16px, 1.7vw, 25px);
+  height: clamp(16px, 1.7vw, 25px);
+  flex-shrink: 0;
+}
+.mkt-title-paper .mkt-community-figure strong {
+  font-size: clamp(16px, 1.65vw, 27px);
+  font-weight: 900;
+  line-height: 1;
+  margin: 0;
+}
+.mkt-title-paper .mkt-community-count > span {
+  font-size: clamp(8px, .86vw, 13px);
+  font-weight: 700;
+  line-height: 1.12;
 }
 @media (min-width: 621px) and (max-width: 980px) {
-  .mkt-title-paper .mkt-community-counts { bottom: 6%; font-size: 10px; }
+  .mkt-title-paper:has(.mkt-community-counts) h1 { font-size: clamp(35px, 7.5vw, 62px); }
+  .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle { top: 63%; left: 23%; right: 7%; font-size: 12px; }
+  .mkt-title-paper .mkt-community-counts { top: 81%; left: 12%; right: 9%; }
+  .mkt-title-paper .mkt-community-figure strong { font-size: 20px; }
+  .mkt-title-paper .mkt-community-count > span { font-size: 10px; }
 }
 @media (max-width: 620px) {
-  .mkt-title-paper .mkt-community-counts { bottom: 7%; font-size: 10px; gap: 4px 12px; }
-  .mkt-title-paper:has(.mkt-community-counts) p { margin-top: 7px; }
+  .mkt-title-paper:has(.mkt-community-counts) h1 { font-size: clamp(34px, 12vw, 54px); }
+  .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle { top: 63%; left: 20%; right: 7%; font-size: 11px; }
+  .mkt-title-paper .mkt-community-counts { top: 81%; left: 10%; right: 7%; gap: 6px; }
+  .mkt-title-paper .mkt-community-figure { gap: 4px; }
+  .mkt-title-paper .mkt-community-figure strong { font-size: 18px; }
+  .mkt-title-paper .mkt-community-count > span { font-size: 9px; }
+  .mkt-title-paper .mkt-community-figure svg { width: 18px; height: 18px; }
 }
+
