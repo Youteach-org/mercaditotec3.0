@@ -5285,3 +5285,26 @@ img:not([data-no-image-zoom="true"]) {
     font-size: clamp(20px, 1.7vw, 28px) !important;
   }
 }
+
+/* Quick notices move between posts without moving the scrapbook panel itself. */
+.mkt-quick-carousel .mkt-quick-card-anim-forward {
+  animation: mkt-quick-notice-enter-forward 420ms ease-out both;
+}
+.mkt-quick-carousel .mkt-quick-card-anim-backward {
+  animation: mkt-quick-notice-enter-backward 420ms ease-out both;
+}
+@keyframes mkt-quick-notice-enter-forward {
+  from { opacity: .3; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes mkt-quick-notice-enter-backward {
+  from { opacity: .3; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.mkt-quick-pause { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) {
+  .mkt-quick-carousel .mkt-quick-card-anim-forward,
+  .mkt-quick-carousel .mkt-quick-card-anim-backward {
+    animation: none !important;
+  }
+}
