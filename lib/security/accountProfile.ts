@@ -1,4 +1,5 @@
 import { parseImageUploadPath } from "../store/media";
+import { notifyAdminsSafely } from "../notifications/repository";
 import type { DecodedIdToken } from "../firebaseAdmin";
 import { FirestoreRestError, getAdminDb, Timestamp } from "../firestoreRest";
 import { isAdminRole, studentControlEligibility } from "./domain";
@@ -230,6 +231,13 @@ export async function syncVerifiedAccountProfile(
     const nickname = await reserveNickname(claims.uid, identity.localPart, now);
     try {
       await reference.set(newStudentProfile(identity, true, nickname, now));
+      await notifyAdminsSafely({
+        type: "student_pending",
+        title: "Nuevo alumno por aprobar",
+        message: "Se registró un nuevo alumno con correo institucional verificado.",
+        href: "/admin/users",
+        dedupeKey: `student:${claims.uid}:verified-pending`,
+      });
     } catch (error) {
       await releaseNicknameReservation(claims.uid, nickname).catch(() => undefined);
       throw error;
@@ -243,6 +251,15 @@ export async function syncVerifiedAccountProfile(
     emailVerified: true,
     updatedAt: Timestamp.fromDate(now),
   });
+  if (existing?.emailVerified !== true && !isAdminRole(existing)) {
+    await notifyAdminsSafely({
+      type: "student_pending",
+      title: "Nuevo alumno por aprobar",
+      message: "Un alumno verificó su correo institucional y espera aprobación.",
+      href: "/admin/users",
+      dedupeKey: `student:${claims.uid}:verified-pending`,
+    });
+  }
 }
 
 export function validateProfileImageUrl(uid: string, value: string): string {
