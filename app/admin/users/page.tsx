@@ -26,6 +26,7 @@ interface AdminUserSummary {
   createdAt: string | null;
   registrationSource: string | null;
   manualActivationStatus: string | null;
+  emailVerified: boolean;
 }
 
 const TRUST_LABEL: Record<StudentTrustStatus, string> = {
@@ -127,6 +128,7 @@ export default function AdminUsersPage() {
       setNewUserEmail("");
       setIdentityChecked(false);
       await loadUsers();
+      if (result.existingAccount) setMessage("La cuenta ya existía. Se preparó un código nuevo sin eliminar sus datos.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo agregar al usuario.");
     } finally {
@@ -136,8 +138,9 @@ export default function AdminUsersPage() {
 
   async function issueNewCode(user: AdminUserSummary) {
     if (!firebaseUser || !isSuperadmin) return;
-    if (user.manualActivationStatus === "activated" && !window.confirm(
-      "Se suspenderá temporalmente el acceso de esta persona hasta que active un nuevo código. ¿Comprobaste nuevamente su identidad y deseas continuar?"
+    if (!window.confirm(
+      "¿Comprobaste personalmente que el correo y número de control pertenecen a esta persona? " +
+      "Si tenía acceso, quedará suspendido hasta que active el nuevo código."
     )) return;
     setWorkingUid(user.uid);
     setActivation(null);
@@ -146,6 +149,7 @@ export default function AdminUsersPage() {
     try {
       const response = await storeApiFetch(firebaseUser, `/api/admin/users/${user.uid}/activation-code`, {
         method: "POST",
+        body: JSON.stringify({ identityChecked: true }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "No se pudo generar el código.");
@@ -472,12 +476,13 @@ export default function AdminUsersPage() {
                       </span>
                     )}
 
-                    {isSuperadmin && user.registrationSource === "manual_admin" && !user.adminRole && (
+                    {isSuperadmin && !user.adminRole && !user.emailVerified && (
                       <button type="button" disabled={working}
                         onClick={() => void issueNewCode(user)}
                         className="rounded-xl border border-amber-400 px-3.5 py-2.5 text-sm font-bold text-amber-900 disabled:opacity-50">
                         {working ? "Generando..." : user.manualActivationStatus === "activated"
-                          ? "Restablecer acceso con código" : "Generar código nuevo"}
+                          ? "Restablecer acceso con código" : user.registrationSource === "manual_admin"
+                          ? "Generar código nuevo" : "Activar sin correo"}
                       </button>
                     )}
 

@@ -9,6 +9,10 @@ export async function POST(request: Request, context: RouteContext<"/api/admin/u
   try {
     const actor = await requireSuperadmin(request);
     const { uid } = await context.params;
+    const body = await request.json().catch(() => ({}));
+    if (body?.identityChecked !== true || Object.keys(body).some(key => key !== "identityChecked")) {
+      throw new AdminUserError(400, "Debes comprobar personalmente la identidad antes de emitir un código.");
+    }
     return NextResponse.json(await renewManualActivationCode(actor.uid, uid),
       { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

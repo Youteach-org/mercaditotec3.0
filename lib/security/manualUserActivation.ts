@@ -89,6 +89,38 @@ async function createFirebaseUser(data: ManualRegistration): Promise<string> {
   return result.localId;
 }
 
+
+interface ExistingFirebaseAccount {
+  localId: string;
+  email: string;
+  emailVerified?: boolean;
+  disabled?: boolean;
+}
+
+async function lookupFirebaseAccount(criteria: { email?: string; uid?: string }): Promise<ExistingFirebaseAccount> {
+  const response = await adminAuthRequest(":lookup", criteria.email
+    ? { email: [criteria.email] } : { localId: [criteria.uid] });
+  if (!response.ok) {
+    throw new AdminUserError(502, "No se pudo revisar la cuenta existente en Firebase.");
+  }
+  const body = (await response.json().catch(() => ({}))) as {
+    users?: ExistingFirebaseAccount[];
+  };
+  const account = body.users?.find(user => criteria.email
+    ? user.email?.toLowerCase() === criteria.email?.toLowerCase()
+    : user.localId === criteria.uid);
+  if (!account || !account.localId || !/^[A-Za-z0-9_-]{1,128}$/.test(account.localId)) {
+    throw new AdminUserError(404, "No se encontró la identidad asociada a ese usuario.");
+  }
+  if (account.disabled) {
+    throw new AdminUserError(403, "No puedes habilitar desde este control una cuenta bloqueada.");
+  }
+  if (account.emailVerified === true) {
+    throw new AdminUserError(409, "El correo de esta cuenta ya está verificado en Firebase.");
+  }
+  return account;
+}
+
 async function sha256(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), byte =>
@@ -112,8 +144,24 @@ async function makeCode(uid: string) {
 }
 
 export async function createManualUser(actorUid: string, data: ManualRegistration) {
-  const uid = await createFirebaseUser(data);
+  let uid: string;
+  let existingIdentity = false;
+  try {
+    uid = await createFirebaseUser(data);
+  } catch (error) {
+    if (!(error instanceof AdminUserError) || error.status !== 409) throw error;
+    // Important: help existing unverified students without creating duplicates.
+    uid = (await lookupFirebaseAccount({ email: data.email })).localId;
+    existingIdentity = true;
+  }
   const db = getAdminDb();
+  const previous = await db.collection("users").doc(uid).get();
+  if (existingIdentity && previous.exists) {
+    const issued = await renewManualActivationCode(actorUid, uid, data.email);
+    return { user: { uid, email: data.email,
+      displayName: String(previous.data()?.displayName ?? data.displayName) },
+      existingAccount: true, ...issued };
+  }
   const generated = await makeCode(uid);
   const expiresAt = Timestamp.fromMillis(Date.now() + EXPIRY_MS);
   const now = Timestamp.now();
@@ -157,23 +205,31 @@ export async function createManualUser(actorUid: string, data: ManualRegistratio
   try {
     await batch.commit();
   } catch (error) {
-    try {
-      const rollback = await adminAuthRequest(":delete", { localId: uid });
-      if (!rollback.ok) console.error("MANUAL_USER_AUTH_ROLLBACK_FAILED", rollback.status);
-    } catch (rollbackError) {
-      console.error("MANUAL_USER_AUTH_ROLLBACK_FAILED", rollbackError);
+    if (!existingIdentity) {
+      try {
+        const rollback = await adminAuthRequest(":delete", { localId: uid });
+        if (!rollback.ok) console.error("MANUAL_USER_AUTH_ROLLBACK_FAILED", rollback.status);
+      } catch (rollbackError) {
+        console.error("MANUAL_USER_AUTH_ROLLBACK_FAILED", rollbackError);
+      }
     }
     console.error("MANUAL_USER_DB_CREATE_FAILED", error);
     throw new AdminUserError(502, "No se pudo guardar el perfil. Revisa antes de reintentar.");
   }
 
   return { user: { uid, email: data.email, displayName: data.displayName },
+    existingAccount: existingIdentity,
     activationCode: generated.code, activationExpiresAt: expiresAt.toDate().toISOString() };
 }
 
-export async function renewManualActivationCode(actorUid: string, uid: string) {
+export async function renewManualActivationCode(actorUid: string, uid: string, expectedEmail?: string) {
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(uid)) {
     throw new AdminUserError(400, "Identificador inválido.");
+  }
+  // Check Firebase Auth, not a Firestore mirror of email verification.
+  const firebaseAccount = await lookupFirebaseAccount({ uid });
+  if (expectedEmail && firebaseAccount.email.toLowerCase() !== expectedEmail.toLowerCase()) {
+    throw new AdminUserError(409, "El correo no corresponde a la cuenta existente.");
   }
   const db = getAdminDb();
   const ref = db.collection("users").doc(uid);
@@ -182,11 +238,21 @@ export async function renewManualActivationCode(actorUid: string, uid: string) {
   await db.runTransaction(async tx => {
     const snap = await tx.get(ref);
     const data = snap.data();
-    if (!data || data.registrationSource !== "manual_admin" ||
-        isAdminRole(data) || data.isActive === false) {
+    if (!data || isAdminRole(data) || data.isActive === false
+      || typeof data.email !== "string"
+      || data.email.toLowerCase() !== firebaseAccount.email.toLowerCase()) {
       throw new AdminUserError(409, "Esta cuenta no admite generar otro código.");
     }
+    try {
+      institutionalIdentity(data.email, { requireStudentControl: true });
+    } catch {
+      throw new AdminUserError(409, "El correo no cumple la política institucional.");
+    }
     tx.update(ref, {
+      registrationSource: "manual_admin",
+      manualConvertedFromSelfRegistration: data.registrationSource !== "manual_admin",
+      createdByAdminUid: actorUid,
+      emailVerified: false,
       manualActivationCodeHash: generated.hash,
       manualActivationExpiresAt: expiresAt,
       manualActivationAttempts: 0,
@@ -202,7 +268,8 @@ export async function renewManualActivationCode(actorUid: string, uid: string) {
       action: "user.manual.reissue",
       targetType: "user",
       targetId: uid,
-      metadata: { email: data.email },
+      metadata: { email: data.email, identityCheckedInPerson: true,
+        previousRegistrationSource: String(data.registrationSource ?? "self") },
       createdAt: Timestamp.now(),
     });
   });

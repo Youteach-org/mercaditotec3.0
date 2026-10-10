@@ -32,6 +32,7 @@ export interface AdminUserSummary {
   createdAt: string | null;
   registrationSource: string | null;
   manualActivationStatus: string | null;
+  emailVerified: boolean;
 }
 
 export function parseAdminTrustChange(input: unknown): "revoked" {
@@ -87,6 +88,7 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
     createdAt: createdAtIso(data.createdAt),
     registrationSource: typeof data.registrationSource === "string" ? data.registrationSource : null,
     manualActivationStatus: typeof data.manualActivationStatus === "string" ? data.manualActivationStatus : null,
+    emailVerified: data.emailVerified === true,
   };
 }
 

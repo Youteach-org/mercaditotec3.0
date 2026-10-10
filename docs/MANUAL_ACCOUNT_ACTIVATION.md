@@ -21,3 +21,5 @@
 **Precaución de roles:** una cuenta presencial con correo todavía no verificado no puede recibir rol Subadmin. Para permisos elevados se conserva la comprobación de correo firmada por Firebase.
 
 **Recuperación sin correo:** el Superadmin puede revalidar personalmente la identidad y seleccionar «Restablecer acceso con código». Esto desactiva temporalmente el acceso hasta que se utilice un código nuevo; nunca se reutiliza la contraseña anterior.
+
+**Cuentas ya existentes sin correo de verificación:** si Firebase ya contiene el correo, el Superadmin puede recuperarlas mediante el alta (el sistema encuentra su UID) o desde su tarjeta «Activar sin correo». La identidad se consulta en Firebase y se rechazan cuentas ya verificadas, cuentas administrativas, inactivas y correos no institucionales. No se borra el perfil ni se pierden sus datos y avales.
