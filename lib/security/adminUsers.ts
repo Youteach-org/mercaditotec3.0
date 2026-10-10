@@ -166,9 +166,9 @@ export async function setUserRoleBySuperadmin(
     );
   }
 
-  if (role === "subadmin" && current.registrationSource === "manual_admin"
-    && current.manualActivationStatus !== "activated") {
-    throw new AdminUserError(409, "Primero se debe activar presencialmente esta cuenta.");
+  if (role === "subadmin" && current.registrationSource === "manual_admin") {
+    throw new AdminUserError(409,
+      "Una cuenta activada presencialmente no puede ser subadmin sin verificar el correo en Firebase.");
   }
 
   const now = Timestamp.now();

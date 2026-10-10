@@ -17,3 +17,5 @@
 **Recuperación:** si Identity Toolkit acepta el cambio de contraseña pero Firestore falla al registrar la activación, la cuenta no gana acceso; transcurrido el bloqueo de 2 minutos se puede repetir con el mismo código o regenerarlo desde Administración. Si falla la creación del perfil después de crear la identidad, se intenta eliminar la identidad.
 
 **Verificación:** ejecutar vitest, revisar que el nuevo flujo no afecte registros normales y desplegar firestore.rules y storage.rules antes de habilitar la excepción en producción.
+
+**Precaución de roles:** una cuenta presencial con correo todavía no verificado no puede recibir rol Subadmin. Para permisos elevados se conserva la comprobación de correo firmada por Firebase.

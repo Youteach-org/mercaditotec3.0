@@ -23,6 +23,19 @@ before(async () => {
       inactive: { role: "user", isActive: false },
     })) await setDoc(doc(db, "users", uid), fields);
     await setDoc(doc(db, "messages", "message-1"), { text: "Hello", createdAt: 1, hidden: false });
+    for (const [uid, status, role] of [
+      ["manualApproved", "activated", "user"],
+      ["manualPending", "pending", "user"],
+      ["manualPrivileged", "activated", "subadmin"],
+    ]) {
+      await setDoc(doc(db, "users", uid), {
+        role, isActive: true, email: "a22121079@morelia.tecnm.mx",
+        registrationSource: "manual_admin",
+        manualActivationStatus: status,
+        manualIdentityVerifiedBy: "admin-uid",
+        manualIdentityVerifiedAt: Timestamp.fromDate(new Date()),
+      });
+    }
   });
 }, { timeout: 180000 });
 after(async () => { if (env) await env.cleanup(); });
@@ -44,6 +57,34 @@ test("unverified and external accounts cannot read institutional chat", async ()
     await assertFails(getDoc(doc(db, "messages", "message-1")));
   }
 });
+test("in-person validated accounts can enter with unverified email, never pending or privileged accounts", async () => {
+  const approved = env.authenticatedContext("manualApproved", identity(false)).firestore();
+  await assertSucceeds(getDoc(doc(approved, "messages", "message-1")));
+
+  for (const uid of ["manualPending", "manualPrivileged"]) {
+    const db = env.authenticatedContext(uid, identity(false)).firestore();
+    await assertFails(getDoc(doc(db, "messages", "message-1")));
+  }
+  const mismatch = env.authenticatedContext("manualApproved",
+    identity(false, "x22121079@morelia.tecnm.mx")).firestore();
+  await assertFails(getDoc(doc(mismatch, "messages", "message-1")));
+  const external = env.authenticatedContext("manualApproved",
+    identity(false, "a22121079@gmail.com")).firestore();
+  await assertFails(getDoc(doc(external, "messages", "message-1")));
+
+  for (const forbidden of [
+    { manualActivationStatus: "activated" },
+    { manualIdentityVerifiedBy: "self" },
+    { role: "superadmin" },
+  ]) {
+    await assertFails(updateDoc(doc(approved, "users", "manualApproved"), forbidden));
+  }
+
+  const storage = env.authenticatedContext("manualApproved", identity(false)).storage();
+  await assertSucceeds(uploadBytes(ref(storage, "profile-images/manualApproved/activated.png"),
+    new Uint8Array([1]), { contentType: "image/png" }));
+});
+
 test("student access includes the 8-year boundary and rejects 9-year-old control numbers", async () => {
   const boundaryDb = env.authenticatedContext("alice", identity(true, controlEmailForAge(8))).firestore();
   await assertSucceeds(getDoc(doc(boundaryDb, "messages", "message-1")));

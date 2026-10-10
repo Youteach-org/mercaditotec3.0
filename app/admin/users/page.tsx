@@ -377,7 +377,7 @@ export default function AdminUsersPage() {
               const working = workingUid === user.uid;
               const isSelf = user.uid === firebaseUser.uid;
               const canPromote = isSuperadmin && !isSelf && !user.adminRole
-                && (user.registrationSource !== "manual_admin" || user.manualActivationStatus === "activated");
+                && user.registrationSource !== "manual_admin";
               const selected = selectedUserUid === user.uid;
               return (
                 <article

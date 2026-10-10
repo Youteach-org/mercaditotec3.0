@@ -204,3 +204,38 @@ describe("student application access eligibility", () => {
     }).allowed).toBe(false);
   });
 });
+
+
+describe("manual in-person activation access", () => {
+  const profile = {
+    role: "user", email: "a22121079@morelia.tecnm.mx",
+    registrationSource: "manual_admin", manualActivationStatus: "activated",
+    manualIdentityVerifiedBy: "admin-uid",
+    manualIdentityVerifiedAt: { toDate: () => new Date() },
+  };
+
+  it("allows manually activated institutional users without email_verified", () => {
+    expect(securityDomain.studentAccessEligibility({
+      email: profile.email, emailVerified: false, profile,
+      now: new Date("2026-10-09"),
+    }).allowed).toBe(true);
+  });
+
+  it("fails closed when the persisted manual identity attestation is incomplete", () => {
+    for (const change of [
+      { manualActivationStatus: "pending" },
+      { registrationSource: undefined },
+      { manualIdentityVerifiedAt: null },
+      { manualIdentityVerifiedBy: "" },
+      { role: "subadmin" },
+      { email: "another@morelia.tecnm.mx" },
+    ]) {
+      expect(securityDomain.studentAccessEligibility({
+        email: "a22121079@morelia.tecnm.mx",
+        emailVerified: false,
+        profile: { ...profile, ...change },
+        now: new Date("2026-10-09"),
+      }).allowed).toBe(false);
+    }
+  });
+});
