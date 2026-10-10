@@ -7,14 +7,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(join(here, "AppShell.tsx"), "utf8");
 
 describe("private message navigation", () => {
-  it("avoids high-frequency Firestore polling and suspends checks in background tabs", () => {
+  it("keeps private-message counters event-driven with no timed polling", () => {
     expect(source).not.toContain("}, 8000);");
-    expect(source).toContain("120_000");
+    expect(source).not.toContain("120_000");
     expect(source).toContain("if (fetching || document.hidden) return");
+    expect(source).toContain("appUser?.unreadNotificationCount");
     expect(source).toContain('document.addEventListener("visibilitychange", onVisible)');
     expect(source).toContain('window.addEventListener("notifications:changed", onFocus)');
-    expect(source).toContain('document.removeEventListener("visibilitychange", onVisible)');
-    expect(source).toContain('window.removeEventListener("notifications:changed", onFocus)');
+    expect(source).toContain('window.addEventListener("direct-chat:changed", onFocus)');
+    expect(source).toContain('window.removeEventListener("direct-chat:changed", onFocus)');
   });
 
   it("routes the chat navigation item to the private inbox", () => {
