@@ -15,8 +15,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
 
     if (searchParams.get("summary") === "1") {
-      const unreadCount = await syncUnreadNotificationCount(user.uid);
-      return NextResponse.json({ unreadCount });
+      const saved = user.profile?.unreadNotificationCount;
+      const unreadCount =
+        typeof saved === "number" && Number.isFinite(saved) && saved >= 0
+          ? Math.floor(saved)
+          : await syncUnreadNotificationCount(user.uid);
+      return NextResponse.json({ unreadCount }, {
+        headers: { "Cache-Control": "private, no-store" },
+      });
     }
 
     const notifications = await listNotificationsForUser(user.uid);
