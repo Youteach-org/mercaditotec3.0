@@ -187,16 +187,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         fetching = false;
       }
     };
+    // The authenticated user's existing Firestore listener updates on a
+    // newly created admin notification. There is no periodic API polling.
     void check();
-    const interval = window.setInterval(() => void check(), 60_000);
-    const onFocus = () => void check();
+    let lastFocusRefresh = Date.now();
+    const onFocus = () => {
+      // Rapid Brave tab-switches must not flood authenticated reads.
+      if (Date.now() - lastFocusRefresh < 30_000) return;
+      lastFocusRefresh = Date.now();
+      void check();
+    };
+    const onVisible = () => { if (!document.hidden) onFocus(); };
     window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [firebaseUser, loading, serverAdminVerified, pathname]);
+  }, [firebaseUser, loading, serverAdminVerified, pathname, appUser?.unreadNotificationCount]);
 
   useEffect(() => {
     if (loading || !firebaseUser) {
