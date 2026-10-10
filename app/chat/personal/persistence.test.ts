@@ -18,14 +18,17 @@ const conversationRoute = readFileSync(
 describe("private chat persistence", () => {
   it("loads message history through authenticated server API", () => {
     expect(detailSource).toContain("/api/chat/direct/messages?targetUid=");
-    expect(detailSource).toContain("setInterval");
-    expect(detailSource).not.toContain("onSnapshot");
+    expect(detailSource).not.toContain("setInterval");
+    expect(detailSource).toContain("onSnapshot(recent");
+    expect(detailSource).toContain("limit(40)");
+    expect(detailSource).toContain('document.addEventListener("visibilitychange", watch)');
     expect(messagesRoute).toContain("listDirectMessages");
   });
 
   it("keeps sent messages visible immediately", () => {
     expect(detailSource).toContain("setMessages((current)");
-    expect(detailSource).toContain("await loadMessages()");
+    expect(detailSource).toContain("setMessages((current)");
+    expect(detailSource).toContain("active Firestore listener delivers");
   });
 
   it("provides a persistent conversation inbox", () => {

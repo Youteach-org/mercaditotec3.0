@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { collection, limit, onSnapshot, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 import AuthGuard from "@/components/AuthGuard";
 import { moderationApiFetch } from "@/lib/moderation/client";
@@ -29,6 +31,8 @@ function PersonalChatContent() {
   const params = useParams<{ uid: string }>();
   const targetUid = String(params?.uid ?? "");
   const { firebaseUser, loading } = useSession();
+  const [showOlderMessages, setShowOlderMessages] = useState(false);
+  const showOlderMessagesRef = useRef(false);
   const [session, setSession] = useState<DirectSession | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [text, setText] = useState("");
@@ -72,6 +76,24 @@ function PersonalChatContent() {
     };
   }, [firebaseUser, targetUid]);
 
+  const acceptIncomingMessages = useCallback((loadedMessages: DirectMessage[]) => {
+    if (!firebaseUser || !targetUid) return;
+    const latestIncoming = loadedMessages
+      .filter((message) => message.recipientId === firebaseUser.uid)
+      .reduce((latest, message) => Math.max(latest, message.createdAt), 0);
+    if (latestIncoming <= lastMarkedIncomingRef.current) return;
+    lastMarkedIncomingRef.current = latestIncoming;
+    void moderationApiFetch(firebaseUser, "/api/chat/direct/read", {
+      method: "POST",
+      body: JSON.stringify({ targetUid }),
+    }).then((response) => {
+      if (!response.ok) throw new Error("Could not mark direct messages read.");
+      window.dispatchEvent(new Event("direct-chat:changed"));
+    }).catch(() => {
+      lastMarkedIncomingRef.current = 0;
+    });
+  }, [firebaseUser, targetUid]);
+
   const loadMessages = useCallback(async () => {
     if (!firebaseUser || !targetUid) return;
 
@@ -92,19 +114,7 @@ function PersonalChatContent() {
         : [];
       setMessages(loadedMessages);
 
-      const latestIncoming = loadedMessages
-        .filter((message) => message.recipientId === firebaseUser.uid)
-        .reduce((latest, message) => Math.max(latest, message.createdAt), 0);
-
-      if (latestIncoming > lastMarkedIncomingRef.current) {
-        lastMarkedIncomingRef.current = latestIncoming;
-        void moderationApiFetch(firebaseUser, "/api/chat/direct/read", {
-          method: "POST",
-          body: JSON.stringify({ targetUid }),
-        }).catch(() => {
-          lastMarkedIncomingRef.current = 0;
-        });
-      }
+      acceptIncomingMessages(loadedMessages);
 
       window.setTimeout(() => {
         const el = scrollRef.current;
@@ -117,18 +127,65 @@ function PersonalChatContent() {
           : "No se pudieron cargar los mensajes privados.",
       );
     }
-  }, [firebaseUser, targetUid]);
+  }, [firebaseUser, targetUid, acceptIncomingMessages]);
 
+  // The open conversation alone subscribes to its latest 40 messages.
+  // No timer, no repeated history downloads and no listener in hidden tabs.
   useEffect(() => {
-    if (!firebaseUser || !targetUid) return;
+    if (!firebaseUser || !targetUid || !session?.chatId || session.target.uid !== targetUid) return;
+    lastMarkedIncomingRef.current = 0;
+    showOlderMessagesRef.current = false;
+    setShowOlderMessages(false);
+    let unsubscribe: (() => void) | null = null;
+    let active = true;
 
-    void loadMessages();
-    const interval = window.setInterval(() => {
-      void loadMessages();
-    }, 2500);
+    const watch = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const recent = query(
+        collection(db, "direct_chats", session.chatId, "messages"),
+        orderBy("createdAt", "desc"),
+        limit(40),
+      );
+      unsubscribe = onSnapshot(recent, (snapshot) => {
+        if (!active) return;
+        const loaded = snapshot.docs.map((document) => {
+          const data = document.data();
+          return {
+            id: document.id,
+            senderId: String(data.senderId ?? ""),
+            recipientId: String(data.recipientId ?? ""),
+            text: String(data.text ?? ""),
+            createdAt: Number(data.createdAt ?? 0),
+          } satisfies DirectMessage;
+        }).reverse();
+        setMessages((previous) => {
+          if (!showOlderMessagesRef.current) return loaded;
+          const merged = new Map(previous.map((message) => [message.id, message]));
+          for (const message of loaded) merged.set(message.id, message);
+          return [...merged.values()].sort((a, b) => a.createdAt - b.createdAt);
+        });
+        acceptIncomingMessages(loaded);
+        window.requestAnimationFrame(() => {
+          const el = scrollRef.current;
+          if (el) el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
+        });
+      }, () => {
+        // Authentication/network failures never trigger a polling loop.
+        // One authenticated API load preserves access without a live listener.
+        if (active && !document.hidden) void loadMessages();
+      });
+    };
 
-    return () => window.clearInterval(interval);
-  }, [firebaseUser, loadMessages, targetUid]);
+    watch();
+    document.addEventListener("visibilitychange", watch);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", watch);
+      unsubscribe?.();
+    };
+  }, [firebaseUser, targetUid, session?.chatId, session?.target.uid, acceptIncomingMessages, loadMessages]);
 
   async function sendMessage() {
     if (!firebaseUser || !text.trim() || sending) return;
@@ -156,7 +213,7 @@ function PersonalChatContent() {
         });
       }
       setText("");
-      await loadMessages();
+      // The active Firestore listener delivers the saved message automatically.
     } catch (sendError) {
       setError(
         sendError instanceof Error
@@ -215,6 +272,19 @@ function PersonalChatContent() {
           ref={scrollRef}
           className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
         >
+          {messages.length >= 40 && !showOlderMessages && (
+            <button
+              type="button"
+              className="mb-3 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
+              onClick={() => {
+                showOlderMessagesRef.current = true;
+                setShowOlderMessages(true);
+                void loadMessages();
+              }}
+            >
+              Ver mensajes anteriores
+            </button>
+          )}
           {messages.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
               Aún no hay mensajes en esta conversación.
