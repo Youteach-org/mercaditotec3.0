@@ -65,6 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [visualPreview, setVisualPreview] = useState(false);
   const [syncDeferred, setSyncDeferred] = useState(false);
   const [serverAdminVerified, setServerAdminVerified] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<{ usersPending: number; storesPending: number } | null>(null);
 
   useEffect(() => {
     setSyncDeferred(
@@ -143,6 +144,41 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       controller.abort();
     };
   }, [appUser, firebaseUser, loading, syncDeferred]);
+
+  useEffect(() => {
+    if (loading || !firebaseUser || !serverAdminVerified || pathname.startsWith("/admin")) {
+      setPendingApprovals(null);
+      return;
+    }
+    let cancelled = false;
+    let fetching = false;
+    const check = async () => {
+      if (fetching || document.hidden) return;
+      fetching = true;
+      try {
+        const response = await storeApiFetch(firebaseUser, "/api/admin/pending-counts", { cache: "no-store" });
+        if (!response.ok) throw new Error("Pending counts unavailable");
+        const data = await response.json();
+        if (!cancelled) setPendingApprovals({
+          usersPending: Math.max(0, Math.floor(Number(data.usersPending) || 0)),
+          storesPending: Math.max(0, Math.floor(Number(data.storesPending) || 0)),
+        });
+      } catch {
+        if (!cancelled) setPendingApprovals(null);
+      } finally {
+        fetching = false;
+      }
+    };
+    void check();
+    const interval = window.setInterval(() => void check(), 60_000);
+    const onFocus = () => void check();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [firebaseUser, loading, serverAdminVerified, pathname]);
 
   useEffect(() => {
     if (loading || !firebaseUser) {
@@ -274,6 +310,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         }
                       >
                         Admin
+                        {!adminSurface && pendingApprovals && (
+                          <span className="inline-flex items-center gap-1.5" aria-label={`${pendingApprovals.usersPending} alumnos y ${pendingApprovals.storesPending} tiendas por aprobar`}>
+                            {pendingApprovals.usersPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff0cf] px-1.5 py-0.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="profile" />{pendingApprovals.usersPending}</span>}
+                            {pendingApprovals.storesPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff0cf] px-1.5 py-0.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="store" />{pendingApprovals.storesPending}</span>}
+                          </span>
+                        )}
                       </Link>
                     )}
                   </>
@@ -301,7 +343,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </nav>
 
-              {!marketplaceHome && (
+              {firebaseUser && (
                 <Link
                   href="/notifications"
                   aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
@@ -366,7 +408,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                             : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
                       }
                     >
-                      Admin
+                      <span className="inline-flex items-center gap-1.5">
+                        Admin
+                        {!adminSurface && pendingApprovals && (
+                          <>
+                            {pendingApprovals.usersPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-white/90 px-1.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="profile" />{pendingApprovals.usersPending}</span>}
+                            {pendingApprovals.storesPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-white/90 px-1.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="store" />{pendingApprovals.storesPending}</span>}
+                          </>
+                        )}
+                      </span>
                     </Link>
                   )}
                 </>
