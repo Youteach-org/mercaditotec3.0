@@ -107,15 +107,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         fetching = false;
       }
     };
-    void load();
-    const id = window.setInterval(() => void load(), 60_000);
-    window.addEventListener("focus", load);
-    window.addEventListener("notifications:changed", load);
+    // The existing user-profile Firestore listener already carries this
+    // unread count. Do not fetch a second copy on a background timer.
+    if (profileUnreadCount === null) void load();
+    const refreshFallback = () => {
+      if (profileUnreadCount === null) void load();
+    };
+    window.addEventListener("focus", refreshFallback);
+    window.addEventListener("notifications:changed", refreshFallback);
     return () => {
       cancelled = true;
-      window.clearInterval(id);
-      window.removeEventListener("focus", load);
-      window.removeEventListener("notifications:changed", load);
+      window.removeEventListener("focus", refreshFallback);
+      window.removeEventListener("notifications:changed", refreshFallback);
     };
   }, [firebaseUser, loading, profileUnreadCount]);
 
@@ -244,24 +247,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       }
     };
 
+    // A saved direct message generates a notification and updates the user's
+    // existing Firestore profile listener. That is the signal to refresh the
+    // badge: NO 8-second, 2-minute, or other background polling.
     void loadPrivateUnread();
-    // Previously every 8s (10,800 requests/day per continuously open tab).
-    // With a 2-minute fallback, at most 720 timer ticks/day, none while hidden.
-    const interval = window.setInterval(() => void loadPrivateUnread(), 120_000);
     const onFocus = () => void loadPrivateUnread();
     const onVisible = () => { if (!document.hidden) void loadPrivateUnread(); };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("notifications:changed", onFocus);
+    window.addEventListener("direct-chat:changed", onFocus);
 
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("notifications:changed", onFocus);
+      window.removeEventListener("direct-chat:changed", onFocus);
     };
-  }, [firebaseUser, loading, pathname]);
+  }, [firebaseUser, loading, pathname, appUser?.unreadNotificationCount]);
 
   useEffect(() => {
     if (loading || !firebaseUser) return;
