@@ -30,7 +30,7 @@ export class Timestamp {
   }
 }
 
-type FilterOp = "==" | "<" | ">" | "<=" | ">=" | "!=";
+type FilterOp = "==" | "<" | ">" | "<=" | ">=" | "!=" | "array-contains";
 type Direction = "asc" | "desc";
 
 interface QueryFilter {
@@ -189,6 +189,7 @@ function encodeFilter(filter: QueryFilter): Record<string, unknown> {
     "<=": "LESS_THAN_OR_EQUAL",
     ">=": "GREATER_THAN_OR_EQUAL",
     "!=": "NOT_EQUAL",
+    "array-contains": "ARRAY_CONTAINS",
   };
 
   return {

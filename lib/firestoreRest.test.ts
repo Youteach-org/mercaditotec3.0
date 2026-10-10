@@ -47,3 +47,26 @@ it('backs off and retries aborted transaction commits instead of failing immedia
  expect(commitCount).toBe(3);
  expect(beginCount).toBe(3);
 });
+
+it('runs indexed array-contains Firestore queries instead of listing the entire collection',async()=>{
+ vi.stubGlobal('fetch',async(input:string,options:RequestInit)=>{
+  expect(input).toContain('documents:runQuery');
+  const body=JSON.parse(String(options.body));
+  expect(body.structuredQuery.from).toEqual([{collectionId:'direct_chats'}]);
+  expect(body.structuredQuery.where).toEqual({
+   fieldFilter:{
+    field:{fieldPath:'participantUids'},
+    op:'ARRAY_CONTAINS',
+    value:{stringValue:'user-a'},
+   },
+  });
+  expect(body.structuredQuery.limit).toBe(250);
+  return Response.json([{document:{
+   name:'projects/test-project/databases/(default)/documents/direct_chats/abc',
+   fields:{participantUids:{arrayValue:{values:[{stringValue:'user-a'},{stringValue:'user-b'}]}}},
+  }}]);
+ });
+ const result=await getAdminDb().collection('direct_chats')
+  .where('participantUids','array-contains','user-a').limit(250).get();
+ expect(result.docs.map(doc=>doc.id)).toEqual(['abc']);
+});

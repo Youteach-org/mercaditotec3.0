@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { directChatId } from "./directRepository";
@@ -13,5 +14,13 @@ describe("directChatId", () => {
     expect(directChatId("alice", "victim")).not.toBe(
       directChatId("alice", "other"),
     );
+  });
+});
+
+describe("private chat read budget", () => {
+  it("filters Firestore conversations by current user instead of scanning all users' chats", () => {
+    const source = readFileSync(new URL("./directRepository.ts", import.meta.url), "utf8");
+    expect(source).toContain('.where("participantUids", "array-contains", actorUid)');
+    expect(source).not.toContain('db.collection("direct_chats").list(250)');
   });
 });
