@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { notifyAdminsSafely } from "@/lib/notifications/repository";
 
 import {
   requireUnblockedUser,
@@ -41,11 +42,15 @@ export async function POST(
         storeId,
       );
 
+    await notifyAdminsSafely({
+      type: "store_pending_review",
+      title: "Tienda por aprobar",
+      message: `Hay una solicitud de revisión: ${store.name}.`,
+      href: `/admin/stores/${store.id}`,
+      dedupeKey: `store:${store.id}:review:${store.submittedAt?.toMillis() ?? "new"}`,
+    });
     return NextResponse.json({
-      store:
-        serializeStore(
-          store,
-        ),
+      store: serializeStore(store),
     });
   } catch (error) {
     const apiError =
