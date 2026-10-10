@@ -16,7 +16,7 @@ messaging.onBackgroundMessage((payload) => {
   const destination =
     typeof data.href === "string" && data.href.startsWith("/") && !data.href.startsWith("//")
       ? data.href : "/notifications";
-  self.registration.showNotification(data.title || "MercaditoTec", {
+  return self.registration.showNotification(data.title || "MercaditoTec", {
     body: data.body || "Hay novedades en tu Mercadito.",
     tag: data.notificationId || "mercaditotec",
     icon: "/icon.svg",
