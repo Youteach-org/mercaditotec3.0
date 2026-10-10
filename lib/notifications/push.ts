@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { getAdminAccessToken, getFirebaseProjectId } from "@/lib/firebaseAdmin";
-import { getAdminDb, Timestamp } from "@/lib/firestoreRest";
+import { getAdminAccessToken, getFirebaseProjectId } from "../firebaseAdmin";
+import { getAdminDb, Timestamp } from "../firestoreRest";
 
 export class PushDeviceError extends Error {
   constructor(public readonly status: number, message: string) { super(message); }
