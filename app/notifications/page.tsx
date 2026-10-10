@@ -85,7 +85,12 @@ export default function NotificationsPage() {
         await markNotificationRead(firebaseUser, notification.id);
         announceNotificationsChanged();
       }
-      router.push(notification.href);
+      const destination = notification.type === "student_pending"
+        ? "/admin/users?status=pending"
+        : notification.type === "store_pending_review"
+          ? "/admin/stores?status=pending_review"
+          : notification.href;
+      router.push(destination);
     } catch (readError) {
       setError(readError instanceof Error ? readError.message : "No se pudo abrir la notificación.");
       setBusyId(null);

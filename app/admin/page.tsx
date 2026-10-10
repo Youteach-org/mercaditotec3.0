@@ -24,16 +24,16 @@ const cards: Array<{
     icon: "👥",
   },
   {
-    title: "Categorías de productos",
-    description: "Organiza las categorías, elige sus iconos visualmente y controla cuáles están activas.",
-    href: "/admin/categories",
-    icon: "🗂️",
-  },
-  {
     title: "Tiendas",
     description: "Aprueba, devuelve para cambios, suspende o reactiva tiendas.",
     href: "/admin/stores",
     icon: "🏪",
+  },
+  {
+    title: "Categorías de productos",
+    description: "Organiza las categorías, elige sus iconos visualmente y controla cuáles están activas.",
+    href: "/admin/categories",
+    icon: "🗂️",
   },
   {
     title: "Portada Mercadito",

@@ -524,8 +524,9 @@ export default function MarketplacePage() {
             {marketplaceContent.heroTitle}
             <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
-          <p className="mkt-hero-subtitle"><MultilineText text={marketplaceContent.heroSubtitle} /></p>
-          {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
+          <p className="mkt-hero-subtitle">{marketplaceContent.heroSubtitle.replace(/\s+/g, " ").trim()}</p>
+        </div>
+        {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
             <div className="mkt-community-counts" aria-label="Cifras de la comunidad">
               {registeredUsers !== null && (
                 <div className="mkt-community-count">
@@ -535,7 +536,7 @@ export default function MarketplacePage() {
                     </svg>
                     <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
                   </div>
-                  <span>Usuarios registrados</span>
+
                 </div>
               )}
               {activeStores !== null && (
@@ -546,12 +547,11 @@ export default function MarketplacePage() {
                     </svg>
                     <strong>{activeStores.toLocaleString("es-MX")}</strong>
                   </div>
-                  <span>Tiendas activas</span>
+
                 </div>
               )}
             </div>
           )}
-        </div>
 
         <div className="mkt-pink-note"><MultilineText text={marketplaceContent.pinkNote} /></div>
         <div className="mkt-blue-note"><MultilineText text={marketplaceContent.blueNote} /></div>
