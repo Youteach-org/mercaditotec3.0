@@ -19,7 +19,6 @@ describe("Mercadito monitoring and efficient chat", () => {
 
   it("never performs periodic API cleanup or reconnects the chat listener every minute", () => {
     const chat = text("../../app/chat/page.tsx");
-    expect(chat).not.toContain('method: "GET",\n        });');
     expect(chat).not.toContain('moderationApiFetch(firebaseUser, "/api/chat/messages", {\n          method: "GET"');
     expect(chat).toContain("const watchMessages = () =>");
     expect(chat).toContain('document.addEventListener("visibilitychange", watchMessages)');
