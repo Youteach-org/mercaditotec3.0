@@ -28,5 +28,6 @@ describe("Notification event integrations", () => {
     const notificationRepository = source("./repository.ts");
     expect(notificationRepository).toContain("if (created)");
     expect(notificationRepository).toContain("deliverPushSafely");
+    expect(notificationRepository).toContain("dedupeKey: `${event.dedupeKey}:admin:${recipientUid}`");
   });
 });
