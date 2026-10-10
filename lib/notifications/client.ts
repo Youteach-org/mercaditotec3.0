@@ -17,7 +17,8 @@ export interface NotificationApiRecord {
     | "store_suspended"
     | "store_reactivated"
     | "student_pending"
-    | "direct_message";
+    | "direct_message"
+    | "contact_attempt";
   title: string;
   message: string;
   href: string;
