@@ -22,6 +22,13 @@ export interface DecodedIdToken extends Record<string, unknown> {
   email_verified?: boolean;
 }
 
+export class FirebaseAuthUnavailableError extends Error {
+  constructor(public readonly status: number) {
+    super("Firebase Authentication is temporarily unavailable");
+    this.name = "FirebaseAuthUnavailableError";
+  }
+}
+
 interface FirebaseLookupUser {
   localId?: string;
   disabled?: boolean;
@@ -40,6 +47,8 @@ let cachedAccessToken:
     }
   | null = null;
 let cachedPrivateKey: CryptoKey | null = null;
+let pendingAccessToken: Promise<string> | null = null;
+const inFlightFirebaseChecks = new Map<string, Promise<void>>();
 
 function getServiceAccount(): ServiceAccount {
   if (cachedServiceAccount) {
@@ -182,7 +191,7 @@ function validateFirebaseClaims(claims: DecodedIdToken): void {
   }
 }
 
-async function verifyWithFirebaseAuth(
+async function verifyWithFirebaseAuthUnshared(
   token: string,
   claims: DecodedIdToken,
   checkRevoked: boolean,
@@ -199,6 +208,11 @@ async function verifyWithFirebaseAuth(
   );
 
   if (!response.ok) {
+    // Quota exhaustion or temporary identity-service outages are NOT evidence
+    // of an invalid user; keep authorization fail-closed without forcing logout.
+    if (response.status === 429 || response.status >= 500) {
+      throw new FirebaseAuthUnavailableError(response.status);
+    }
     let message = "Firebase rejected the ID token";
 
     try {
@@ -239,6 +253,25 @@ async function verifyWithFirebaseAuth(
       throw new Error("Firebase ID token has been revoked");
     }
   }
+}
+
+async function verifyWithFirebaseAuth(
+  token: string,
+  claims: DecodedIdToken,
+  checkRevoked: boolean,
+): Promise<void> {
+  // Concurrent requests for the same token share the same Firebase lookup.
+  // Only IN-FLIGHT checks are reused; there is no cache of authorization,
+  // revocation, disabled-account state or Firestore profile decisions.
+  const key = `${checkRevoked ? "revoked" : "standard"}:${token}`;
+  let pending = inFlightFirebaseChecks.get(key);
+  if (!pending) {
+    pending = verifyWithFirebaseAuthUnshared(token, claims, checkRevoked).finally(() => {
+      inFlightFirebaseChecks.delete(key);
+    });
+    inFlightFirebaseChecks.set(key, pending);
+  }
+  await pending;
 }
 
 async function verifyIdToken(
@@ -363,7 +396,7 @@ export async function deleteFirebaseAuthUser(uid: string): Promise<void> {
   );
 }
 
-export async function getAdminAccessToken(): Promise<string> {
+async function requestNewAdminAccessToken(): Promise<string> {
   const now = Date.now();
 
   if (
@@ -426,4 +459,21 @@ export async function getAdminAccessToken(): Promise<string> {
   };
 
   return body.access_token;
+}
+
+/**
+ * Deduplicate overlapping Google OAuth exchanges within a Worker instance.
+ * Completed responses are still subject to the existing expiration check.
+ */
+export async function getAdminAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (cachedAccessToken && cachedAccessToken.expiresAtMs > now + 60_000) {
+    return cachedAccessToken.token;
+  }
+  if (!pendingAccessToken) {
+    pendingAccessToken = requestNewAdminAccessToken().finally(() => {
+      pendingAccessToken = null;
+    });
+  }
+  return pendingAccessToken;
 }

@@ -122,6 +122,10 @@ export async function requireFirebaseUser(
     return { uid: claims.uid, claims, profile };
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
+    if (error instanceof Error && error.name === "FirebaseAuthUnavailableError") {
+      console.error("AUTH_IDENTITY_PROVIDER_UNAVAILABLE");
+      throw new ApiAuthError(503, "Firebase no puede verificar el acceso temporalmente. Inténtalo de nuevo.");
+    }
     if (error instanceof ApiAuthError) throw error;
     if (error instanceof FirestoreRestError && (error.status === 403 || error.status === 429 || error.status >= 500)) {
       // Database saturation must not be presented as an expired login.

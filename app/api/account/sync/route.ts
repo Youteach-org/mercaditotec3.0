@@ -23,6 +23,13 @@ export async function POST(request: Request) {
     if (error instanceof AccountProfileError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
+    if (error instanceof Error && error.name === "FirebaseAuthUnavailableError") {
+      console.error("ACCOUNT_SYNC_AUTH_PROVIDER_UNAVAILABLE");
+      return NextResponse.json(
+        { error: "Firebase está temporalmente saturado.", retryable: true },
+        { status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" } },
+      );
+    }
     if (error instanceof FirestoreRestError && (error.status === 429 || error.status >= 500)) {
       // A backend quota/outage is not an invalid Firebase session.
       console.error("ACCOUNT_SYNC_DATA_UNAVAILABLE", error.status);
