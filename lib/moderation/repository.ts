@@ -603,7 +603,8 @@ async function deleteGeneralChatDocumentsBefore(
   const db = getAdminDb();
   let deleted = 0;
 
-  for (let pass = 0; pass < 20; pass += 1) {
+  // Bounded daily cleanup: no visitor may trigger unbounded Firestore deletion.
+  for (let pass = 0; pass < 4; pass += 1) {
     const snapshot = await db
       .collection(collectionName)
       .where("createdAt", "<", cutoff)
@@ -664,7 +665,8 @@ export async function createGeneralChatMessage(
     throw new ModerationRepositoryError(403, "Tu cuenta está bloqueada temporalmente para realizar esta acción.");
   }
   const now = Date.now();
-  await pruneExpiredGeneralChatMessages(now);
+  // Retention cleanup runs once daily in the Cloudflare scheduled handler.
+  // New chat messages should cost only the writes and validations they need.
   const reference = db.collection("messages").doc();
   const record = {
     text,
