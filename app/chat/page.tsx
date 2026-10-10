@@ -584,49 +584,40 @@ function ChatContent() {
   ]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
-
-    let cancelled = false;
-
-    const refreshRetention = async () => {
-      const now = Date.now();
-      if (!cancelled) setRetentionNow(now);
-
-      try {
-        await moderationApiFetch(firebaseUser, "/api/chat/messages", {
-          method: "GET",
-        });
-      } catch (error) {
-        console.error("GENERAL_CHAT_RETENTION_ERROR", error);
-      }
+    // Only local clock work: no Firestore reads, no API call, no listener reset.
+    // The visible 48-hour window still expires older messages on screen.
+    const refreshClock = () => {
+      if (!document.hidden) setRetentionNow(Date.now());
     };
-
-    void refreshRetention();
-    const interval = window.setInterval(() => {
-      void refreshRetention();
-    }, 60_000);
-
+    const interval = window.setInterval(refreshClock, 60_000);
+    document.addEventListener("visibilitychange", refreshClock);
     return () => {
-      cancelled = true;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshClock);
     };
-  }, [firebaseUser]);
+  }, []);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "messages"),
-      where("createdAt", ">=", generalChatCutoff(retentionNow)),
-      orderBy("createdAt", "desc"),
-      limit(100),
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    if (!firebaseUser) return;
+    let unsubscribe: (() => void) | null = null;
+    const watchMessages = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "messages"),
+        where("createdAt", ">=", generalChatCutoff()),
+        orderBy("createdAt", "desc"),
+        limit(100),
+      );
+      unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
         }))
         .filter((message) =>
-          isGeneralChatMessageCurrent(Number(message.createdAt), retentionNow)
+          isGeneralChatMessageCurrent(Number(message.createdAt), Date.now())
         )
         .reverse();
 
@@ -686,8 +677,14 @@ function ChatContent() {
       }
     });
 
-    return () => unsubscribe();
-  }, [firebaseUser?.uid, retentionNow]);
+    };
+    watchMessages();
+    document.addEventListener("visibilitychange", watchMessages);
+    return () => {
+      document.removeEventListener("visibilitychange", watchMessages);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!firebaseUser) return;
@@ -1306,7 +1303,7 @@ function ChatContent() {
             onScroll={handleChatScroll}
             className={darkMode ? "h-full overflow-y-auto overscroll-contain space-y-4 pr-1 text-slate-100" : "h-full overflow-y-auto overscroll-contain space-y-4 pr-1"}
           >
-          {messages.map((msg) => {
+          {messages.filter((msg) => isGeneralChatMessageCurrent(Number(msg.createdAt), retentionNow)).map((msg) => {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
             const isAdmin = appUser?.role === "admin";
