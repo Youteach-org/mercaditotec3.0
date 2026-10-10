@@ -28,6 +28,7 @@ function typeIcon(type: NotificationApiRecord["type"]): string {
     case "store_reactivated": return "✅";
     case "student_pending": return "👤";
     case "direct_message": return "💬";
+    case "contact_attempt": return "📱";
   }
 }
 
