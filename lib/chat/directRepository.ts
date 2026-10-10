@@ -246,7 +246,12 @@ export async function listDirectConversations(
 ): Promise<DirectConversationSummary[]> {
   const actorUid = cleanUid(actorUidInput);
   const db = getAdminDb();
-  const snapshot = await db.collection("direct_chats").list(250);
+  // Never scan the whole shared collection to find one user's chats.
+  // This single-field array index returns only conversations containing them.
+  const snapshot = await db.collection("direct_chats")
+    .where("participantUids", "array-contains", actorUid)
+    .limit(250)
+    .get();
   const owned = snapshot.docs
     .map((document) => ({ id: document.id, data: document.data() }))
     .filter(({ data }) =>
