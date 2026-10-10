@@ -21,6 +21,13 @@ function typeIcon(type: NotificationApiRecord["type"]): string {
     case "order_ready": return "📦";
     case "order_completed": return "🎉";
     case "order_cancelled": return "↩️";
+    case "store_pending_review": return "🏪";
+    case "store_changes_required": return "🛠️";
+    case "store_approved": return "✅";
+    case "store_suspended": return "⛔";
+    case "store_reactivated": return "✅";
+    case "student_pending": return "👤";
+    case "direct_message": return "💬";
   }
 }
 
@@ -33,6 +40,9 @@ export default function NotificationsPage() {
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!firebaseUser) return;
@@ -91,6 +101,25 @@ export default function NotificationsPage() {
     }
   }
 
+  async function changeDeviceNotifications(enable: boolean) {
+    if (!firebaseUser || pushBusy) return;
+    setPushBusy(true);
+    setPushMessage("");
+    try {
+      const { enableDevicePush, disableDevicePush } = await import("@/lib/notifications/pushClient");
+      if (enable) await enableDevicePush(firebaseUser);
+      else await disableDevicePush(firebaseUser);
+      setPushEnabled(enable);
+      setPushMessage(enable
+        ? "Notificaciones de Android activadas en este dispositivo."
+        : "Notificaciones de este dispositivo desactivadas.");
+    } catch (error) {
+      setPushMessage(error instanceof Error ? error.message : "No se pudieron configurar las notificaciones.");
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   if (sessionLoading || !firebaseUser) {
     return <main className="min-h-screen bg-slate-100 p-5">Comprobando sesión...</main>;
   }
@@ -124,6 +153,21 @@ export default function NotificationsPage() {
             </div>
           </div>
         </header>
+
+        <section className="rounded-2xl bg-white px-5 py-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-black text-slate-900">Avisos en esta tablet o celular</h2>
+              <p className="text-sm text-slate-600">Recibe avisos de revisiones, mensajes y pedidos, incluso con Mercadito cerrado.</p>
+            </div>
+            <button type="button" disabled={pushBusy}
+              onClick={() => void changeDeviceNotifications(!pushEnabled)}
+              className="rounded-xl bg-[#174db4] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">
+              {pushBusy ? "Configurando..." : pushEnabled ? "Desactivar avisos" : "Activar avisos"}
+            </button>
+          </div>
+          {pushMessage && <p role="status" className="mt-2 text-sm font-semibold text-slate-700">{pushMessage}</p>}
+        </section>
 
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">{error}</div>
