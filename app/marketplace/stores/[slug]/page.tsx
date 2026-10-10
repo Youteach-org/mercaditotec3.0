@@ -77,6 +77,20 @@ export default function PublicStorePage() {
     };
   }, [slug, firebaseUser, sessionLoading, router]);
 
+  async function recordWhatsappContactAttempt() {
+    if (!firebaseUser || !store) return;
+    try {
+      const token = await firebaseUser.getIdToken();
+      await fetch(`/api/marketplace/stores/${encodeURIComponent(slug)}/contact`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      });
+    } catch {
+      // WhatsApp navigation must never be blocked by an optional notice.
+    }
+  }
+
   async function requestProduct(productId: string) {
     if (!store) return;
     if (!firebaseUser) {
@@ -174,6 +188,7 @@ export default function PublicStorePage() {
                     href={store.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => void recordWhatsappContactAttempt()}
                     aria-label="Contactar por WhatsApp"
                     title="Contactar por WhatsApp"
                     className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2"

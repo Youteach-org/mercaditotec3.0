@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { createNotificationSafely, notifyAdminsSafely } from "@/lib/notifications/repository";
 
 import {
   requireUnblockedUser,
@@ -41,11 +42,23 @@ export async function POST(
         storeId,
       );
 
+    await createNotificationSafely({
+      recipientUid: store.ownerUid,
+      type: "store_pending_review",
+      title: "Tu tienda está en revisión",
+      message: `${store.name} fue enviada correctamente a revisión administrativa.`,
+      href: `/mystore/${store.id}`,
+      dedupeKey: `store:${store.id}:review:${store.submittedAt?.toMillis() ?? "new"}:owner`,
+    });
+    await notifyAdminsSafely({
+      type: "store_pending_review",
+      title: "Tienda por aprobar",
+      message: `Hay una solicitud de revisión: ${store.name}.`,
+      href: `/admin/stores/${store.id}`,
+      dedupeKey: `store:${store.id}:review:${store.submittedAt?.toMillis() ?? "new"}`,
+    });
     return NextResponse.json({
-      store:
-        serializeStore(
-          store,
-        ),
+      store: serializeStore(store),
     });
   } catch (error) {
     const apiError =

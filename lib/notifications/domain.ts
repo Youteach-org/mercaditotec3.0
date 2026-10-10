@@ -4,7 +4,15 @@ export type NotificationType =
   | "order_rejected"
   | "order_ready"
   | "order_completed"
-  | "order_cancelled";
+  | "order_cancelled"
+  | "store_pending_review"
+  | "store_changes_required"
+  | "store_approved"
+  | "store_suspended"
+  | "store_reactivated"
+  | "student_pending"
+  | "direct_message"
+  | "contact_attempt";
 
 export type OrderNotificationEvent =
   | "created"

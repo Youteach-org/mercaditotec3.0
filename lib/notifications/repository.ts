@@ -3,10 +3,13 @@ import { Timestamp, type DocumentData } from "../firestoreRest";
 import { getAdminDb } from "../firestoreRest";
 import {
   buildOrderNotification,
+  type NotificationDraft,
   type NotificationType,
   type OrderNotificationEvent,
   type OrderNotificationSource,
 } from "./domain";
+import { deliverPushSafely } from "./push";
+import { isAdminRole } from "../security/domain";
 
 export interface NotificationRecord {
   id: string;
@@ -49,8 +52,14 @@ export async function createOrderNotification(
   order: OrderNotificationSource,
   event: OrderNotificationEvent,
 ): Promise<NotificationRecord> {
+  return createNotification(buildOrderNotification(order, event));
+}
+
+export async function createNotification(draft: NotificationDraft): Promise<NotificationRecord> {
+  if (!draft.recipientUid || !/^[A-Za-z0-9:_-]{1,400}$/.test(draft.dedupeKey)) {
+    throw new NotificationRepositoryError(400, "Evento de notificación inválido.");
+  }
   const db = getAdminDb();
-  const draft = buildOrderNotification(order, event);
   const reference = db.collection("notifications").doc(draft.dedupeKey);
   const userReference = db.collection("users").doc(draft.recipientUid);
   const record: Omit<NotificationRecord, "id"> = {
@@ -60,6 +69,7 @@ export async function createOrderNotification(
   };
 
   let result: NotificationRecord | null = null;
+  let created = false;
 
   const initialUserSnapshot = await userReference.get();
   if (!initialUserSnapshot.exists) {
@@ -96,17 +106,57 @@ export async function createOrderNotification(
     }
 
     transaction.create(reference, record);
+    created = true;
     transaction.update(userReference, {
       unreadNotificationCount: currentUnread + 1,
     });
     result = { id: reference.id, ...record };
   });
 
-  if (!result) {
+  // The transaction callback populates result asynchronously. Explicitly
+  // narrow it here instead of relying on TypeScript's closure flow analysis.
+  const notification = result as NotificationRecord | null;
+  if (!notification) {
     throw new NotificationRepositoryError(500, "No se pudo crear la notificación.");
   }
 
-  return result;
+  // A replayed event must not send a duplicate Android push.
+  if (created) {
+    await deliverPushSafely(notification.recipientUid, {
+      id: notification.id,
+      title: notification.title,
+      message: "Tienes una nueva notificación en MercaditoTec.",
+      href: notification.href,
+    });
+  }
+  return notification;
+}
+
+export async function createNotificationSafely(draft: NotificationDraft): Promise<void> {
+  try {
+    await createNotification(draft);
+  } catch (error) {
+    // An unavailable notifications service must not roll back a committed order,
+    // message, store decision or account activation.
+    console.warn("NOTIFICATION_EVENT_UNAVAILABLE", {
+      type: draft.type,
+      error: error instanceof Error ? error.name : "Unknown",
+    });
+  }
+}
+
+export async function notifyAdminsSafely(event: Omit<NotificationDraft, "recipientUid">): Promise<void> {
+  try {
+    const profiles = await getAdminDb().collection("users").list(250);
+    const adminUids = profiles.docs
+      .filter((document) => isAdminRole(document.data()) && document.data().isActive !== false)
+      .map((document) => document.id);
+    await Promise.all(adminUids.map((recipientUid) =>
+      createNotificationSafely({ ...event, recipientUid, dedupeKey: `${event.dedupeKey}:admin:${recipientUid}` }),
+    ));
+  } catch (error) {
+    console.warn("ADMIN_NOTIFICATION_UNAVAILABLE", error instanceof Error ? error.name : "Unknown");
+  }
 }
 
 export async function countUnreadNotifications(
