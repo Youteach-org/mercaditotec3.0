@@ -1,6 +1,6 @@
 import type { User } from "firebase/auth";
 import { getApp } from "firebase/app";
-import { deleteToken, getMessaging, getToken, isSupported } from "firebase/messaging";
+import { deleteToken, getMessaging, getToken, isSupported, onMessage } from "firebase/messaging";
 import { storeApiFetch } from "@/lib/store/client";
 
 export function browserPushAvailable(): boolean {
@@ -53,4 +53,30 @@ export async function disableDevicePush(user: User): Promise<void> {
     if (!response.ok) throw new Error("No se pudo desvincular este dispositivo.");
   }
   await deleteToken(messaging);
+}
+
+/**
+ * FCM routes messages to the page while the tab is focused. Android's
+ * Notification constructor is not supported in many mobile browsers, so use
+ * the existing service worker registration to display an OS notification.
+ */
+export async function watchForegroundPush(): Promise<() => void> {
+  if (!browserPushAvailable() || Notification.permission !== "granted" || !(await isSupported())) {
+    return () => undefined;
+  }
+  const messaging = getMessaging(getApp());
+  return onMessage(messaging, (payload) => {
+    window.dispatchEvent(new Event("notifications:changed"));
+    const data = payload.data ?? {};
+    const href = typeof data.href === "string" && data.href.startsWith("/") && !data.href.startsWith("//")
+      ? data.href : "/notifications";
+    void navigator.serviceWorker.getRegistration("/")
+      .then((registration) => registration?.showNotification(data.title || "MercaditoTec", {
+        body: data.body || "Tienes una nueva notificación.",
+        icon: "/icon.svg",
+        tag: data.notificationId || "mercaditotec",
+        data: { href },
+      }))
+      .catch(() => undefined);
+  });
 }
