@@ -31,13 +31,20 @@ export function isAdminProfile(profile: unknown): boolean {
   return isAdminRole(profile);
 }
 
-async function loadProfile(uid: string) {
-  const profileSnapshot = await getAdminDb()
-    .collection("users")
-    .doc(uid)
-    .get();
+// Deduplicate overlapping reads for the same account within one Worker.
+// Entries are deleted as soon as the read finishes: do not cache revocations,
+// role changes, moderation blocks, or an account that was subsequently deleted.
+const inFlightProfiles = new Map<string, Promise<Record<string, unknown> | undefined>>();
 
-  return profileSnapshot.data();
+async function loadProfile(uid: string): Promise<Record<string, unknown> | undefined> {
+  let pending = inFlightProfiles.get(uid);
+  if (!pending) {
+    pending = getAdminDb().collection("users").doc(uid).get()
+      .then(snapshot => snapshot.data() as Record<string, unknown> | undefined)
+      .finally(() => { inFlightProfiles.delete(uid); });
+    inFlightProfiles.set(uid, pending);
+  }
+  return pending;
 }
 
 export function assertUserMayMutate(
