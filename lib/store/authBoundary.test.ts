@@ -4,18 +4,44 @@ import { requireAdmin, requireFirebaseUser, requireSuperadmin } from "./auth";
 const state = vi.hoisted(() => ({
   profile: {} as Record<string, unknown>,
   claims: { uid: "student-1", email: "a22121079@morelia.tecnm.mx", email_verified: true, role: "superadmin" },
+  transientAuthError: false,
+  profileReads: 0,
 }));
-vi.mock("../firebaseAdmin", () => ({ getAdminAuth: () => ({ verifyIdToken: async () => state.claims }) }));
-vi.mock("../firestoreRest", () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => state.profile }) }) }) }) }));
+vi.mock("../firebaseAdmin", () => ({ getAdminAuth: () => ({ verifyIdToken: async () => {
+  if (state.transientAuthError) {
+    const error = new Error("Firebase upstream 429");
+    error.name = "FirebaseAuthUnavailableError";
+    throw error;
+  }
+  return state.claims;
+} }) }));
+vi.mock("../firestoreRest", () => ({ getAdminDb: () => ({ collection: () => ({ doc: () => ({
+  get: async () => {
+    state.profileReads++;
+    return { data: () => state.profile };
+  },
+}) }) }) }));
 const request = () => new Request("https://mercadito.test/api/admin/users", { headers: { authorization: "Bearer verified-test-token" } });
 
 beforeEach(() => {
+  state.transientAuthError = false;
+  state.profileReads = 0;
   state.profile = { role: "user", isActive: true };
   state.claims.email = "a22121079@morelia.tecnm.mx";
   state.claims.email_verified = true;
   state.claims.role = "superadmin";
 });
 describe("server authorization boundary", () => {
+  it("shares simultaneous profile fetches without caching completed authorization decisions", async () => {
+    await Promise.all([requireFirebaseUser(request()), requireFirebaseUser(request())]);
+    expect(state.profileReads).toBe(1);
+    await requireFirebaseUser(request());
+    expect(state.profileReads).toBe(2);
+  });
+  it("returns temporary unavailability instead of logging out on provider quota exhaustion", async () => {
+    state.transientAuthError = true;
+    await expect(requireFirebaseUser(request())).rejects.toMatchObject({ status: 503 });
+  });
   it("rejects an absent bearer token", async () => {
     await expect(requireFirebaseUser(new Request("https://mercadito.test"))).rejects.toMatchObject({ status: 401 });
   });

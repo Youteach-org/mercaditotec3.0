@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
 import { storeApiFetch } from "@/lib/store/client";
+import { followUpSessionRetryDelayMs, immediateSessionRetryDelayMs } from "@/lib/security/sessionRetry.mjs";
 import { useSession } from "@/lib/useSession";
 
 type AccessState = "checking" | "allowed" | "unavailable" | "denied";
@@ -56,8 +57,18 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
     }
 
     let cancelled = false;
+    let followUpTimer: number | null = null;
     const controller = new AbortController();
     setState("checking");
+
+    const scheduleFollowUp = (delayMs: number) => {
+      // Two automatic retries maximum; manual Reintentar remains available.
+      // Stagger by device to avoid a synchronized wave on campus Wi-Fi.
+      if (cancelled || attempt >= 2) return;
+      followUpTimer = window.setTimeout(() => {
+        if (!cancelled) setAttempt((current) => current + 1);
+      }, delayMs + Math.floor(Math.random() * 3000));
+    };
 
     void (async () => {
       try {
@@ -69,9 +80,13 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
             signal: controller.signal,
             cache: "no-store",
           });
-          if (![429, 502, 503, 504].includes(response.status) || retry >= 2) break;
+          // Never hammer a 429; honor Retry-After from Firebase/Cloudflare.
+          const delayMs = immediateSessionRetryDelayMs(
+            response.status, retry, response.headers.get("retry-after"),
+          );
+          if (delayMs === null) break;
           await new Promise<void>((resolve, reject) => {
-            const delay = window.setTimeout(resolve, 500 * (retry + 1));
+            const delay = window.setTimeout(resolve, delayMs + Math.floor(Math.random() * 350));
             controller.signal.addEventListener("abort", () => {
               window.clearTimeout(delay);
               reject(new DOMException("Aborted", "AbortError"));
@@ -109,18 +124,23 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
           // No backend verification means NO protected content, even if
           // Firebase left an old local session active.
           setState("unavailable");
+          scheduleFollowUp(
+            followUpSessionRetryDelayMs(response.status, response.headers.get("retry-after")),
+          );
         }
       } catch {
         if (!cancelled) {
           lastVerified.current = null;
           setVerified(null);
           setState("unavailable");
+          scheduleFollowUp(20_000);
         }
       }
     })();
 
     return () => {
       cancelled = true;
+      if (followUpTimer !== null) window.clearTimeout(followUpTimer);
       controller.abort();
     };
   }, [firebaseUser, loading, pathname, protectedPage, router, setupPage, attempt]);
@@ -137,6 +157,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
             <p className="mt-2 text-sm">
               No podemos verificar los requisitos de acceso con el servidor.
               Las funciones privadas permanecerán bloqueadas por seguridad.
+              El sistema intentará conectarse de nuevo automáticamente.
             </p>
             <button type="button" onClick={() => setAttempt((value) => value + 1)}
               className="mt-4 rounded-xl bg-slate-900 px-4 py-2 font-semibold text-white">

@@ -31,13 +31,20 @@ export function isAdminProfile(profile: unknown): boolean {
   return isAdminRole(profile);
 }
 
-async function loadProfile(uid: string) {
-  const profileSnapshot = await getAdminDb()
-    .collection("users")
-    .doc(uid)
-    .get();
+// Deduplicate overlapping reads for the same account within one Worker.
+// Entries are deleted as soon as the read finishes: do not cache revocations,
+// role changes, moderation blocks, or an account that was subsequently deleted.
+const inFlightProfiles = new Map<string, Promise<Record<string, unknown> | undefined>>();
 
-  return profileSnapshot.data();
+async function loadProfile(uid: string): Promise<Record<string, unknown> | undefined> {
+  let pending = inFlightProfiles.get(uid);
+  if (!pending) {
+    pending = getAdminDb().collection("users").doc(uid).get()
+      .then(snapshot => snapshot.data() as Record<string, unknown> | undefined)
+      .finally(() => { inFlightProfiles.delete(uid); });
+    inFlightProfiles.set(uid, pending);
+  }
+  return pending;
 }
 
 export function assertUserMayMutate(
@@ -122,6 +129,13 @@ export async function requireFirebaseUser(
     return { uid: claims.uid, claims, profile };
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
+    if (error instanceof Error && (
+      error.name === "FirebaseAuthUnavailableError" ||
+      error.name === "GoogleOAuthUnavailableError"
+    )) {
+      console.error("AUTH_IDENTITY_PROVIDER_UNAVAILABLE");
+      throw new ApiAuthError(503, "Firebase no puede verificar el acceso temporalmente. Inténtalo de nuevo.");
+    }
     if (error instanceof ApiAuthError) throw error;
     if (error instanceof FirestoreRestError && (error.status === 403 || error.status === 429 || error.status >= 500)) {
       // Database saturation must not be presented as an expired login.
