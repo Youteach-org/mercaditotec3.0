@@ -197,7 +197,6 @@ export default function AdminCategoriesPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow-md">
-        <AdminQuickNav />
           Verificando permisos...
         </div>
       </main>
@@ -207,6 +206,7 @@ export default function AdminCategoriesPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-5xl space-y-5">
+        <AdminQuickNav />
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

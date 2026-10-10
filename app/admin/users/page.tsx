@@ -3,7 +3,7 @@
 import AdminQuickNav from "@/components/admin/AdminQuickNav";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -58,7 +58,6 @@ function isTrustFilter(value: string | null): value is TrustFilter {
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const isAdmin = isAdminRole(appUser);
   const isSuperadmin = isSuperadminRole(appUser);
@@ -83,7 +82,7 @@ export default function AdminUsersPage() {
   }, [firebaseUser, isAdmin, router, sessionLoading]);
 
   useEffect(() => {
-    const requested = searchParams.get("status");
+    const requested = new URLSearchParams(window.location.search).get("status");
     if (isTrustFilter(requested)) {
       setTrustFilter(requested);
       window.sessionStorage.setItem(TRUST_FILTER_STORAGE_KEY, requested);
@@ -91,7 +90,7 @@ export default function AdminUsersPage() {
     }
     const savedFilter = window.sessionStorage.getItem(TRUST_FILTER_STORAGE_KEY);
     if (isTrustFilter(savedFilter)) setTrustFilter(savedFilter);
-  }, [searchParams]);
+  }, []);
 
   function selectTrustFilter(value: TrustFilter) {
     setTrustFilter(value);
@@ -248,7 +247,6 @@ export default function AdminUsersPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
-        <AdminQuickNav />
           Verificando permisos...
         </div>
       </main>
@@ -258,6 +256,7 @@ export default function AdminUsersPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-7xl space-y-5">
+        <AdminQuickNav />
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <Link href="/admin" className="text-sm font-semibold text-blue-700 hover:underline">
             ← Centro de administración

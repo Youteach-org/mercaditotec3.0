@@ -149,7 +149,6 @@ export default function AdminMarketplacePage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow-md">
-        <AdminQuickNav />
           Cargando editor del Mercadito...
         </div>
       </main>
@@ -159,6 +158,7 @@ export default function AdminMarketplacePage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-5">
+        <AdminQuickNav />
         <section className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg">
           <Link href="/admin" className="text-sm font-bold text-sky-300 hover:underline">← Administración</Link>
           <h1 className="mt-2 text-3xl font-black">Editar portada del Mercadito</h1>

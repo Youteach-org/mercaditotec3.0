@@ -69,7 +69,6 @@ export default function AdminStoresPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">
-        <AdminQuickNav />
           <p className="text-gray-600">Verificando permisos...</p>
         </div>
       </main>
@@ -79,6 +78,7 @@ export default function AdminStoresPage() {
   return (
     <main className="min-h-screen bg-gray-100 p-4">
       <div className="mx-auto max-w-6xl space-y-5">
+        <AdminQuickNav />
         <section className="rounded-2xl bg-white p-6 shadow-md">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
