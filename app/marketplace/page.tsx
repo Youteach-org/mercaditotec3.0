@@ -465,7 +465,7 @@ export default function MarketplacePage() {
       approvedCategories.map((item) => [item.id, item.name]),
     );
 
-    return sourceStores.filter((store) => {
+    const matchingStores = sourceStores.filter((store) => {
       const demo = "demoCategory" in store;
       const categoryMatch =
         category === "all" ||
@@ -493,7 +493,9 @@ export default function MarketplacePage() {
 
       return categoryMatch && queryMatch;
     });
-  }, [approvedCategories, category, normalizedQuery, sourceStores]);
+    // Keep demos for previews, but suppress demos that would reach the second page.
+    return previewMode ? matchingStores : matchingStores.filter((store, index) => index < 18 || !("demoCategory" in store));
+  }, [approvedCategories, category, normalizedQuery, sourceStores, previewMode]);
 
   const featured = filteredStores.slice(0, 6);
   const additionalStores = filteredStores.slice(6);
