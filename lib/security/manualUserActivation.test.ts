@@ -52,5 +52,11 @@ describe("activation constraints", () => {
     expect(source).toContain("manualActivationAttempts");
     expect(source).toContain("MAX_ATTEMPTS");
     expect(source).not.toContain('emailVerified: true');
+    // Preexisting self registrations must not be silently converted.
+    expect(source).not.toContain("existingIdentity");
+    expect(source).not.toContain("manualConvertedFromSelfRegistration");
+    expect(source).not.toContain('lookupFirebaseAccount({ email: data.email })');
+    expect(source).toContain('data.registrationSource !== "manual_admin"');
+    expect(source).toContain("const uid = await createFirebaseUser(data);");
   });
 });

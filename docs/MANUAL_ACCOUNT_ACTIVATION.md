@@ -22,4 +22,4 @@
 
 **Recuperación sin correo:** el Superadmin puede revalidar personalmente la identidad y seleccionar «Restablecer acceso con código». Esto desactiva temporalmente el acceso hasta que se utilice un código nuevo; nunca se reutiliza la contraseña anterior.
 
-**Cuentas ya existentes sin correo de verificación:** si Firebase ya contiene el correo, el Superadmin puede recuperarlas mediante el alta (el sistema encuentra su UID) o desde su tarjeta «Activar sin correo». La identidad se consulta en Firebase y se rechazan cuentas ya verificadas, cuentas administrativas, inactivas y correos no institucionales. No se borra el perfil ni se pierden sus datos y avales.
+**Alcance estricto:** esta alternativa solo se permite para usuarios nuevos creados desde Administración → Usuarios. Si el correo ya existe en Firebase, el alta responde que ya existe y no modifica esa cuenta. Ninguna cuenta creada mediante registro normal podrá recibir códigos ni convertirse a alta manual. La verificación habitual por correo y los dos avales no cambian.

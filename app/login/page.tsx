@@ -107,7 +107,7 @@ export default function LoginPage() {
         if (!result.user.emailVerified) {
           try { await sendEmailVerification(result.user); } catch {}
           await signOut(auth).catch(() => undefined);
-          setError("Debes verificar tu correo o activar tu cuenta con un código del administrador. Si no recibes correo, usa «Activar con código».");
+          setError("Tu correo aún no ha sido verificado. Te reenviamos el enlace de confirmación.");
           return;
         }
         await signOut(auth).catch(() => undefined);
@@ -281,9 +281,6 @@ export default function LoginPage() {
             {loadingResendVerification ? "Reenviando..." : "Reenviar correo de verificación"}
           </button>
 
-          <a href="/activate" className="block text-center text-slate-800 font-semibold">
-            Activar cuenta con código del administrador (sin correo)
-          </a>
           <a href="/register" className="block text-center text-blue-600 font-medium">
             Crear cuenta nueva
           </a>

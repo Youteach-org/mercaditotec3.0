@@ -128,7 +128,6 @@ export default function AdminUsersPage() {
       setNewUserEmail("");
       setIdentityChecked(false);
       await loadUsers();
-      if (result.existingAccount) setMessage("La cuenta ya existía. Se preparó un código nuevo sin eliminar sus datos.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo agregar al usuario.");
     } finally {
@@ -476,7 +475,8 @@ export default function AdminUsersPage() {
                       </span>
                     )}
 
-                    {isSuperadmin && !user.adminRole && !user.emailVerified && (
+                    {isSuperadmin && user.registrationSource === "manual_admin"
+                      && !user.adminRole && !user.emailVerified && (
                       <button type="button" disabled={working}
                         onClick={() => void issueNewCode(user)}
                         className="rounded-xl border border-amber-400 px-3.5 py-2.5 text-sm font-bold text-amber-900 disabled:opacity-50">
