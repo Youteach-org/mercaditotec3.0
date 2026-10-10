@@ -29,6 +29,13 @@ export class FirebaseAuthUnavailableError extends Error {
   }
 }
 
+export class GoogleOAuthUnavailableError extends Error {
+  constructor(public readonly status: number) {
+    super("Google OAuth token exchange is temporarily unavailable");
+    this.name = "GoogleOAuthUnavailableError";
+  }
+}
+
 interface FirebaseLookupUser {
   localId?: string;
   disabled?: boolean;
@@ -419,6 +426,9 @@ async function requestNewAdminAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
+    if (response.status === 429 || response.status >= 500) {
+      throw new GoogleOAuthUnavailableError(response.status);
+    }
     let details = "";
 
     try {

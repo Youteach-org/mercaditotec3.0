@@ -23,7 +23,10 @@ export async function POST(request: Request) {
     if (error instanceof AccountProfileError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    if (error instanceof Error && error.name === "FirebaseAuthUnavailableError") {
+    if (error instanceof Error && (
+      error.name === "FirebaseAuthUnavailableError" ||
+      error.name === "GoogleOAuthUnavailableError"
+    )) {
       console.error("ACCOUNT_SYNC_AUTH_PROVIDER_UNAVAILABLE");
       return NextResponse.json(
         { error: "Firebase está temporalmente saturado.", retryable: true },

@@ -129,7 +129,10 @@ export async function requireFirebaseUser(
     return { uid: claims.uid, claims, profile };
   } catch (error) {
     if (error instanceof MutationLimitError) throw new ApiAuthError(429, error.message);
-    if (error instanceof Error && error.name === "FirebaseAuthUnavailableError") {
+    if (error instanceof Error && (
+      error.name === "FirebaseAuthUnavailableError" ||
+      error.name === "GoogleOAuthUnavailableError"
+    )) {
       console.error("AUTH_IDENTITY_PROVIDER_UNAVAILABLE");
       throw new ApiAuthError(503, "Firebase no puede verificar el acceso temporalmente. Inténtalo de nuevo.");
     }
