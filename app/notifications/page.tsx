@@ -45,6 +45,13 @@ export default function NotificationsPage() {
   const [pushMessage, setPushMessage] = useState("");
   const [pushEnabled, setPushEnabled] = useState(false);
 
+  useEffect(() => {
+    if (!firebaseUser || typeof window === "undefined") return;
+    const preference = window.localStorage.getItem(`mercadito-push-${firebaseUser.uid}`);
+    setPushEnabled(preference === "enabled" && "Notification" in window &&
+      Notification.permission === "granted");
+  }, [firebaseUser]);
+
   const refresh = useCallback(async () => {
     if (!firebaseUser) return;
     setLoading(true);
@@ -111,6 +118,7 @@ export default function NotificationsPage() {
       if (enable) await enableDevicePush(firebaseUser);
       else await disableDevicePush(firebaseUser);
       setPushEnabled(enable);
+      window.localStorage.setItem(`mercadito-push-${firebaseUser.uid}`, enable ? "enabled" : "disabled");
       setPushMessage(enable
         ? "Notificaciones de Android activadas en este dispositivo."
         : "Notificaciones de este dispositivo desactivadas.");
