@@ -497,8 +497,24 @@ export default function MarketplacePage() {
     return previewMode ? matchingStores : matchingStores.filter((store, index) => index < 18 || !("demoCategory" in store));
   }, [approvedCategories, category, normalizedQuery, sourceStores, previewMode]);
 
-  const featured = filteredStores.slice(0, 6);
-  const additionalStores = filteredStores.slice(6);
+  const featuredStores = useMemo(() => {
+    if (filteredStores.length <= 1) return filteredStores.slice(0, 6);
+    const priority = filteredStores.filter((store) => {
+      const name = store.name.toLocaleLowerCase("es-MX");
+      return name.includes("ke-rollos") || name.includes("ke rollos") || name.includes("k-rollos") ||
+        name.includes("youteach");
+    });
+    const other = filteredStores.filter((store) => !priority.includes(store));
+    // A stable random order per visit, rather than jumping during each render.
+    const rotation = (Math.floor(Date.now() / 86400000) * 17) % Math.max(1, other.length);
+    const rotated = [...other.slice(rotation), ...other.slice(0, rotation)];
+    const chosen = [...priority.slice(0, 6), ...rotated].slice(0, 6);
+    const priorityRotation = (Math.floor(Date.now() / 86400000) * 7) % Math.max(1, chosen.length);
+    return [...chosen.slice(priorityRotation), ...chosen.slice(0, priorityRotation)];
+  }, [filteredStores]);
+  const featured = featuredStores;
+  const additionalStores = [...filteredStores.slice(6), ...filteredStores.slice(0, 6)]
+    .filter((store) => !featuredStores.some((featuredStore) => featuredStore.id === store.id));
   const storesPerPage = 12;
   const pageCount = Math.max(1, Math.ceil(additionalStores.length / storesPerPage));
   const currentStorePage = Math.min(storePage, pageCount - 1);

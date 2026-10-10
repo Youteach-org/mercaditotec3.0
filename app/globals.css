@@ -5498,3 +5498,36 @@ img:not([data-no-image-zoom="true"]) {
   }
   .mkt-approved-canvas > .mkt-community-counts strong { font-size: 18px; }
 }
+
+/* Visible counts float ON the lower edge of the yellow cutout, with no pills.
+   Leave the search lane on the right entirely clear. */
+.mkt-approved-canvas > .mkt-community-counts {
+  top: 19.6% !important;
+  left: 9.5% !important;
+  width: 23% !important;
+  right: auto !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+.mkt-approved-canvas > .mkt-community-counts .mkt-community-count {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+}
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-approved-canvas > .mkt-community-counts {
+    top: 255px !important;
+    left: 9% !important;
+    width: 26% !important;
+  }
+}
+@media (max-width: 620px) {
+  .mkt-approved-canvas > .mkt-community-counts {
+    top: 242px !important;
+    left: 13% !important;
+    width: 67% !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-around !important;
+  }
+}
