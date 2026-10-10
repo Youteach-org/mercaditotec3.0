@@ -100,18 +100,16 @@ export default function LoginPage() {
 
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
 
-      if (!result.user.emailVerified) {
-        try {
-          await sendEmailVerification(result.user);
-        } catch {}
-        await signOut(auth);
-        setError("Tu correo aún no ha sido verificado. Te reenviamos el enlace de confirmación.");
-        return;
-      }
-
       try {
+        // The server also recognizes Superadmin-authorized in-person activation.
         await syncAccount(result.user);
       } catch (accessError) {
+        if (!result.user.emailVerified) {
+          try { await sendEmailVerification(result.user); } catch {}
+          await signOut(auth).catch(() => undefined);
+          setError("Debes verificar tu correo o activar tu cuenta con un código del administrador. Si no recibes correo, usa «Activar con código».");
+          return;
+        }
         await signOut(auth).catch(() => undefined);
         throw accessError;
       }
@@ -283,6 +281,9 @@ export default function LoginPage() {
             {loadingResendVerification ? "Reenviando..." : "Reenviar correo de verificación"}
           </button>
 
+          <a href="/activate" className="block text-center text-slate-800 font-semibold">
+            Activar cuenta con código del administrador (sin correo)
+          </a>
           <a href="/register" className="block text-center text-blue-600 font-medium">
             Crear cuenta nueva
           </a>

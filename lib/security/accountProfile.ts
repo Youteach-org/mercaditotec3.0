@@ -1,7 +1,7 @@
 import { parseImageUploadPath } from "../store/media";
 import type { DecodedIdToken } from "../firebaseAdmin";
 import { getAdminDb, Timestamp } from "../firestoreRest";
-import { isAdminRole, studentControlEligibility } from "./domain";
+import { isAdminRole, isManuallyActivatedProfile, studentControlEligibility } from "./domain";
 import { normalizeWhatsappNumber, WhatsappNumberError } from "./whatsapp";
 
 const INSTITUTIONAL_DOMAIN = "@morelia.tecnm.mx";
@@ -96,14 +96,14 @@ export async function syncVerifiedAccountProfile(
   claims: DecodedIdToken,
   now: Date = new Date(),
 ): Promise<void> {
-  if (claims.email_verified !== true) {
-    throw new AccountProfileError(403, "Debes verificar tu correo institucional antes de entrar.");
-  }
-
   const email = tokenEmail(claims);
   const reference = getAdminDb().collection("users").doc(claims.uid);
   const snapshot = await reference.get();
   const existing = snapshot.data();
+
+  if (claims.email_verified !== true && !isManuallyActivatedProfile(existing, email)) {
+    throw new AccountProfileError(403, "Debes verificar tu correo institucional antes de entrar.");
+  }
 
   const identity = institutionalIdentity(email, {
     requireStudentControl: !isAdminRole(existing),
@@ -118,7 +118,7 @@ export async function syncVerifiedAccountProfile(
   await reference.update({
     email: identity.email,
     emailLocalPart: identity.localPart,
-    emailVerified: true,
+    emailVerified: claims.email_verified === true,
     updatedAt: Timestamp.fromDate(now),
   });
 }

@@ -30,6 +30,8 @@ export interface AdminUserSummary {
   isActive: boolean;
   blocked: boolean;
   createdAt: string | null;
+  registrationSource: string | null;
+  manualActivationStatus: string | null;
 }
 
 export function parseAdminTrustChange(input: unknown): "revoked" {
@@ -83,6 +85,8 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
     isActive: data.isActive !== false,
     blocked: isAdministrativeBlockActive(data),
     createdAt: createdAtIso(data.createdAt),
+    registrationSource: typeof data.registrationSource === "string" ? data.registrationSource : null,
+    manualActivationStatus: typeof data.manualActivationStatus === "string" ? data.manualActivationStatus : null,
   };
 }
 
@@ -160,6 +164,11 @@ export async function setUserRoleBySuperadmin(
       409,
       "No puedes modificar otra cuenta de superadmin desde este control.",
     );
+  }
+
+  if (role === "subadmin" && current.registrationSource === "manual_admin"
+    && current.manualActivationStatus !== "activated") {
+    throw new AdminUserError(409, "Primero se debe activar presencialmente esta cuenta.");
   }
 
   const now = Timestamp.now();

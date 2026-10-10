@@ -146,6 +146,23 @@ export function studentControlEligibility(
 }
 
 
+/**
+ * Only server-owned Firestore profiles can authorize manual activation.
+ * Never accept these properties from client-supplied claims.
+ */
+export function isManuallyActivatedProfile(profile: unknown, email: string): boolean {
+  if (!profile || typeof profile !== "object") return false;
+  const data = profile as Record<string, unknown>;
+  return data.registrationSource === "manual_admin"
+    && data.manualActivationStatus === "activated"
+    && typeof data.manualIdentityVerifiedBy === "string"
+    && data.manualIdentityVerifiedBy.length > 0
+    && data.manualIdentityVerifiedAt != null
+    && typeof data.email === "string"
+    && data.email.toLowerCase() === email.toLowerCase()
+    && !isAdminRole(data);
+}
+
 export type StudentAccessEligibility =
   | {
       allowed: true;
@@ -161,14 +178,13 @@ export function studentAccessEligibility(input: {
   profile?: unknown;
   now?: Date;
 }): StudentAccessEligibility {
-  if (!input.emailVerified) {
+  const email = input.email.trim().toLowerCase();
+  if (!input.emailVerified && !isManuallyActivatedProfile(input.profile, email)) {
     return {
       allowed: false,
       reason: "Debes verificar tu correo institucional antes de entrar.",
     };
   }
-
-  const email = input.email.trim().toLowerCase();
   const institutionalDomain = "@morelia.tecnm.mx";
   if (!email.endsWith(institutionalDomain) || email === institutionalDomain) {
     return {
