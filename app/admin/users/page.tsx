@@ -1,7 +1,9 @@
 "use client";
 
+import AdminQuickNav from "@/components/admin/AdminQuickNav";
+
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -56,6 +58,7 @@ function isTrustFilter(value: string | null): value is TrustFilter {
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const isAdmin = isAdminRole(appUser);
   const isSuperadmin = isSuperadminRole(appUser);
@@ -80,11 +83,15 @@ export default function AdminUsersPage() {
   }, [firebaseUser, isAdmin, router, sessionLoading]);
 
   useEffect(() => {
-    const savedFilter = window.sessionStorage.getItem(TRUST_FILTER_STORAGE_KEY);
-    if (isTrustFilter(savedFilter)) {
-      setTrustFilter(savedFilter);
+    const requested = searchParams.get("status");
+    if (isTrustFilter(requested)) {
+      setTrustFilter(requested);
+      window.sessionStorage.setItem(TRUST_FILTER_STORAGE_KEY, requested);
+      return;
     }
-  }, []);
+    const savedFilter = window.sessionStorage.getItem(TRUST_FILTER_STORAGE_KEY);
+    if (isTrustFilter(savedFilter)) setTrustFilter(savedFilter);
+  }, [searchParams]);
 
   function selectTrustFilter(value: TrustFilter) {
     setTrustFilter(value);
@@ -156,8 +163,9 @@ export default function AdminUsersPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "No se pudo actualizar al usuario.");
       setUsers((current) =>
-        current.map((item) => (item.uid === user.uid ? (data.user as AdminUserSummary) : item)),
+        current.map((item) => (item.uid === user.uid ? { ...item, ...(data.user as AdminUserSummary), studentStatus: status } : item)),
       );
+      if (status === "verified") setSelectedUserUid(null);
       setMessage(
         status === "verified"
           ? "Alumno aprobado manualmente por Superadmin."
@@ -240,6 +248,7 @@ export default function AdminUsersPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
+        <AdminQuickNav />
           Verificando permisos...
         </div>
       </main>

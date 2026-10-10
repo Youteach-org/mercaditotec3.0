@@ -1,5 +1,7 @@
 "use client";
 
+import AdminQuickNav from "@/components/admin/AdminQuickNav";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -93,6 +95,7 @@ export default function AdminReportsPage() {
   return (
     <main className="min-h-screen bg-slate-100 p-4 sm:p-6">
       <div className="mx-auto max-w-6xl space-y-5">
+        <AdminQuickNav />
         <header className="rounded-2xl bg-slate-950 p-6 text-white shadow-lg">
           <Link href="/admin" className="text-sm font-bold text-sky-300 hover:underline">← Centro de administración</Link>
           <h1 className="mt-3 text-3xl font-black">Reportes</h1>

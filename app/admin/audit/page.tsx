@@ -1,5 +1,7 @@
 "use client";
 
+import AdminQuickNav from "@/components/admin/AdminQuickNav";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -74,7 +76,8 @@ export default function AdminAuditPage() {
   if (sessionLoading || !firebaseUser || !isAdmin) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
-        <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">Verificando permisos...</div>
+        <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">
+        <AdminQuickNav />Verificando permisos...</div>
       </main>
     );
   }

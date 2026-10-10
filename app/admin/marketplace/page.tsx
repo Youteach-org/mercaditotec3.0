@@ -1,5 +1,7 @@
 "use client";
 
+import AdminQuickNav from "@/components/admin/AdminQuickNav";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -147,6 +149,7 @@ export default function AdminMarketplacePage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-5xl rounded-2xl bg-white p-6 shadow-md">
+        <AdminQuickNav />
           Cargando editor del Mercadito...
         </div>
       </main>

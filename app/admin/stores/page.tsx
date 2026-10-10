@@ -1,5 +1,7 @@
 "use client";
 
+import AdminQuickNav from "@/components/admin/AdminQuickNav";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -67,6 +69,7 @@ export default function AdminStoresPage() {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-6xl rounded-2xl bg-white p-6 shadow-md">
+        <AdminQuickNav />
           <p className="text-gray-600">Verificando permisos...</p>
         </div>
       </main>
