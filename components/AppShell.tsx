@@ -203,8 +203,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
+    let fetching = false;
 
     const loadPrivateUnread = async () => {
+      // A hidden browser tab must never poll Firestore for unread messages.
+      // Foreground push or returning to the tab triggers an immediate check.
+      if (fetching || document.hidden) return;
+      fetching = true;
       try {
         const response = await moderationApiFetch(
           firebaseUser,
@@ -234,17 +239,27 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         setPrivateUnreadCount(nextCount);
       } catch {
         // Mantener el contador previo ante fallas temporales de red.
+      } finally {
+        fetching = false;
       }
     };
 
     void loadPrivateUnread();
-    const interval = window.setInterval(() => {
-      void loadPrivateUnread();
-    }, 8000);
+    // Previously every 8s (10,800 requests/day per continuously open tab).
+    // With a 2-minute fallback, at most 720 timer ticks/day, none while hidden.
+    const interval = window.setInterval(() => void loadPrivateUnread(), 120_000);
+    const onFocus = () => void loadPrivateUnread();
+    const onVisible = () => { if (!document.hidden) void loadPrivateUnread(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("notifications:changed", onFocus);
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("notifications:changed", onFocus);
     };
   }, [firebaseUser, loading, pathname]);
 
