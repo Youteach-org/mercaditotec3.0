@@ -65,6 +65,12 @@ const cards: Array<{
     href: "/admin/audit",
     icon: "🧾",
   },
+  {
+    title: "Consumo y rendimiento",
+    description: "Vigila las peticiones de Cloudflare y los límites gratuitos de Firebase, sin actualizaciones automáticas.",
+    href: "/admin/usage",
+    icon: "📊",
+  },
 ];
 
 export default function AdminHomePage() {
