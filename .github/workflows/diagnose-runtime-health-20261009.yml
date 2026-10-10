@@ -1,0 +1,34 @@
+name: Diagnose Mercadito production health (read-only)
+
+on:
+  push:
+    branches:
+      - diagnostics/runtime-errors-20261009
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Probe public health and anonymous session without modifying production
+        shell: bash
+        run: |
+          set -uo pipefail
+          for base in https://mercaditotec3-0.youteach-tk.workers.dev https://mercaditotec.store; do
+            for path in /__health /api/account/session /__probe; do
+              echo "===== $base$path ====="
+              status="$(curl -sS --max-time 25 --connect-timeout 8 \
+                -D /tmp/mercadito-headers -o /tmp/mercadito-body \
+                -w '%{http_code}' "$base$path" || true)"
+              echo "HTTP $status"
+              grep -Ei '^(HTTP/|content-type:|retry-after:|cf-ray:|server:)' /tmp/mercadito-headers || true
+              if [ "$path" = "/__health" ] || [ "$path" = "/api/account/session" ]; then
+                head -c 1400 /tmp/mercadito-body || true
+                echo
+              fi
+              sleep 2
+            done
+          done
