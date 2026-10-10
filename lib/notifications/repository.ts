@@ -113,20 +113,23 @@ export async function createNotification(draft: NotificationDraft): Promise<Noti
     result = { id: reference.id, ...record };
   });
 
-  if (!result) {
+  // The transaction callback populates result asynchronously. Explicitly
+  // narrow it here instead of relying on TypeScript's closure flow analysis.
+  const notification = result as NotificationRecord | null;
+  if (!notification) {
     throw new NotificationRepositoryError(500, "No se pudo crear la notificación.");
   }
 
   // A replayed event must not send a duplicate Android push.
   if (created) {
-    await deliverPushSafely(result.recipientUid, {
-      id: result.id,
-      title: result.title,
+    await deliverPushSafely(notification.recipientUid, {
+      id: notification.id,
+      title: notification.title,
       message: "Tienes una nueva notificación en MercaditoTec.",
-      href: result.href,
+      href: notification.href,
     });
   }
-  return result;
+  return notification;
 }
 
 export async function createNotificationSafely(draft: NotificationDraft): Promise<void> {
