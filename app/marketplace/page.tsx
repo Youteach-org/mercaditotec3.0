@@ -513,7 +513,8 @@ export default function MarketplacePage() {
     return [...chosen.slice(priorityRotation), ...chosen.slice(0, priorityRotation)];
   }, [filteredStores]);
   const featured = featuredStores;
-  const additionalStores = filteredStores.filter((store) => !featuredStores.some((featuredStore) => featuredStore.id === store.id));
+  const additionalStores = [...filteredStores.slice(6), ...filteredStores.slice(0, 6)]
+    .filter((store) => !featuredStores.some((featuredStore) => featuredStore.id === store.id));
   const storesPerPage = 12;
   const pageCount = Math.max(1, Math.ceil(additionalStores.length / storesPerPage));
   const currentStorePage = Math.min(storePage, pageCount - 1);
