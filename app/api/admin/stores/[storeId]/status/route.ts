@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createNotificationSafely } from "@/lib/notifications/repository";
 
 import { writeAuditEntry } from "@/lib/security/audit";
 import { getStudentTrust, TrustRepositoryError } from "@/lib/security/trustRepository";
@@ -100,6 +101,27 @@ export async function POST(request: Request, context: RouteContext) {
       },
     });
 
+    const ownerNotice = {
+      active: current.status === "suspended" ? "Tu tienda volvió a estar activa" : "Tu tienda fue aprobada",
+      changes_required: "Tu tienda necesita correcciones",
+      suspended: "Tu tienda fue suspendida",
+      draft: "",
+      pending_review: "",
+    }[store.status];
+    if (ownerNotice) {
+      const type = store.status === "changes_required" ? "store_changes_required"
+        : store.status === "suspended" ? "store_suspended"
+        : current.status === "suspended" ? "store_reactivated"
+        : "store_approved";
+      await createNotificationSafely({
+        recipientUid: store.ownerUid,
+        type,
+        title: ownerNotice,
+        message: `Revisa el estado de ${store.name} y las indicaciones de administración.`,
+        href: `/mystore/${store.id}`,
+        dedupeKey: `store:${store.id}:status:${store.updatedAt.toMillis()}:${store.status}`,
+      });
+    }
     return NextResponse.json({ store: serializeStore(store) });
   } catch (error) {
     const apiError = toApiError(error);
