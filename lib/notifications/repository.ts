@@ -56,7 +56,7 @@ export async function createOrderNotification(
 }
 
 export async function createNotification(draft: NotificationDraft): Promise<NotificationRecord> {
-  if (!draft.recipientUid || !/^[A-Za-z0-9:_-]{1,200}$/.test(draft.dedupeKey)) {
+  if (!draft.recipientUid || !/^[A-Za-z0-9:_-]{1,400}$/.test(draft.dedupeKey)) {
     throw new NotificationRepositoryError(400, "Evento de notificación inválido.");
   }
   const db = getAdminDb();
@@ -149,7 +149,7 @@ export async function notifyAdminsSafely(event: Omit<NotificationDraft, "recipie
       .filter((document) => isAdminRole(document.data()) && document.data().isActive !== false)
       .map((document) => document.id);
     await Promise.all(adminUids.map((recipientUid) =>
-      createNotificationSafely({ ...event, recipientUid }),
+      createNotificationSafely({ ...event, recipientUid, dedupeKey: `${event.dedupeKey}:admin:${recipientUid}` }),
     ));
   } catch (error) {
     console.warn("ADMIN_NOTIFICATION_UNAVAILABLE", error instanceof Error ? error.name : "Unknown");
