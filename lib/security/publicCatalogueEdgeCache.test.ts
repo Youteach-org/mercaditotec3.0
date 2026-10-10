@@ -39,6 +39,10 @@ describe("Cloudflare public catalogue cache", () => {
     expect(handle).toHaveBeenCalledTimes(1);
     expect(cache.match).toHaveBeenCalledTimes(2);
     expect(cache.put).toHaveBeenCalledTimes(1);
+    // The v2 versioned key bypasses entries saved by a previous Worker
+    // while still normalizing arbitrary query parameters.
+    expect(cache.match.mock.calls[0][0].url).toContain("catalogue=v2");
+    expect(cache.match.mock.calls[1][0].url).toBe(cache.match.mock.calls[0][0].url);
   });
 
   it("never caches failure responses", async () => {
@@ -109,6 +113,8 @@ describe("Cloudflare public catalogue cache", () => {
       fakeCache,
     );
     expect(deleted.sort()).toEqual(["/api/marketplace", "/api/marketplace-v2"].sort());
+    const v2Key = fakeCache.delete.mock.calls.find(([key]) => new URL(key.url).pathname === "/api/marketplace-v2")?.[0];
+    expect(new URL(v2Key!.url).searchParams.get("catalogue")).toBe("v2");
   });
 
 });
