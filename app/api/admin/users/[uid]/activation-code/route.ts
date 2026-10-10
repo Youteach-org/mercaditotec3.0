@@ -9,7 +9,8 @@ export async function POST(request: Request, context: RouteContext<"/api/admin/u
   try {
     const actor = await requireSuperadmin(request);
     const { uid } = await context.params;
-    return NextResponse.json(await renewManualActivationCode(actor.uid, uid));
+    return NextResponse.json(await renewManualActivationCode(actor.uid, uid),
+      { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof AdminUserError || error instanceof ApiAuthError)
       return NextResponse.json({ error: error.message }, { status: error.status });

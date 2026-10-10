@@ -183,8 +183,7 @@ export async function renewManualActivationCode(actorUid: string, uid: string) {
     const snap = await tx.get(ref);
     const data = snap.data();
     if (!data || data.registrationSource !== "manual_admin" ||
-        data.manualActivationStatus === "activated" || isAdminRole(data) ||
-        data.isActive === false) {
+        isAdminRole(data) || data.isActive === false) {
       throw new AdminUserError(409, "Esta cuenta no admite generar otro código.");
     }
     tx.update(ref, {
@@ -192,6 +191,8 @@ export async function renewManualActivationCode(actorUid: string, uid: string) {
       manualActivationExpiresAt: expiresAt,
       manualActivationAttempts: 0,
       manualActivationStatus: "pending",
+      manualIdentityVerifiedAt: null,
+      manualIdentityVerifiedBy: "",
       manualActivationLeaseUntil: null,
       updatedAt: Timestamp.now(),
     });

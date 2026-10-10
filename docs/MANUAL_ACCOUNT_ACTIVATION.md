@@ -19,3 +19,5 @@
 **Verificación:** ejecutar vitest, revisar que el nuevo flujo no afecte registros normales y desplegar firestore.rules y storage.rules antes de habilitar la excepción en producción.
 
 **Precaución de roles:** una cuenta presencial con correo todavía no verificado no puede recibir rol Subadmin. Para permisos elevados se conserva la comprobación de correo firmada por Firebase.
+
+**Recuperación sin correo:** el Superadmin puede revalidar personalmente la identidad y seleccionar «Restablecer acceso con código». Esto desactiva temporalmente el acceso hasta que se utilice un código nuevo; nunca se reutiliza la contraseña anterior.

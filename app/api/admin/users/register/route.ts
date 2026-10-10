@@ -15,7 +15,8 @@ export async function POST(request: Request) {
     try { body = JSON.parse(raw); }
     catch { throw new AdminUserError(400, "Datos de alta inválidos."); }
     return NextResponse.json(
-      await createManualUser(actor.uid, parseManualRegistration(body)), { status: 201 }
+      await createManualUser(actor.uid, parseManualRegistration(body)),
+      { status: 201, headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
     if (error instanceof AdminUserError || error instanceof ApiAuthError)

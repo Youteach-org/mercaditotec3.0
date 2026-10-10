@@ -136,6 +136,9 @@ export default function AdminUsersPage() {
 
   async function issueNewCode(user: AdminUserSummary) {
     if (!firebaseUser || !isSuperadmin) return;
+    if (user.manualActivationStatus === "activated" && !window.confirm(
+      "Se suspenderá temporalmente el acceso de esta persona hasta que active un nuevo código. ¿Comprobaste nuevamente su identidad y deseas continuar?"
+    )) return;
     setWorkingUid(user.uid);
     setActivation(null);
     setError("");
@@ -469,12 +472,12 @@ export default function AdminUsersPage() {
                       </span>
                     )}
 
-                    {isSuperadmin && user.registrationSource === "manual_admin"
-                      && user.manualActivationStatus !== "activated" && !user.adminRole && (
+                    {isSuperadmin && user.registrationSource === "manual_admin" && !user.adminRole && (
                       <button type="button" disabled={working}
                         onClick={() => void issueNewCode(user)}
                         className="rounded-xl border border-amber-400 px-3.5 py-2.5 text-sm font-bold text-amber-900 disabled:opacity-50">
-                        {working ? "Generando..." : "Generar código nuevo"}
+                        {working ? "Generando..." : user.manualActivationStatus === "activated"
+                          ? "Restablecer acceso con código" : "Generar código nuevo"}
                       </button>
                     )}
 
