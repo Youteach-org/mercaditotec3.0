@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createNotificationSafely } from "@/lib/notifications/repository";
 
 import {
   createDirectChatMessage,
@@ -38,6 +39,14 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const targetUid = String((body as Record<string, unknown>).targetUid ?? "");
     const message = await createDirectChatMessage(actor.uid, targetUid, body);
+    await createNotificationSafely({
+      recipientUid: message.recipientId,
+      type: "direct_message",
+      title: "Nuevo mensaje privado",
+      message: "Alguien intentó contactarte por el chat de MercaditoTec.",
+      href: `/chat/personal/${actor.uid}`,
+      dedupeKey: `chat:${message.id}:received`,
+    });
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     if (error instanceof ApiAuthError || error instanceof DirectChatError) {
