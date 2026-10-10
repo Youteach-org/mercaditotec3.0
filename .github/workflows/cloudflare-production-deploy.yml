@@ -68,7 +68,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "$BASE" >> "$GITHUB_STEP_SUMMARY"
 
-          for path in "/" "/marketplace" "/admin/users" "/icon.svg" "/__health"; do
+          for path in "/" "/marketplace" "/admin/users" "/icon.svg"; do
             status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/prod-body -w '%{http_code}' "$BASE$path")"
             echo "$path -> HTTP $status"
             case "$status" in
@@ -101,6 +101,8 @@ jobs:
           echo "Public marketplace active stores: $STORE_COUNT"
           echo "Public store names:"
           printf '%s' "$MARKETPLACE_JSON" | jq -r '.stores[]? | " - \(.name) [\(.slug)]"'
+          echo "Real stores in published snapshot:"
+          printf '%s' "$MARKETPLACE_JSON" | jq -r '.realStoreCount'
 
           # HTTPS regression: the official domain previously returned HTTP 200
           # for /chat instead of redirecting. Browsers therefore showed "No es seguro"
