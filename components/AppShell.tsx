@@ -248,6 +248,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, loading, pathname]);
 
+  useEffect(() => {
+    if (loading || !firebaseUser) return;
+    let cancelled = false;
+    let stop: (() => void) | null = null;
+    void import("@/lib/notifications/pushClient")
+      .then((client) => client.watchForegroundPush())
+      .then((unsubscribe) => {
+        if (cancelled) unsubscribe();
+        else stop = unsubscribe;
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+      stop?.();
+    };
+  }, [firebaseUser, loading]);
+
   const showAdmin = serverAdminVerified && !syncDeferred && Boolean(firebaseUser) && pathname !== "/login" && pathname !== "/register";
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
