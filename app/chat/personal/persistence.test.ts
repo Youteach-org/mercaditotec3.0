@@ -27,7 +27,8 @@ describe("private chat persistence", () => {
 
   it("keeps sent messages visible immediately", () => {
     expect(detailSource).toContain("setMessages((current)");
-    expect(detailSource).toContain("await loadMessages()");
+    expect(detailSource).toContain("setMessages((current)");
+    expect(detailSource).toContain("active Firestore listener delivers");
   });
 
   it("provides a persistent conversation inbox", () => {
