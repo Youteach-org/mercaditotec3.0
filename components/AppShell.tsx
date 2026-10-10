@@ -87,24 +87,39 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       : null;
 
   useEffect(() => {
-    if (loading || !firebaseUser || profileUnreadCount !== null) return;
-
+    if (loading || !firebaseUser) {
+      setFallbackUnreadCount(0);
+      return;
+    }
     let cancelled = false;
+    let fetching = false;
+    setFallbackUnreadCount(profileUnreadCount ?? 0);
 
-    void loadUnreadNotificationCount(firebaseUser)
-      .then((count) => {
+    const load = async () => {
+      if (fetching || document.hidden) return;
+      fetching = true;
+      try {
+        const count = await loadUnreadNotificationCount(firebaseUser);
         if (!cancelled) setFallbackUnreadCount(count);
-      })
-      .catch(() => {
-        if (!cancelled) setFallbackUnreadCount(0);
-      });
-
+      } catch {
+        // Keep the last valid count when the network is unavailable.
+      } finally {
+        fetching = false;
+      }
+    };
+    void load();
+    const id = window.setInterval(() => void load(), 60_000);
+    window.addEventListener("focus", load);
+    window.addEventListener("notifications:changed", load);
     return () => {
       cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener("focus", load);
+      window.removeEventListener("notifications:changed", load);
     };
   }, [firebaseUser, loading, profileUnreadCount]);
 
-  const unreadCount = profileUnreadCount ?? fallbackUnreadCount;
+  const unreadCount = fallbackUnreadCount;
 
   useEffect(() => {
     if (loading || !firebaseUser || !isAdminRole(appUser) || syncDeferred) {
