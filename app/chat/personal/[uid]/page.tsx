@@ -32,6 +32,7 @@ function PersonalChatContent() {
   const targetUid = String(params?.uid ?? "");
   const { firebaseUser, loading } = useSession();
   const [showOlderMessages, setShowOlderMessages] = useState(false);
+  const showOlderMessagesRef = useRef(false);
   const [session, setSession] = useState<DirectSession | null>(null);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [text, setText] = useState("");
@@ -133,6 +134,7 @@ function PersonalChatContent() {
   useEffect(() => {
     if (!firebaseUser || !targetUid || !session?.chatId || session.target.uid !== targetUid) return;
     lastMarkedIncomingRef.current = 0;
+    showOlderMessagesRef.current = false;
     setShowOlderMessages(false);
     let unsubscribe: (() => void) | null = null;
     let active = true;
@@ -159,7 +161,7 @@ function PersonalChatContent() {
           } satisfies DirectMessage;
         }).reverse();
         setMessages((previous) => {
-          if (!showOlderMessages) return loaded;
+          if (!showOlderMessagesRef.current) return loaded;
           const merged = new Map(previous.map((message) => [message.id, message]));
           for (const message of loaded) merged.set(message.id, message);
           return [...merged.values()].sort((a, b) => a.createdAt - b.createdAt);
@@ -183,7 +185,7 @@ function PersonalChatContent() {
       document.removeEventListener("visibilitychange", watch);
       unsubscribe?.();
     };
-  }, [firebaseUser, targetUid, session?.chatId, session?.target.uid, acceptIncomingMessages, loadMessages, showOlderMessages]);
+  }, [firebaseUser, targetUid, session?.chatId, session?.target.uid, acceptIncomingMessages, loadMessages]);
 
   async function sendMessage() {
     if (!firebaseUser || !text.trim() || sending) return;
@@ -270,6 +272,19 @@ function PersonalChatContent() {
           ref={scrollRef}
           className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
         >
+          {messages.length >= 40 && !showOlderMessages && (
+            <button
+              type="button"
+              className="mb-3 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700"
+              onClick={() => {
+                showOlderMessagesRef.current = true;
+                setShowOlderMessages(true);
+                void loadMessages();
+              }}
+            >
+              Ver mensajes anteriores
+            </button>
+          )}
           {messages.length === 0 ? (
             <div className="py-12 text-center text-sm text-gray-500">
               Aún no hay mensajes en esta conversación.
