@@ -688,24 +688,32 @@ function ChatContent() {
 
   useEffect(() => {
     if (!firebaseUser) return;
-
-    const q = query(
-      collection(db, "users", firebaseUser!.uid, "images"),
-      orderBy("createdAt", "desc"),
-      limit(100),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUserImages(
-        snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<UserImage, "id">),
-        }))
+    let unsubscribe: (() => void) | null = null;
+    const watchImages = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "users", firebaseUser.uid, "images"),
+        orderBy("createdAt", "desc"),
+        limit(100),
       );
-    });
-
-    return () => unsubscribe();
-  }, [firebaseUser]);
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setUserImages(
+          snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<UserImage, "id">),
+          }))
+        );
+      });
+    };
+    watchImages();
+    document.addEventListener("visibilitychange", watchImages);
+    return () => {
+      document.removeEventListener("visibilitychange", watchImages);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!firebaseUser || !galleryOpen) return;
@@ -730,22 +738,33 @@ function ChatContent() {
   }, [firebaseUser, galleryOpen]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "message_reactions"),
-      orderBy("createdAt", "desc"),
-      limit(500),
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setReactions(
-        snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<ReactionRecord, "id">),
-        }))
+    if (!firebaseUser) return;
+    let unsubscribe: (() => void) | null = null;
+    const watchReactions = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "message_reactions"),
+        orderBy("createdAt", "desc"),
+        limit(500),
       );
-    });
-
-    return () => unsubscribe();
-  }, []);
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setReactions(
+          snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<ReactionRecord, "id">),
+          }))
+        );
+      });
+    };
+    watchReactions();
+    document.addEventListener("visibilitychange", watchReactions);
+    return () => {
+      document.removeEventListener("visibilitychange", watchReactions);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     const urls = selectedImages.map((file) => URL.createObjectURL(file));
