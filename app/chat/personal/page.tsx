@@ -26,7 +26,7 @@ type Conversation = {
 };
 
 function PrivateInboxContent() {
-  const { firebaseUser, loading } = useSession();
+  const { firebaseUser, appUser, loading } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [error, setError] = useState("");
 
@@ -58,14 +58,29 @@ function PrivateInboxContent() {
 
   useEffect(() => {
     if (!firebaseUser) return;
-    void loadConversations();
-
-    const interval = window.setInterval(() => {
-      void loadConversations();
-    }, 5000);
-
-    return () => window.clearInterval(interval);
-  }, [firebaseUser, loadConversations]);
+    // The already-subscribed user profile changes when a new private-message
+    // notification is created. Refresh only on that event, tab return or push.
+    // No periodic full conversation-list downloads.
+    let busy = false;
+    const refresh = async () => {
+      if (busy || document.hidden) return;
+      busy = true;
+      try { await loadConversations(); }
+      finally { busy = false; }
+    };
+    void refresh();
+    const onVisible = () => { if (!document.hidden) void refresh(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("notifications:changed", refresh);
+    window.addEventListener("direct-chat:changed", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("notifications:changed", refresh);
+      window.removeEventListener("direct-chat:changed", refresh);
+    };
+  }, [firebaseUser, loadConversations, appUser?.unreadNotificationCount]);
 
   if (loading) {
     return (
