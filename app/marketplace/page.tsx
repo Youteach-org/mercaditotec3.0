@@ -495,8 +495,12 @@ export default function MarketplacePage() {
     });
   }, [approvedCategories, category, normalizedQuery, sourceStores]);
 
-  const featured = filteredStores.slice(0, 6);
-  const additionalStores = filteredStores.slice(6);
+  // Demo stores are retained as fixtures but hidden once they would fall on page 2.
+  const displayStores = previewMode
+    ? filteredStores
+    : filteredStores.filter((store, index) => index < 18 || !("demoCategory" in store));
+  const featured = displayStores.slice(0, 6);
+  const additionalStores = displayStores.slice(6);
   const storesPerPage = 12;
   const pageCount = Math.max(1, Math.ceil(additionalStores.length / storesPerPage));
   const currentStorePage = Math.min(storePage, pageCount - 1);
