@@ -1,4 +1,4 @@
-const FIREBASE_WEB_API_KEY = "AIzaSyAkWKoXLU3Xaqy_4prycNsnJiz6YvYGE5M";
+export const FIREBASE_WEB_API_KEY = "AIzaSyAkWKoXLU3Xaqy_4prycNsnJiz6YvYGE5M";
 const FIREBASE_ISSUER_PREFIX = "https://securetoken.google.com/";
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_OAUTH_SCOPE =

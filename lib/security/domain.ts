@@ -146,6 +146,22 @@ export function studentControlEligibility(
 }
 
 
+/** Only server-owned Firestore profiles authorize in-person account activation. */
+export function isManuallyActivatedProfile(profile: unknown, email: string): boolean {
+  if (!profile || typeof profile !== "object") return false;
+  const data = profile as Record<string, unknown>;
+  return data.registrationSource === "manual_admin"
+    && data.manualActivationStatus === "activated"
+    && typeof data.manualIdentityVerifiedBy === "string"
+    && data.manualIdentityVerifiedBy.length > 0
+    && data.manualIdentityVerifiedAt != null
+    && typeof data.createdByAdminUid === "string"
+    && data.createdByAdminUid.length > 0
+    && typeof data.email === "string"
+    && data.email.toLowerCase() === email.toLowerCase()
+    && !isAdminRole(data);
+}
+
 export type StudentAccessEligibility =
   | {
       allowed: true;
@@ -161,7 +177,7 @@ export function studentAccessEligibility(input: {
   profile?: unknown;
   now?: Date;
 }): StudentAccessEligibility {
-  if (!input.emailVerified) {
+  if (!input.emailVerified && !isManuallyActivatedProfile(input.profile, input.email.trim().toLowerCase())) {
     return {
       allowed: false,
       reason: "Debes verificar tu correo institucional antes de entrar.",
