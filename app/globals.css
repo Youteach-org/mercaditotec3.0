@@ -5498,3 +5498,124 @@ img:not([data-no-image-zoom="true"]) {
   }
   .mkt-approved-canvas > .mkt-community-counts strong { font-size: 18px; }
 }
+
+
+/* HERO BANNER LAYOUT — the community counts belong to the yellow paper.
+   Fixes desktop cut-edge collisions and makes category subtitle legible on phones.
+   Only affects the marketplace title paper (not shop/featured cards). */
+.mkt-approved-canvas .mkt-title-paper {
+  overflow: hidden !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
+.mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+  position: absolute !important;
+  top: 68% !important;
+  left: 7% !important;
+  right: 7% !important;
+  width: 86% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: clamp(10px, 1.08vw, 16px) !important;
+  line-height: 1.24 !important;
+  letter-spacing: 0 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  text-align: center !important;
+  color: #12346f !important;
+  transform: rotate(-1deg) !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
+  position: absolute !important;
+  z-index: 5 !important;
+  top: 83% !important;
+  left: 19% !important;
+  right: 19% !important;
+  bottom: auto !important;
+  width: 62% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: space-evenly !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: clamp(12px, 2.5vw, 36px) !important;
+  color: #12346f !important;
+  pointer-events: none;
+  transform: none !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-community-count {
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-community-figure {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-community-figure svg {
+  width: clamp(19px, 1.7vw, 26px) !important;
+  height: clamp(19px, 1.7vw, 26px) !important;
+  flex-shrink: 0 !important;
+}
+.mkt-approved-canvas .mkt-title-paper .mkt-community-figure strong {
+  font: 900 clamp(19px, 1.8vw, 28px)/1 Arial, sans-serif !important;
+  color: #12346f !important;
+}
+@media (min-width: 621px) and (max-width: 980px) {
+  .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle {
+    top: 66% !important;
+    font-size: clamp(12px, 1.8vw, 15px) !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
+    top: 82% !important;
+    left: 18% !important;
+    width: 64% !important;
+    right: 18% !important;
+  }
+}
+@media (max-width: 620px) {
+  .mkt-approved-canvas .mkt-title-paper {
+    padding: 28px 19px 12px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper h1,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) h1 {
+    font-size: clamp(34px, 11.2vw, 51px) !important;
+    line-height: .88 !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+    top: 64% !important;
+    left: 9% !important;
+    right: 9% !important;
+    width: 82% !important;
+    font-size: clamp(12px, 3.25vw, 15px) !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0 !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
+    top: 83% !important;
+    left: 17% !important;
+    right: 17% !important;
+    width: 66% !important;
+    gap: clamp(18px, 5vw, 32px) !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure {
+    gap: 5px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure svg {
+    width: 21px !important;
+    height: 21px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure strong {
+    font-size: clamp(20px, 5.3vw, 25px) !important;
+  }
+}
