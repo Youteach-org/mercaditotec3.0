@@ -114,12 +114,20 @@ export default function LoginPage() {
       const result = await signInWithEmailAndPassword(auth, fullEmail, password);
 
       if (!result.user.emailVerified) {
+        // Only the server can authorize previously activated manual identities.
         try {
-          await sendEmailVerification(result.user);
-        } catch {}
-        await signOut(auth);
-        setError("Tu correo aún no ha sido verificado. Te reenviamos el enlace de confirmación.");
-        return;
+          const status = await syncAccount(result.user);
+          if (status === "deferred") {
+            window.sessionStorage.setItem("mercadito-profile-sync-pending", "1");
+          }
+          router.replace("/marketplace");
+          return;
+        } catch {
+          try { await sendEmailVerification(result.user); } catch {}
+          await signOut(auth);
+          setError("Tu correo aún no ha sido verificado. Te reenviamos el enlace de confirmación.");
+          return;
+        }
       }
 
       // A valid Firebase token does not waive the eight-year admission policy.

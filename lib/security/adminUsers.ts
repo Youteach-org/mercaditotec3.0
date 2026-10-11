@@ -32,6 +32,9 @@ export interface AdminUserSummary {
   isActive: boolean;
   blocked: boolean;
   createdAt: string | null;
+  registrationSource: string | null;
+  manualActivationStatus: string | null;
+  emailVerified: boolean;
 }
 
 export function parseAdminTrustChange(input: unknown): "verified" | "revoked" {
@@ -87,6 +90,9 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
     isActive: data.isActive !== false,
     blocked: isAdministrativeBlockActive(data),
     createdAt: createdAtIso(data.createdAt),
+    registrationSource: typeof data.registrationSource === "string" ? data.registrationSource : null,
+    manualActivationStatus: typeof data.manualActivationStatus === "string" ? data.manualActivationStatus : null,
+    emailVerified: data.emailVerified === true,
   };
 }
 
@@ -196,6 +202,9 @@ export async function setUserRoleBySuperadmin(
     );
   }
 
+  if (role === "subadmin" && current.registrationSource === "manual_admin") {
+    throw new AdminUserError(403, "Las cuentas activadas presencialmente no pueden recibir permisos administrativos sin verificar Firebase Auth.");
+  }
   const now = Timestamp.now();
   await reference.update({ role, updatedAt: now });
 

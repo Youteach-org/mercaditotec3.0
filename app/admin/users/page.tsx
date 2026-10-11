@@ -4,7 +4,7 @@ import AdminQuickNav from "@/components/admin/AdminQuickNav";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import {
   isAdminRole,
@@ -28,6 +28,9 @@ interface AdminUserSummary {
   isActive: boolean;
   blocked: boolean;
   createdAt: string | null;
+  registrationSource: string | null;
+  manualActivationStatus: string | null;
+  emailVerified: boolean;
 }
 
 const TRUST_LABEL: Record<StudentTrustStatus, string> = {
@@ -71,6 +74,12 @@ export default function AdminUsersPage() {
   const [message, setMessage] = useState("");
   const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
   const [trustFilter, setTrustFilter] = useState<TrustFilter>("all");
+  const [showNewUser, setShowNewUser] = useState(false);
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [identityChecked, setIdentityChecked] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [activation, setActivation] = useState<{ code: string; email: string; expiresAt: string } | null>(null);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -134,6 +143,85 @@ export default function AdminUsersPage() {
       return matchesStatus && matchesQuery;
     });
   }, [query, trustFilter, users]);
+
+  async function createUserManually(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!firebaseUser || !isSuperadmin || creatingUser || !identityChecked) return;
+    setCreatingUser(true);
+    setError("");
+    setMessage("");
+    setActivation(null);
+    try {
+      const response = await storeApiFetch(firebaseUser, "/api/admin/users/register", {
+        method: "POST",
+        body: JSON.stringify({ email: newUserEmail, displayName: newUserName, identityChecked }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "No se pudo agregar al usuario.");
+      setActivation({
+        email: result.user.email,
+        code: result.activationCode,
+        expiresAt: result.activationExpiresAt,
+      });
+      setShowNewUser(false);
+      setNewUserName("");
+      setNewUserEmail("");
+      setIdentityChecked(false);
+      await loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo agregar al usuario.");
+    } finally {
+      setCreatingUser(false);
+    }
+  }
+
+  async function issueNewCode(user: AdminUserSummary) {
+    if (!firebaseUser || !isSuperadmin) return;
+    if (!window.confirm(
+      "¿Comprobaste personalmente que el correo y número de control pertenecen a esta persona? " +
+      "Si tenía acceso, quedará suspendido hasta que active el nuevo código."
+    )) return;
+    setWorkingUid(user.uid);
+    setActivation(null);
+    setError("");
+    setMessage("");
+    try {
+      const response = await storeApiFetch(firebaseUser, `/api/admin/users/${user.uid}/activation-code`, {
+        method: "POST",
+        body: JSON.stringify({ identityChecked: true }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "No se pudo generar el código.");
+      setActivation({
+        code: result.activationCode,
+        email: user.email,
+        expiresAt: result.activationExpiresAt,
+      });
+      setMessage("Código nuevo generado. El código anterior ya no funciona.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo generar el código.");
+    } finally {
+      setWorkingUid(null);
+    }
+  }
+
+  async function copyActivation() {
+    if (!activation) return;
+    const message = [
+      "Mercadito — Activación presencial",
+      "Correo: " + activation.email,
+      "Código de un solo uso: " + activation.code,
+      "Activar cuenta: " + window.location.origin + "/activate",
+      "Caduca: " + new Date(activation.expiresAt).toLocaleString("es-MX"),
+      "Crea tu propia contraseña. No compartas este código.",
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(message);
+      setMessage("Instrucciones copiadas. Entrégalas únicamente a la persona identificada.");
+    } catch {
+      setError("No se pudo copiar. Selecciona el código y cópialo manualmente.");
+    }
+  }
 
   async function updateTrust(
     user: AdminUserSummary,
@@ -268,14 +356,88 @@ export default function AdminUsersPage() {
                 Revisa alumnos y avales. La confirmación normal llega con 2 avales; el Superadmin puede aprobar manualmente a un alumno pendiente.
               </p>
             </div>
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+              {isSuperadmin && (
+                <button type="button" onClick={() => setShowNewUser((value) => !value)}
+                  className="shrink-0 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white">
+                  {showNewUser ? "Cancelar" : "+ Agregar usuario"}
+                </button>
+              )}
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar usuario, correo, nombre o ID"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none focus:border-blue-500 sm:max-w-sm"
             />
+            </div>
           </div>
         </section>
+
+        {isSuperadmin && showNewUser && (
+          <section className="rounded-2xl bg-white p-5 shadow-md sm:p-6">
+            <h2 className="text-xl font-black text-gray-900">Alta manual sin correo</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Comprueba personalmente su identidad y su número de control. Obtendrás un código temporal para entregárselo; la cuenta no requiere ningún correo de activación.
+            </p>
+            <form onSubmit={(event) => void createUserManually(event)} className="mt-4 grid gap-3 md:grid-cols-2">
+              <label className="text-sm font-semibold text-gray-800">
+                Nombre completo
+                <input required minLength={2} maxLength={60} autoComplete="off"
+                  value={newUserName} onChange={(event) => setNewUserName(event.target.value)}
+                  placeholder="Nombre y apellidos"
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 font-normal text-gray-900" />
+              </label>
+              <label className="text-sm font-semibold text-gray-800">
+                Correo institucional
+                <input required type="email" autoCapitalize="none" autoComplete="off"
+                  value={newUserEmail} onChange={(event) => setNewUserEmail(event.target.value)}
+                  placeholder="a22121079@morelia.tecnm.mx"
+                  className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 font-normal text-gray-900" />
+              </label>
+              <label className="flex items-start gap-3 text-sm font-semibold text-gray-700 md:col-span-2">
+                <input type="checkbox" required checked={identityChecked}
+                  onChange={(event) => setIdentityChecked(event.target.checked)}
+                  className="mt-1 h-5 w-5 shrink-0 accent-emerald-700" />
+                Confirmo que comprobé personalmente la identidad de esta persona y que el correo y número de control corresponden a ella.
+              </label>
+              <button type="submit" disabled={creatingUser || !identityChecked}
+                className="rounded-xl bg-emerald-700 px-5 py-3 font-bold text-white disabled:opacity-50 md:col-span-2">
+                {creatingUser ? "Registrando..." : "Crear usuario y generar código"}
+              </button>
+            </form>
+          </section>
+        )}
+
+        {activation && (
+          <section className="rounded-2xl border border-amber-300 bg-white p-5 shadow-md sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-black text-gray-900">Código de activación (visible solo ahora)</h2>
+              <button type="button" onClick={() => setActivation(null)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700">
+                Cerrar
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-gray-700">
+              Entrégalo directamente a <strong>{activation.email}</strong>. Caduca el {new Date(activation.expiresAt).toLocaleString("es-MX")}.
+            </p>
+            <p className="mt-3 select-all break-all rounded-xl bg-gray-100 p-4 font-mono text-sm text-gray-900">
+              {activation.code}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button type="button" onClick={() => void copyActivation()}
+                className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white">
+                Copiar instrucciones
+              </button>
+              <Link href="/activate" target="_blank" rel="noopener noreferrer"
+                className="rounded-xl border border-gray-300 px-4 py-3 text-sm font-bold text-gray-800">
+                Abrir activación
+              </Link>
+            </div>
+            <p className="mt-3 text-xs text-gray-600">
+              No se envía ningún correo ni se guarda el código en texto legible. Si se pierde, genera uno nuevo desde la tarjeta del usuario.
+            </p>
+          </section>
+        )}
 
         <section className="rounded-2xl bg-white p-4 shadow-md">
           <div className="flex flex-wrap gap-2">
@@ -351,7 +513,7 @@ export default function AdminUsersPage() {
               const working = workingUid === user.uid;
               const isSelf = user.uid === firebaseUser.uid;
               const canExpand = !isSelf;
-              const canPromote = isSuperadmin && !isSelf && !user.adminRole;
+              const canPromote = isSuperadmin && !isSelf && !user.adminRole && user.registrationSource !== "manual_admin";
               const canDelete =
                 isSuperadmin && !isSelf && user.adminRole !== "superadmin";
               const selected = selectedUserUid === user.uid;
@@ -385,6 +547,15 @@ export default function AdminUsersPage() {
                       <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${TRUST_CLASS[user.studentStatus]}`}>
                         {TRUST_LABEL[user.studentStatus]}
                       </span>
+                      {user.registrationSource === "manual_admin" && (
+                        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                          user.manualActivationStatus === "activated"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-amber-100 text-amber-800"
+                        }`}>
+                          {user.manualActivationStatus === "activated" ? "Activación presencial completada" : "Sin activar"}
+                        </span>
+                      )}
                       {user.adminRole && (
                         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">
                           {user.adminRole === "superadmin" ? "Superadmin" : "Subadmin"}
@@ -458,6 +629,17 @@ export default function AdminUsersPage() {
                       <span className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm font-bold text-red-800">
                         Confirmación revocada por administración.
                       </span>
+                    )}
+
+                    {isSuperadmin && user.registrationSource === "manual_admin"
+                      && !user.adminRole && !user.emailVerified && (
+                      <button type="button" disabled={working}
+                        onClick={() => void issueNewCode(user)}
+                        className="rounded-xl border border-amber-400 px-3.5 py-2.5 text-sm font-bold text-amber-900 disabled:opacity-50">
+                        {working ? "Generando..." : user.manualActivationStatus === "activated"
+                          ? "Restablecer acceso con código" : user.registrationSource === "manual_admin"
+                          ? "Generar código nuevo" : "Activar sin correo"}
+                      </button>
                     )}
 
                     {canPromote && selected && (
