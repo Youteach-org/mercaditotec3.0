@@ -23,6 +23,23 @@ before(async () => {
       blocked: { role: "user", blocked: true, blockedUntil: Timestamp.fromDate(new Date("2099-01-01")) },
       inactive: { role: "user", isActive: false },
     })) await setDoc(doc(db, "users", uid), fields);
+    await setDoc(doc(db, "users", "manualApproved"), {
+      email: "a22121079@morelia.tecnm.mx", role: "user", isActive: true,
+      registrationSource: "manual_admin", createdByAdminUid: "verified-superadmin",
+      manualActivationStatus: "activated", manualIdentityVerifiedBy: "verified-superadmin",
+      manualIdentityVerifiedAt: Timestamp.fromDate(new Date()),
+    });
+    await setDoc(doc(db, "users", "manualPending"), {
+      email: "a22121079@morelia.tecnm.mx", role: "user", isActive: true,
+      registrationSource: "manual_admin", createdByAdminUid: "verified-superadmin",
+      manualActivationStatus: "pending", manualIdentityVerifiedBy: "",
+    });
+    await setDoc(doc(db, "users", "manualPrivileged"), {
+      email: "a22121079@morelia.tecnm.mx", role: "subadmin", isActive: true,
+      registrationSource: "manual_admin", createdByAdminUid: "verified-superadmin",
+      manualActivationStatus: "activated", manualIdentityVerifiedBy: "verified-superadmin",
+      manualIdentityVerifiedAt: Timestamp.fromDate(new Date()),
+    });
     await setDoc(doc(db, "messages", "message-1"), { text: "Hello", createdAt: 1, hidden: false });
     await setDoc(doc(db, "direct_chats", "chat-1"), {
       participantUids: ["alice", "victim"],
@@ -123,6 +140,27 @@ test("profile-image uploads enforce ownership, format and verified identity", as
 test("personal image writes cannot bypass the server mutation budget", async () => {
  const db = env.authenticatedContext("alice", identity()).firestore();
  await assertFails(setDoc(doc(db, "users", "alice", "images", "spam"), { url: "https://example.com/a.png", createdAt: 1 }));
+});
+
+test("manual activation is limited to approved admin-created institutional identities", async () => {
+  const verified = env.authenticatedContext("manualApproved", identity(false)).firestore();
+  await assertSucceeds(getDoc(doc(verified, "users", "manualApproved")));
+  await assertSucceeds(getDoc(doc(verified, "messages", "message-1")));
+  await assertFails(getDoc(doc(verified, "users", "alice")));
+  for (const uid of ["manualPending", "manualPrivileged"]) {
+    const unverified = env.authenticatedContext(uid, identity(false)).firestore();
+    await assertFails(getDoc(doc(unverified, "messages", "message-1")));
+  }
+  const outside = env.authenticatedContext("manualApproved", identity(false, "student@gmail.com")).firestore();
+  await assertFails(getDoc(doc(outside, "messages", "message-1")));
+  const mismatched = env.authenticatedContext("manualApproved", identity(false, "a23121079@morelia.tecnm.mx")).firestore();
+  await assertFails(getDoc(doc(mismatched, "messages", "message-1")));
+  for (const update of [{ manualActivationStatus: "activated" }, { role: "superadmin" }, { createdByAdminUid: "fake" }]) {
+    await assertFails(updateDoc(doc(verified, "users", "manualApproved"), update));
+  }
+  const store = env.authenticatedContext("manualApproved", identity(false)).storage();
+  await assertSucceeds(uploadBytes(ref(store, "profile-images/manualApproved/activated.png"),
+    new Uint8Array([1]), { contentType: "image/png" }));
 });
 
 test("server transactions resist concurrent reaction and image writes", () => {

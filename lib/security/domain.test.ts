@@ -204,3 +204,21 @@ describe("student application access eligibility", () => {
     }).allowed).toBe(false);
   });
 });
+
+describe("manual user activation boundary", () => {
+  it("requires immutable admin-created activation proof for unverified email", async () => {
+    const { studentAccessEligibility } = await import("./domain");
+    const email = "a22121079@morelia.tecnm.mx";
+    const profile = {
+      email, role: "user", registrationSource: "manual_admin",
+      createdByAdminUid: "verified-superadmin",
+      manualActivationStatus: "activated", manualIdentityVerifiedBy: "verified-superadmin",
+      manualIdentityVerifiedAt: new Date(),
+    };
+    expect(studentAccessEligibility({ email, emailVerified: false, profile }).allowed).toBe(true);
+    expect(studentAccessEligibility({ email, emailVerified: false, profile: { ...profile, registrationSource: "self" } }).allowed).toBe(false);
+    expect(studentAccessEligibility({ email, emailVerified: false, profile: { ...profile, manualActivationStatus: "pending" } }).allowed).toBe(false);
+    expect(studentAccessEligibility({ email, emailVerified: false, profile: { ...profile, role: "subadmin" } }).allowed).toBe(false);
+    expect(studentAccessEligibility({ email, emailVerified: false, profile: { ...profile, createdByAdminUid: "" } }).allowed).toBe(false);
+  });
+});
