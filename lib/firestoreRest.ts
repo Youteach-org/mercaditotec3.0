@@ -433,53 +433,66 @@ class Query<T extends DocumentData = DocumentData> {
     );
   }
 
+  protected structuredQuery(): Record<string, unknown> {
+    const segments = this.collectionPath.split("/").filter(Boolean);
+    const collectionId = segments.at(-1)!;
+    const query: Record<string, unknown> = { from: [{ collectionId }] };
+    if (this.filters.length === 1) {
+      query.where = encodeFilter(this.filters[0]);
+    } else if (this.filters.length > 1) {
+      query.where = {
+        compositeFilter: { op: "AND", filters: this.filters.map(encodeFilter) },
+      };
+    }
+    if (this.orders.length) {
+      query.orderBy = this.orders.map((order) => ({
+        field: fieldPath(order.field),
+        direction: order.direction === "desc" ? "DESCENDING" : "ASCENDING",
+      }));
+    }
+    if (this.queryLimit !== null) query.limit = this.queryLimit;
+    return query;
+  }
+
   count(): {
     get: () => Promise<{ data: () => { count: number } }>;
   } {
     return {
       get: async () => {
-        const snapshot = await this.get();
-        return {
-          data: () => ({ count: snapshot.size }),
-        };
+        const segments = this.collectionPath.split("/").filter(Boolean);
+        const parentPath = segments.slice(0, -1).join("/");
+        const root = await transport.documentsRoot();
+        const endpoint = parentPath
+          ? `${root}/${parentPath}:runAggregationQuery`
+          : `${root}:runAggregationQuery`;
+        // Native COUNT reads index entries, not every user/store document.
+        const response = await transport.request(endpoint, {
+          method: "POST",
+          body: JSON.stringify({
+            structuredAggregationQuery: {
+              structuredQuery: this.structuredQuery(),
+              aggregations: [{ count: {}, alias: "total" }],
+            },
+          }),
+        });
+        const rows = await response.json() as Array<{
+          result?: { aggregateFields?: { total?: { integerValue?: string } } };
+        }>;
+        const value = Number(rows.find((row) => row.result?.aggregateFields?.total)?.result?.aggregateFields?.total?.integerValue);
+        if (!Number.isFinite(value) || value < 0) throw new Error("Firestore count returned an invalid result");
+        return { data: () => ({ count: value }) };
       },
     };
   }
 
   async get(): Promise<QuerySnapshot<T>> {
     const segments = this.collectionPath.split("/").filter(Boolean);
-    const collectionId = segments.at(-1)!;
     const parentPath = segments.slice(0, -1).join("/");
     const root = await transport.documentsRoot();
     const endpoint = parentPath
       ? `${root}/${parentPath}:runQuery`
       : `${root}:runQuery`;
-
-    const structuredQuery: Record<string, unknown> = {
-      from: [{ collectionId }],
-    };
-
-    if (this.filters.length === 1) {
-      structuredQuery.where = encodeFilter(this.filters[0]);
-    } else if (this.filters.length > 1) {
-      structuredQuery.where = {
-        compositeFilter: {
-          op: "AND",
-          filters: this.filters.map(encodeFilter),
-        },
-      };
-    }
-
-    if (this.orders.length) {
-      structuredQuery.orderBy = this.orders.map((order) => ({
-        field: fieldPath(order.field),
-        direction: order.direction === "desc" ? "DESCENDING" : "ASCENDING",
-      }));
-    }
-
-    if (this.queryLimit !== null) {
-      structuredQuery.limit = this.queryLimit;
-    }
+    const structuredQuery = this.structuredQuery();
 
     const response = await transport.request(endpoint, {
       method: "POST",
