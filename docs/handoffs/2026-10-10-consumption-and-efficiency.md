@@ -1,0 +1,24 @@
+# Consumo del servidor + consultas eficientes (2026-10-10)
+
+## Regla de producto
+Mantener MercaditoTec en Cloudflare Workers y Firestore Spark, sin Blaze ni servicios de pago. El panel de monitoreo **no** debe crear documentos en Firestore ni hacer consultas cada X segundos.
+
+## Cambios
+1. `components/AppShell.tsx`: se elimina el timer `/api/admin/pending-counts` de 60 s. El administrador con sesión verificada obtiene contadores cuando aparece la navegación, cambia una notificación de su perfil Firestore, o regresa a la pestaña (con protección de 30 s para cambios rápidos de ventana). Mantiene autorización en servidor; no expone números a perfiles normales.
+2. `app/chat/page.tsx`: ya no invoca `GET /api/chat/messages` cada minuto. El reloj para la ventana de 48 horas se actualiza **solo localmente**, sin volver a abrir la suscripción. Los listeners de mensajes, fotos y reacciones del chat general se cierran cuando se oculta la pestaña y vuelven al mostrarla. El límite actual de 100 mensajes / 500 reacciones permanece, de modo que cada entrada al chat puede seguir causando una lectura inicial significativa.
+3. `lib/moderation/repository.ts`: no depura mensajes antiguos en cada `POST` de chat. Depuración física en Cloudflare Worker cron 10:00 UTC diario, máximo 4 lotes de 250 documentos por colección (2 colecciones); minimiza lecturas/borrados y prohíbe limpieza descontrolada por un usuario. No utiliza TTL administrado de Firestore porque **TTL exige facturación**, incompatible con Spark; la UI aplica siempre caducidad visible de 48 horas, y la limpieza física puede retrasarse con alta actividad.
+4. `cloudflare-runtime-entry.mjs`: atiende evento scheduled; la ruta interna `/api/internal/chat-retention` sigue bloqueada para peticiones públicas.
+5. `app/admin/usage/page.tsx`: nueva pestaña Consumo y rendimiento dentro de Admin. Solicita métricas oficiales al abrir / pulsar Actualizar, sin timers. `app/api/admin/usage` requiere requireAdmin; no escribe/lee documentos para almacenar consumo, utiliza acceso a Cloudflare Analytics y Google Cloud Monitoring. Resultado compartido en memoria por instancia 120s, no persistente.
+6. `lib/monitoring/usage.ts`: consulta solicitudes, fallos y subconsultas del Worker a Cloudflare GraphQL (`workersInvocationsAdaptive`), y las métricas `firestore.googleapis.com/document/{read,write,delete}_count` a Google Cloud Monitoring por OAuth de la cuenta de servicio existente. No se hace ninguna consulta paginada masiva a los datos de Mercadito. Si no hay permisos, muestra «Sin datos», nunca convierte error en 0 ni habilita servicios/billing.
+7. `lib/firestoreRest.ts`: `Query.count()` ahora usa el endpoint nativo REST `runAggregationQuery` para contar entradas de índice sin descargar todos los documentos coincidentes. Impacta los dos contadores de aprobación y cualquier otra agregación de conteo, con permisos y filtros actuales intactos.
+8. `lib/monitoring/domain.ts`: límites de referencia del plan Standard gratuitos de Firestore 50 000 lecturas/20 000 escrituras/20 000 borrados día, con reinicio a medianoche Pacífico; Workers tiene 100 000 solicitudes gratis/día a nivel de **cuenta Cloudflare**, mientras que el panel muestra solo Mercadito Worker. La suma de peticiones de todos los Workers puede superar el dato mostrado. Las cifras de Monitoring son indicativas y pueden retrasarse; la consola oficial prevalece.
+
+## Pendiente de configurar para datos de Cloudflare
+En el entorno de ejecución de Cloudflare Workers, añadir el secreto `CLOUDFLARE_ANALYTICS_TOKEN` (API token Cloudflare con acceso de **lectura** Analytics para la cuenta) y opcionalmente `CLOUDFLARE_ACCOUNT_ID` (el proyecto ya conoce la cuenta de despliegue). **Nunca** guardar el token en GitHub, archivos o cliente. El token utilizado por GitHub Actions para desplegar **no** es visible automáticamente para la aplicación. No habilitar Blaze.
+Google Cloud Monitoring puede devolver 403 o no tener la API activada; la ruta informa de ello y muestra enlace a la consola oficial de Firebase. No habilitar APIs que pidan tarjeta ni asumir que Cloud Monitoring es facturación exacta.
+
+## Validación
+- Las pruebas aseguran ausencia de polling admin, ausencia de limpieza GET por minuto, listeners desconectados en pestaña oculta, cron interno inaccesible públicamente, y uso del servicio de métricas en la página sin temporizador.
+- Después de publicar, confirmar /admin/usage y el cierre de listeners en segundo plano con DevTools. El panel puede mostrar «Sin datos» hasta que se autoricen las APIs de proveedores.
+- No se puede garantizar Spark con 5000 usuarios muy activos en chats grupales: cada listener Firestore lee una tanda inicial de hasta 100 mensajes y 500 reacciones. Requeriría otra arquitectura compartida/caché para una escala real mayor.
+- Se mantiene Cloudflare Pages/Worker producción de branch `feature/student-stores`, nunca Vercel.

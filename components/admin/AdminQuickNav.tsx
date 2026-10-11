@@ -12,6 +12,7 @@ const destinations = [
   { href: "/admin/chat", label: "Chat", icon: "💬" },
   { href: "/admin/users#administradores", label: "Administradores", icon: "🛡️" },
   { href: "/admin/audit", label: "Historial", icon: "🧾" },
+  { href: "/admin/usage", label: "Consumo", icon: "📊" },
 ];
 
 export default function AdminQuickNav() {

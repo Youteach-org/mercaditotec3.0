@@ -584,49 +584,40 @@ function ChatContent() {
   ]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
-
-    let cancelled = false;
-
-    const refreshRetention = async () => {
-      const now = Date.now();
-      if (!cancelled) setRetentionNow(now);
-
-      try {
-        await moderationApiFetch(firebaseUser, "/api/chat/messages", {
-          method: "GET",
-        });
-      } catch (error) {
-        console.error("GENERAL_CHAT_RETENTION_ERROR", error);
-      }
+    // Only local clock work: no Firestore reads, no API call, no listener reset.
+    // The visible 48-hour window still expires older messages on screen.
+    const refreshClock = () => {
+      if (!document.hidden) setRetentionNow(Date.now());
     };
-
-    void refreshRetention();
-    const interval = window.setInterval(() => {
-      void refreshRetention();
-    }, 60_000);
-
+    const interval = window.setInterval(refreshClock, 60_000);
+    document.addEventListener("visibilitychange", refreshClock);
     return () => {
-      cancelled = true;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshClock);
     };
-  }, [firebaseUser]);
+  }, []);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "messages"),
-      where("createdAt", ">=", generalChatCutoff(retentionNow)),
-      orderBy("createdAt", "desc"),
-      limit(100),
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    if (!firebaseUser) return;
+    let unsubscribe: (() => void) | null = null;
+    const watchMessages = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "messages"),
+        where("createdAt", ">=", generalChatCutoff()),
+        orderBy("createdAt", "desc"),
+        limit(100),
+      );
+      unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = snapshot.docs
         .map((item) => ({
           id: item.id,
           ...(item.data() as Omit<ChatMessage, "id">),
         }))
         .filter((message) =>
-          isGeneralChatMessageCurrent(Number(message.createdAt), retentionNow)
+          isGeneralChatMessageCurrent(Number(message.createdAt), Date.now())
         )
         .reverse();
 
@@ -686,29 +677,43 @@ function ChatContent() {
       }
     });
 
-    return () => unsubscribe();
-  }, [firebaseUser?.uid, retentionNow]);
+    };
+    watchMessages();
+    document.addEventListener("visibilitychange", watchMessages);
+    return () => {
+      document.removeEventListener("visibilitychange", watchMessages);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!firebaseUser) return;
-
-    const q = query(
-      collection(db, "users", firebaseUser!.uid, "images"),
-      orderBy("createdAt", "desc"),
-      limit(100),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUserImages(
-        snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<UserImage, "id">),
-        }))
+    let unsubscribe: (() => void) | null = null;
+    const watchImages = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "users", firebaseUser.uid, "images"),
+        orderBy("createdAt", "desc"),
+        limit(100),
       );
-    });
-
-    return () => unsubscribe();
-  }, [firebaseUser]);
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setUserImages(
+          snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<UserImage, "id">),
+          }))
+        );
+      });
+    };
+    watchImages();
+    document.addEventListener("visibilitychange", watchImages);
+    return () => {
+      document.removeEventListener("visibilitychange", watchImages);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!firebaseUser || !galleryOpen) return;
@@ -733,22 +738,33 @@ function ChatContent() {
   }, [firebaseUser, galleryOpen]);
 
   useEffect(() => {
-    const q = query(
-      collection(db, "message_reactions"),
-      orderBy("createdAt", "desc"),
-      limit(500),
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setReactions(
-        snapshot.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<ReactionRecord, "id">),
-        }))
+    if (!firebaseUser) return;
+    let unsubscribe: (() => void) | null = null;
+    const watchReactions = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "message_reactions"),
+        orderBy("createdAt", "desc"),
+        limit(500),
       );
-    });
-
-    return () => unsubscribe();
-  }, []);
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setReactions(
+          snapshot.docs.map((d) => ({
+            id: d.id,
+            ...(d.data() as Omit<ReactionRecord, "id">),
+          }))
+        );
+      });
+    };
+    watchReactions();
+    document.addEventListener("visibilitychange", watchReactions);
+    return () => {
+      document.removeEventListener("visibilitychange", watchReactions);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     const urls = selectedImages.map((file) => URL.createObjectURL(file));
@@ -1306,7 +1322,7 @@ function ChatContent() {
             onScroll={handleChatScroll}
             className={darkMode ? "h-full overflow-y-auto overscroll-contain space-y-4 pr-1 text-slate-100" : "h-full overflow-y-auto overscroll-contain space-y-4 pr-1"}
           >
-          {messages.map((msg) => {
+          {messages.filter((msg) => isGeneralChatMessageCurrent(Number(msg.createdAt), retentionNow)).map((msg) => {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
             const isAdmin = appUser?.role === "admin";

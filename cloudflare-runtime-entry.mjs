@@ -26,6 +26,23 @@ function getHandler() {
 }
 
 export default {
+  // One cleanup per day, not one cleanup for every page visitor or message.
+  async scheduled(_controller, env, ctx) {
+    const job = (async () => {
+      const result = await getHandler().fetch(
+        new Request("https://mercaditotec.store/api/internal/chat-retention", {
+          method: "POST",
+          headers: { "x-mercadito-internal-runtime": "chat-retention-cron-v1" },
+        }),
+        env,
+        ctx,
+      );
+      if (!result.ok) console.warn("DAILY_CHAT_RETENTION_STATUS", result.status);
+    })().catch((error) => {
+      console.warn("DAILY_CHAT_RETENTION_ERROR", error instanceof Error ? error.name : "Unknown");
+    });
+    ctx.waitUntil(job);
+  },
   async fetch(request, env, ctx) {
     // The browser can land on http://mercaditotec.store otherwise, despite
     // a completely valid certificate on the HTTPS version of the site.
@@ -36,7 +53,8 @@ export default {
 
     if (
       url.pathname === "/api/internal/firebase-rules-sync" ||
-      url.pathname === "/api/internal/marketplace-catalog-refresh"
+      url.pathname === "/api/internal/marketplace-catalog-refresh" ||
+      url.pathname === "/api/internal/chat-retention"
     ) {
       return new Response("Not Found", {
         status: 404,

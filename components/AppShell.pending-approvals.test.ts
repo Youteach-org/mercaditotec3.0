@@ -17,6 +17,9 @@ describe("Admin navigation counts", () => {
     expect(source.match(/!adminSurface && pendingApprovals/g)).toHaveLength(2);
     expect(source).toContain('<NavIcon icon="profile" />{pendingApprovals.usersPending}');
     expect(source).toContain('<NavIcon icon="store" />{pendingApprovals.storesPending}');
-    expect(source).toContain("window.setInterval(() => void check(), 60_000)");
+    expect(source).not.toContain("window.setInterval(() => void check(), 60_000)");
+    expect(source).toContain('document.addEventListener("visibilitychange", onVisible)');
+    expect(source).toContain("appUser?.unreadNotificationCount");
+    expect(source).toContain("Date.now() - lastFocusRefresh < 30_000");
   });
 });
