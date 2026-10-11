@@ -70,6 +70,9 @@ export default function AdminUsagePage() {
     if (!sessionLoading && firebaseUser) void update();
   }, [sessionLoading, firebaseUser, update]);
 
+  const traffic = snapshot?.traffic;
+  const maxMinuteRequests = Math.max(1, ...(traffic?.byMinute.map((point) => point.requests) ?? [1]));
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-6xl space-y-5">
@@ -115,6 +118,92 @@ export default function AdminUsagePage() {
           <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer"
             className="inline-block text-sm font-bold underline text-slate-800">
             Abrir métricas oficiales de Cloudflare ↗
+          </a>
+        </section>
+        <section className="space-y-3" aria-labelledby="traffic-heading">
+          <h2 id="traffic-heading" className="text-xl font-black text-slate-900">Actividad reciente de la página</h2>
+          <p className="text-sm text-slate-600">
+            Actividad observada por Cloudflare en los últimos 15 minutos. No se utiliza
+            ninguna consulta de presencia a Firebase ni se envían señales periódicas desde los visitantes.
+          </p>
+          {traffic?.status === "available" ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-700">IPs distintas en el último minuto registrado</h3>
+                  <p className="mt-2 text-3xl font-black text-slate-950">
+                    {traffic.uniqueIpsLatestMinute === null ? "Sin datos" : number(traffic.uniqueIpsLatestMinute)}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-600">
+                    {traffic.latestMinute ? `Minuto registrado: ${new Date(traffic.latestMinute).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-700">Peticiones de la zona (15 min)</h3>
+                  <p className="mt-2 text-3xl font-black text-slate-950">
+                    {traffic.requestsLast15Minutes === null ? "Sin datos" : number(traffic.requestsLast15Minutes)}
+                  </p>
+                </article>
+                <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-700">Páginas vistas (15 min)</h3>
+                  <p className="mt-2 text-3xl font-black text-slate-950">
+                    {traffic.pageViewsLast15Minutes === null ? "Sin datos" : number(traffic.pageViewsLast15Minutes)}
+                  </p>
+                </article>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <h3 className="font-black text-slate-900">Peticiones observadas por minuto</h3>
+                <div className="mt-4 flex h-28 items-end gap-1" role="img"
+                  aria-label="Gráfica de peticiones por minuto de los últimos 15 minutos">
+                  {traffic.byMinute.map((point) => (
+                    <div key={point.minute} className="flex min-w-0 flex-1 flex-col items-center justify-end"
+                      title={`${new Date(point.minute).toLocaleTimeString("es-MX")}: ${point.requests} peticiones, ${point.uniqueIps} IPs distintas`}>
+                      <div className="w-full max-w-8 rounded-t-md bg-emerald-600"
+                        style={{ height: `${Math.max(2, point.requests / maxMinuteRequests * 100)}px` }} />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 flex justify-between text-xs text-slate-500">
+                  <span>{traffic.byMinute.length ? new Date(traffic.byMinute[0].minute).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                  <span>{traffic.latestMinute ? new Date(traffic.latestMinute).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+                </div>
+              </div>
+              {traffic.topPaths.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <h3 className="font-black text-slate-900">Rutas con más tráfico (15 min)</h3>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Peticiones HTTP estimadas. No equivalen a lecturas de Firestore.
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {traffic.topPaths.map((entry) => (
+                      <div key={entry.path} className="flex items-center justify-between gap-4 border-b border-slate-100 pb-2 text-sm">
+                        <code className="min-w-0 break-all text-slate-800">{entry.path}</code>
+                        <span className="shrink-0 font-bold tabular-nums text-slate-900">{number(entry.requests)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="rounded-xl bg-white p-4 text-xs text-slate-700">
+                <strong>No son usuarios conectados exactos:</strong> una IP puede representar a muchos alumnos
+                detrás de la misma red; los bots pueden influir y una persona puede permanecer leyendo
+                sin hacer nuevas peticiones. Las estadísticas también pueden tardar en aparecer.
+                No sumes las IPs distintas de cada minuto para calcular personas únicas.
+              </p>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm">
+              <p className="font-black text-slate-900">Visitas recientes: sin datos</p>
+              <p className="mt-2 text-slate-600">{traffic?.reason ?? "Pulsa Actualizar para consultar las estadísticas."}</p>
+              <p className="mt-2 text-slate-600">
+                Para integrarlas, Cloudflare requiere un token con acceso de lectura de Analytics
+                y permiso de consulta de zona. No afecta Firebase ni habilita un plan de pago.
+              </p>
+            </div>
+          )}
+          <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer"
+            className="inline-block text-sm font-bold underline text-slate-800">
+            Abrir Cloudflare Analytics para comparar visitas ↗
           </a>
         </section>
         <section className="space-y-3">
