@@ -29,6 +29,15 @@ describe("Mercadito monitoring and efficient chat", () => {
     expect(chat).toContain("isGeneralChatMessageCurrent(Number(msg.createdAt), retentionNow)");
   });
 
+  it("performs Firestore count aggregation without downloading matching documents", () => {
+    const firestore = text("../firestoreRest.ts");
+    const query = firestore.slice(firestore.indexOf("class Query<"), firestore.indexOf("class CollectionReference"));
+    expect(query).toContain(":runAggregationQuery");
+    expect(query).toContain("structuredAggregationQuery");
+    expect(query).toContain('aggregations: [{ count: {}, alias: "total" }]');
+    expect(query).not.toContain("const snapshot = await this.get();");
+  });
+
   it("schedules limited daily cleanup, blocked from external requests", () => {
     const wrangler = text("../../wrangler.jsonc");
     const worker = text("../../cloudflare-runtime-entry.mjs");
