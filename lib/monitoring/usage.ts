@@ -1,5 +1,6 @@
 import { getAdminAccessToken, getFirebaseProjectId } from "../firebaseAdmin";
 import { pacificDayStartUtc, sumMonitoringTimeSeries, workerAnalyticsTotals } from "./domain";
+import { getRecentTraffic, type TrafficSnapshot } from "./traffic";
 
 export interface Meter {
   value: number | null;
@@ -11,6 +12,7 @@ export interface UsageSnapshot {
   source: "provider-metrics";
   workers: { requests: Meter; errors: Meter; subrequests: Meter };
   firestore: { reads: Meter; writes: Meter; deletes: Meter };
+  traffic: TrafficSnapshot;
 }
 
 const missing = (reason: string): Meter => ({ value: null, reason });
@@ -126,11 +128,12 @@ export async function loadOfficialUsage(): Promise<UsageSnapshot> {
   if (cached && Date.now() - cached.at < 120_000) return cached.promise;
   const promise = (async () => {
     const now = new Date();
-    const [workers, firestore] = await Promise.all([
+    const [workers, firestore, traffic] = await Promise.all([
       cloudflareCounters(now),
       firebaseCounters(now),
+      getRecentTraffic(now),
     ]);
-    return { checkedAt: now.toISOString(), source: "provider-metrics" as const, workers, firestore };
+    return { checkedAt: now.toISOString(), source: "provider-metrics" as const, workers, firestore, traffic };
   })();
   cached = { at: Date.now(), promise };
   return promise;
