@@ -6,10 +6,23 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function verifiedInstitution() {
+    function verifiedInstitution(profile) {
       return signedIn()
-        && request.auth.token.get('email_verified', false) == true
-        && request.auth.token.get('email', '').matches('^[^@]+@morelia[.]tecnm[.]mx$');
+        && request.auth.token.get('email', '').matches('^[^@]+@morelia[.]tecnm[.]mx$')
+        && (
+          request.auth.token.get('email_verified', false) == true
+          || (
+            profile.get('registrationSource', '') == 'manual_admin'
+            && profile.get('manualActivationStatus', '') == 'activated'
+            && profile.get('manualIdentityVerifiedBy', '') is string
+            && profile.get('manualIdentityVerifiedBy', '').size() > 0
+            && profile.get('manualIdentityVerifiedAt', null) is timestamp
+            && profile.get('email', '') == request.auth.token.get('email', '')
+            && profile.get('role', '') == 'user'
+            && profile.get('createdByAdminUid', '') is string
+            && profile.get('createdByAdminUid', '').size() > 0
+          )
+        );
     }
 
     function mayMutate() {
@@ -19,7 +32,7 @@ service firebase.storage {
       let years = string(year) + '|' + string(year - 1) + '|' + string(year - 2)
         + '|' + string(year - 3) + '|' + string(year - 4) + '|' + string(year - 5)
         + '|' + string(year - 6) + '|' + string(year - 7) + '|' + string(year - 8);
-      return verifiedInstitution()
+      return verifiedInstitution(profile)
         && profile.get('isActive', true) != false
         && (profile.get('role', '') in ['admin', 'administrator', 'superadmin', 'subadmin']
           || profile.get('isAdmin', false) == true || profile.get('admin', false) == true
