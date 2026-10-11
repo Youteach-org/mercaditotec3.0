@@ -527,7 +527,6 @@ export default function MarketplacePage() {
             <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
           <p className="mkt-hero-subtitle">{marketplaceContent.heroSubtitle.replace(/\s+/g, " ").trim()}</p>
-        </div>
         {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
             <div className="mkt-community-counts" aria-label="Cifras de la comunidad">
               {registeredUsers !== null && (
@@ -554,6 +553,8 @@ export default function MarketplacePage() {
               )}
             </div>
           )}
+
+        </div>
 
         <div className="mkt-pink-note"><MultilineText text={marketplaceContent.pinkNote} /></div>
         <div className="mkt-blue-note"><MultilineText text={marketplaceContent.blueNote} /></div>
