@@ -124,7 +124,7 @@ export default function AdminUsagePage() {
           <h2 id="traffic-heading" className="text-xl font-black text-slate-900">Actividad reciente de la página</h2>
           <p className="text-sm text-slate-600">
             Actividad observada por Cloudflare en los últimos 15 minutos. No se utiliza
-            ninguna consulta a Firebase ni se envían señales periódicas desde los visitantes.
+            ninguna consulta de presencia a Firebase ni se envían señales periódicas desde los visitantes.
           </p>
           {traffic?.status === "available" ? (
             <>
