@@ -6,6 +6,7 @@ import {
 import { getAdminDb, Timestamp } from "../firestoreRest";
 import { AccountProfileError, institutionalIdentity } from "./accountProfile";
 import { AdminUserError } from "./adminUsers";
+import { syncProductionFirebaseRules } from "./firebaseRulesDeployment";
 import { isAdminRole } from "./domain";
 
 const EXPIRY_MS = 48 * 60 * 60 * 1000;
@@ -135,7 +136,21 @@ async function makeCode(uid: string) {
   return { code, hash: await sha256(code) };
 }
 
+async function ensureManualActivationRulesReady(): Promise<void> {
+  // Never create a Firebase identity whose activation could not be
+  // authorized by the currently deployed Firestore/Storage rules.
+  try {
+    await syncProductionFirebaseRules();
+  } catch (error) {
+    console.error("MANUAL_ACTIVATION_RULES_NOT_READY",
+      error instanceof Error ? error.name : "UnknownError");
+    throw new AdminUserError(503,
+      "La activación presencial está esperando la publicación de las reglas de Firebase. No se creó ninguna cuenta.");
+  }
+}
+
 export async function createManualUser(actorUid: string, data: ManualRegistration) {
+  await ensureManualActivationRulesReady();
   // Existing ordinary registrations are never converted to manual accounts.
   // Firebase rejects duplicate email addresses before writing any profile.
   const uid = await createFirebaseUser(data);
@@ -198,6 +213,7 @@ export async function createManualUser(actorUid: string, data: ManualRegistratio
 }
 
 export async function renewManualActivationCode(actorUid: string, uid: string) {
+  await ensureManualActivationRulesReady();
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(uid)) {
     throw new AdminUserError(400, "Identificador inválido.");
   }

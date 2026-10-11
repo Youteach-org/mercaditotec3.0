@@ -23,3 +23,5 @@
 **Recuperación sin correo:** el Superadmin puede revalidar personalmente la identidad y seleccionar «Restablecer acceso con código». Esto desactiva temporalmente el acceso hasta que se utilice un código nuevo; nunca se reutiliza la contraseña anterior.
 
 **Alcance estricto:** esta alternativa solo se permite para usuarios nuevos creados desde Administración → Usuarios. Si el correo ya existe en Firebase, el alta responde que ya existe y no modifica esa cuenta. Ninguna cuenta creada mediante registro normal podrá recibir códigos ni convertirse a alta manual. La verificación habitual por correo y los dos avales no cambian.
+
+**Protección de despliegue:** si Cloudflare todavía no puede sincronizar las reglas de Firestore y Storage (por permisos IAM de Firebase), el alta manual y la reemisión devuelven 503 **antes de modificar ninguna cuenta**. Los registros normales no dependen de esta condición. Una vez corregidos los permisos, el servicio valida/publica las reglas antes de habilitar cada nueva alta manual.
