@@ -299,7 +299,7 @@ function StoreCard({
   }
 
   return (
-    <Link
+    <Link prefetch={false}
       href={requiresLogin ? "/login" : storeHref}
       className={className}
       onClickCapture={(event) => {

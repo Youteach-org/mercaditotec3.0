@@ -313,7 +313,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }>
           <div className={scrapbookShell ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
             <div className={scrapbookShell ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
-              <Link href="/marketplace" className={scrapbookShell
+              <Link prefetch={false} href="/marketplace" className={scrapbookShell
                 ? "w-auto max-w-[270px] shrink-0 leading-none sm:w-[300px]"
                 : "shrink-0 font-black tracking-tight text-slate-950"
               }>
@@ -338,7 +338,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     {NAV_ITEMS.map((item) => {
                       const active = isCurrentPath(pathname, item.href);
                       return (
-                        <Link
+                        <Link prefetch={false}
                           key={item.href}
                           href={item.href}
                           className={
@@ -362,7 +362,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       );
                     })}
                     {showAdmin && (
-                      <Link
+                      <Link prefetch={false}
                         href="/admin"
                         className={
                           pathname.startsWith("/admin")
@@ -386,7 +386,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </>
                 ) : (
                   <>
-                    <Link
+                    <Link prefetch={false}
                       href="/login"
                       className={scrapbookShell
                         ? "rounded-full border-2 border-[#174db4] bg-white px-4 py-2 text-sm font-black text-[#174db4]"
@@ -395,7 +395,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     >
                       Iniciar sesión
                     </Link>
-                    <Link
+                    <Link prefetch={false}
                       href="/register"
                       className={scrapbookShell
                         ? "rounded-full bg-[#174db4] px-4 py-2 text-sm font-black text-white"
@@ -429,7 +429,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </button>
 
               {firebaseUser && (
-                <Link
+                <Link prefetch={false}
                   href="/notifications"
                   aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
                   className={scrapbookShell ? "mercadito-shell-bell relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#174db4] bg-[#ffd54c] text-xl shadow-sm" : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-xl shadow-sm hover:bg-slate-50"}
@@ -455,7 +455,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     {NAV_ITEMS.map((item) => {
                       const active = isCurrentPath(pathname, item.href);
                       return (
-                        <Link
+                        <Link prefetch={false}
                           key={item.href}
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
@@ -471,7 +471,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       );
                     })}
                     {showAdmin && (
-                      <Link
+                      <Link prefetch={false}
                         href="/admin"
                         onClick={() => setMobileMenuOpen(false)}
                         className={`mkt-mobile-dropdown-link ${adminSurface ? "mkt-mobile-dropdown-link-active" : ""}`}
@@ -486,13 +486,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </>
                 ) : (
                   <>
-                    <Link href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                    <Link prefetch={false} href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
                       <NavIcon icon="home" /><span>Mercadito</span>
                     </Link>
-                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                    <Link prefetch={false} href="/login" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
                       <span aria-hidden="true">↪</span><span>Iniciar sesión</span>
                     </Link>
-                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                    <Link prefetch={false} href="/register" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
                       <span aria-hidden="true">＋</span><span>Crear cuenta</span>
                     </Link>
                   </>
@@ -503,7 +503,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </header>
       )}
       {messageAlert && firebaseUser && (
-        <Link
+        <Link prefetch={false}
           href="/chat/personal"
           className="fixed right-4 top-20 z-[70] max-w-[calc(100vw-2rem)] rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white shadow-xl"
           aria-live="polite"
