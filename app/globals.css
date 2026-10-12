@@ -5706,7 +5706,7 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) h1 {
     width: 100% !important;
     margin: 0 !important;
-    font-size: clamp(45px, 7.2vw, 79px) !important;
+    font-size: clamp(45px, 7.5vw, 80px) !important;
     line-height: .88 !important;
     letter-spacing: -.07em !important;
     flex: 0 0 auto;
