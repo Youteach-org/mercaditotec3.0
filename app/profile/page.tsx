@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { validateNicknameSyntax } from "@/lib/security/nickname";
 
 import AuthGuard from "@/components/AuthGuard";
 import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
@@ -18,7 +20,12 @@ const TRUST_LABEL: Record<StudentTrustStatus, string> = {
 function ProfileContent() {
   const { firebaseUser, appUser, logout } = useSession();
   const [editing, setEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(appUser?.displayName ?? "");
+  const [nickname, setNickname] = useState(appUser?.nickname ?? appUser?.emailLocalPart ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [nextPassword, setNextPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState(appUser?.whatsappNumber ?? "");
   const [photoURL, setPhotoURL] = useState(appUser?.photoURL ?? "");
   const [saving, setSaving] = useState(false);
@@ -33,13 +40,13 @@ function ProfileContent() {
 
   useEffect(() => {
     if (editing) return;
-    setDisplayName(appUser?.displayName ?? "");
+    setNickname(appUser?.nickname ?? appUser?.emailLocalPart ?? "");
     setWhatsappNumber(appUser?.whatsappNumber ?? "");
     setPhotoURL(appUser?.photoURL ?? "");
-  }, [appUser?.displayName, appUser?.photoURL, appUser?.whatsappNumber, editing]);
+  }, [appUser?.nickname, appUser?.emailLocalPart, appUser?.photoURL, appUser?.whatsappNumber, editing]);
 
   async function saveProfilePatch(payload: {
-    displayName?: string;
+    nickname?: string;
     photoURL?: string;
     whatsappNumber?: string;
   }) {
@@ -62,7 +69,7 @@ function ProfileContent() {
   }
 
   function startEditing() {
-    setDisplayName(appUser?.displayName ?? displayName);
+    setNickname(appUser?.nickname ?? nickname);
     setWhatsappNumber(appUser?.whatsappNumber ?? whatsappNumber);
     setPhotoURL(appUser?.photoURL ?? photoURL);
     setMessage("");
@@ -70,7 +77,7 @@ function ProfileContent() {
   }
 
   function cancelEditing() {
-    setDisplayName(appUser?.displayName ?? "");
+    setNickname(appUser?.nickname ?? appUser?.emailLocalPart ?? "");
     setWhatsappNumber(appUser?.whatsappNumber ?? "");
     setPhotoURL(appUser?.photoURL ?? "");
     setMessage("");
@@ -85,13 +92,13 @@ function ProfileContent() {
     setMessage("");
 
     try {
-      const cleanDisplayName =
-        displayName.trim() || (firebaseUser.email?.split("@")[0] ?? "usuario");
+      const nextNickname = validateNicknameSyntax(nickname);
+      if (!nextNickname.valid) throw new Error(nextNickname.reason);
       await saveProfilePatch({
-        displayName: cleanDisplayName,
+        nickname: nextNickname.nickname,
         whatsappNumber: whatsappNumber.trim(),
       });
-      setDisplayName(cleanDisplayName);
+      setNickname(nextNickname.nickname);
       setMessage("Perfil actualizado.");
       setEditing(false);
     } catch (error) {
@@ -160,8 +167,53 @@ function ProfileContent() {
     }
   }
 
+  async function changePassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!firebaseUser?.email || updatingPassword) return;
+    setPasswordMessage("");
+    if (nextPassword.length < 6) {
+      setPasswordMessage("La nueva contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    if (nextPassword !== confirmPassword) {
+      setPasswordMessage("Las contraseñas nuevas no coinciden.");
+      return;
+    }
+    if (!currentPassword) {
+      setPasswordMessage("Escribe tu contraseña actual.");
+      return;
+    }
+    setUpdatingPassword(true);
+    try {
+      await reauthenticateWithCredential(
+        firebaseUser,
+        EmailAuthProvider.credential(firebaseUser.email, currentPassword),
+      );
+      await updatePassword(firebaseUser, nextPassword);
+      setPasswordMessage("Contraseña actualizada correctamente.");
+      setCurrentPassword("");
+      setNextPassword("");
+      setConfirmPassword("");
+    } catch (error: unknown) {
+      const code = (error as { code?: string })?.code;
+      setPasswordMessage(
+        code === "auth/wrong-password" || code === "auth/invalid-credential"
+          ? "La contraseña actual es incorrecta."
+          : code === "auth/too-many-requests"
+            ? "Demasiados intentos. Espera unos minutos antes de volver a intentar."
+            : code === "auth/weak-password"
+              ? "La nueva contraseña no cumple los requisitos de seguridad."
+              : "No se pudo cambiar la contraseña. Comprueba tu conexión e inténtalo de nuevo.",
+      );
+    } finally {
+      setUpdatingPassword(false);
+    }
+  }
+
   const visibleName =
-    displayName || appUser?.displayName || firebaseUser?.email?.split("@")[0] || "Usuario";
+    (appUser?.nickname ? `@${appUser.nickname}` : "") ||
+    (nickname ? `@${nickname}` : "") ||
+    firebaseUser?.email?.split("@")[0] || "Usuario";
 
   return (
     <main className="min-h-screen bg-gray-100 p-6">
@@ -242,14 +294,18 @@ function ProfileContent() {
           <>
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-2">
-                Nombre corto visible en chat
+                Nickname
               </label>
               <input
                 type="text"
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value.toLowerCase())}
+                minLength={3}
+                maxLength={24}
+                autoCapitalize="none"
+                spellCheck={false}
                 className="w-full border border-gray-300 rounded-xl p-3 text-gray-900"
-                placeholder="Tu nombre visible"
+                placeholder="tu_nickname"
               />
             </div>
 
@@ -292,13 +348,46 @@ function ProfileContent() {
           </>
         ) : (
           <div className="space-y-1 text-sm text-gray-700">
+            <p>Nickname: <strong>{appUser?.nickname ? `@${appUser.nickname}` : "No registrado"}</strong></p>
             <p>WhatsApp: {whatsappNumber ? whatsappNumber : "No registrado"}</p>
             <p>Plan: {appUser?.plan === "premium" || appUser?.plan === "plus" || (firebaseUser?.emailVerified && firebaseUser.email?.toLowerCase() === "l22121079@morelia.tecnm.mx") ? "Plus" : "Gratis"}</p>
             <p>Activo: {appUser?.isActive ? "Sí" : "No"}</p>
           </div>
         )}
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700">Tu correo institucional verificado permite solicitar una tienda. Su publicación requiere aprobación administrativa.</div>
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700">
+          <p className="font-bold">Correo institucional (no editable)</p>
+          <p className="mt-1 break-all">{firebaseUser?.email ?? "—"}</p>
+          <p className="mt-2">La publicación de una tienda requiere aprobación administrativa.</p>
+        </div>
+
+        <form onSubmit={(event) => void changePassword(event)}
+          className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4">
+          <h2 className="text-lg font-bold text-gray-900">Cambiar contraseña</h2>
+          <label className="block text-sm font-semibold text-gray-800">
+            Contraseña actual
+            <input type="password" required autoComplete="current-password"
+              value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-gray-300 p-3 text-gray-900" />
+          </label>
+          <label className="block text-sm font-semibold text-gray-800">
+            Nueva contraseña
+            <input type="password" required minLength={6} autoComplete="new-password"
+              value={nextPassword} onChange={(event) => setNextPassword(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-gray-300 p-3 text-gray-900" />
+          </label>
+          <label className="block text-sm font-semibold text-gray-800">
+            Confirmar nueva contraseña
+            <input type="password" required minLength={6} autoComplete="new-password"
+              value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-gray-300 p-3 text-gray-900" />
+          </label>
+          {passwordMessage && <p role="status" className="text-sm text-slate-700">{passwordMessage}</p>}
+          <button type="submit" disabled={updatingPassword || !firebaseUser}
+            className="w-full rounded-xl bg-slate-900 px-4 py-3 font-bold text-white disabled:opacity-50">
+            {updatingPassword ? "Actualizando..." : "Actualizar contraseña"}
+          </button>
+        </form>
 
         {isAdmin && (
           <Link
