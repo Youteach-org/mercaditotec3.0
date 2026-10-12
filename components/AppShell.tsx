@@ -332,7 +332,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 ) : "MercaditoTec"}
               </Link>
 
-              <nav className={scrapbookShell ? "ml-auto hidden min-w-0 items-center gap-1 md:flex" : "hidden min-w-0 items-center gap-1 md:flex"} aria-label="Navegación principal">
+              <nav className={scrapbookShell ? "ml-auto hidden min-w-0 items-center gap-1 xl:flex" : "hidden min-w-0 items-center gap-1 xl:flex"} aria-label="Navegación principal">
                 {firebaseUser ? (
                   <>
                     {NAV_ITEMS.map((item) => {
@@ -410,7 +410,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
               <button
                 type="button"
-                className="mkt-mobile-menu-toggle md:hidden"
+                className="mkt-mobile-menu-toggle xl:hidden"
                 aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
                 aria-controls="mercadito-mobile-navigation"
                 aria-expanded={mobileMenuOpen}
@@ -447,7 +447,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {mobileMenuOpen && (
               <nav
                 id="mercadito-mobile-navigation"
-                className="mkt-mobile-dropdown md:hidden"
+                className="mkt-mobile-dropdown xl:hidden"
                 aria-label="Navegación principal móvil"
               >
                 {firebaseUser ? (

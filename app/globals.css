@@ -5678,72 +5678,158 @@ img:not([data-no-image-zoom="true"]) {
   font-size: 12px;
   font-weight: 900;
 }
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .mkt-mobile-menu-toggle, .mkt-mobile-dropdown { display: none !important; }
 }
-@media (max-width: 767px) {
+@media (max-width: 1279px) {
   .mkt-shell-header-inner > div:first-child { justify-content: space-between; }
   .mkt-shell-header-inner > div:first-child > a:first-child { margin-right: auto; }
   .mkt-mobile-menu-toggle { order: 3; }
   .mercadito-shell-bell { order: 2; }
 }
+/* Responsive paper layout: large lettering and content-driven spacing.
+   One flow for both tablet orientations prevents absolute title/counter overlaps. */
+@media (min-width: 621px) and (max-width: 1100px) {
+  .mkt-approved-canvas .mkt-title-paper {
+    top: 12px !important;
+    left: 2% !important;
+    width: 68% !important;
+    height: clamp(234px, 29vw, 310px) !important;
+    box-sizing: border-box !important;
+    padding: clamp(22px, 2.7vw, 32px) 5% clamp(19px, 2.3vw, 29px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper h1,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) h1 {
+    width: 100% !important;
+    margin: 0 !important;
+    font-size: clamp(45px, 7.5vw, 80px) !important;
+    line-height: .88 !important;
+    letter-spacing: -.07em !important;
+    flex: 0 0 auto;
+  }
+  .mkt-approved-canvas .mkt-title-paper h1 strong {
+    font-size: 1.12em !important;
+    margin-top: 2px !important;
+    padding-right: 1% !important;
+  }
+}
+@media (max-width: 1100px) {
+  .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.18 !important;
+    text-align: center !important;
+    white-space: normal !important;
+    overflow-wrap: normal !important;
+    transform: rotate(-1deg) !important;
+    flex: 0 0 auto;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: space-evenly !important;
+    align-items: center !important;
+    flex: 0 0 auto;
+    gap: 12px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-count {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+@media (min-width: 621px) and (max-width: 1100px) {
+  .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+    font-size: clamp(12px, 1.5vw, 16px) !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure strong {
+    font-size: clamp(22px, 2.7vw, 28px) !important;
+  }
+}
 @media (max-width: 620px) {
-  /* Compact the yellow paper itself, keeping all elements within its cut edge. */
   .mkt-approved-canvas .mkt-title-paper {
     top: 12px !important;
     left: 2% !important;
     width: 96% !important;
-    height: 206px !important;
-    padding: 25px 22px 12px !important;
+    height: clamp(215px, 51vw, 247px) !important;
+    box-sizing: border-box !important;
+    padding: 24px 20px 20px !important;
     transform: rotate(-1deg) !important;
-    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 5px !important;
   }
   .mkt-approved-canvas .mkt-title-paper h1,
   .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) h1 {
-    font-size: clamp(30px, 9.1vw, 39px) !important;
-    line-height: .91 !important;
-    letter-spacing: -.055em !important;
+    width: 100% !important;
+    font-size: clamp(34px, 12vw, 54px) !important;
+    line-height: .88 !important;
+    letter-spacing: -.075em !important;
+    margin: 0 !important;
+    flex: 0 0 auto;
   }
   .mkt-approved-canvas .mkt-title-paper h1 strong {
-    padding-right: 4% !important;
-    margin-top: 2px;
-    font-size: 1.08em !important;
+    font-size: 1.15em !important;
+    padding-right: 2% !important;
+    margin-top: 1px !important;
   }
   .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
   .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
-    top: 56% !important;
-    left: 6% !important;
-    right: 6% !important;
-    width: 88% !important;
-    font-size: clamp(8px, 2.55vw, 11px) !important;
-    line-height: 1.12 !important;
-    letter-spacing: -.025em !important;
-    white-space: nowrap !important;
-    overflow: visible !important;
-    text-align: center !important;
+    font-size: clamp(12px, 3.25vw, 15px) !important;
+    letter-spacing: 0 !important;
   }
-  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
-    top: 75% !important;
-    left: 17% !important;
-    right: 17% !important;
-    width: 66% !important;
-    justify-content: space-between !important;
-    gap: 12px !important;
-  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts { gap: 10px !important; }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure { gap: 5px !important; }
   .mkt-approved-canvas .mkt-title-paper .mkt-community-figure svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 21px !important;
+    height: 21px !important;
   }
   .mkt-approved-canvas .mkt-title-paper .mkt-community-figure strong {
-    font-size: 23px !important;
+    font-size: clamp(20px, 5.3vw, 25px) !important;
   }
-  /* Position nearby notes and search without leaving a second blank hero. */
-  .mkt-pink-note { top: 252px !important; }
-  .mkt-blue-note { top: 250px !important; }
-  .mkt-search { top: 430px !important; }
-  .mkt-category-strip { top: 505px !important; }
-  .mkt-featured-heading { top: 722px !important; }
-  .mkt-preview-chip { top: 732px !important; }
+  /* Keep the small notes outside the paper and leave the search unobstructed. */
+  .mkt-pink-note { top: clamp(251px, 55vw, 275px) !important; }
+  .mkt-blue-note { top: clamp(251px, 55vw, 275px) !important; }
+  .mkt-search { top: clamp(385px, 78vw, 430px) !important; }
+  .mkt-category-strip { top: clamp(460px, calc(78vw + 75px), 505px) !important; }
+  .mkt-featured-heading { top: clamp(650px, calc(78vw + 265px), 722px) !important; }
+  .mkt-preview-chip { top: clamp(662px, calc(78vw + 277px), 734px) !important; }
+}
+
+/* Tablet landscape, before the complete desktop layout can comfortably fit. */
+@media (min-width: 1101px) and (max-width: 1279px) {
+  .mkt-approved-canvas .mkt-title-paper {
+    width: 44% !important;
+    height: 27.5% !important;
+  }
+  .mkt-search {
+    left: 47% !important;
+    width: 49% !important;
+  }
 }
 
 @media (max-width: 620px) {
