@@ -293,20 +293,12 @@ function ProfileContent() {
         ) : (
           <div className="space-y-1 text-sm text-gray-700">
             <p>WhatsApp: {whatsappNumber ? whatsappNumber : "No registrado"}</p>
-            <p>Plan: {appUser?.plan === "premium" ? "Premium" : "Free"}</p>
+            <p>Plan: {appUser?.plan === "premium" || appUser?.plan === "plus" || (firebaseUser?.emailVerified && firebaseUser.email?.toLowerCase() === "l22121079@morelia.tecnm.mx") ? "Plus" : "Gratis"}</p>
             <p>Activo: {appUser?.isActive ? "Sí" : "No"}</p>
           </div>
         )}
 
-        <Link
-          href="/verify-student"
-          className="block rounded-2xl border border-sky-200 bg-sky-50 p-4 hover:bg-sky-100"
-        >
-          <div className="text-sm font-black text-sky-950">Verificación de alumno</div>
-          <div className="mt-1 text-sm text-sky-800">
-            {TRUST_LABEL[studentStatus]} · {Math.min(appUser?.studentEndorsementCount ?? 0, 2)}/2 avales
-          </div>
-        </Link>
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-700">Tu correo institucional verificado permite solicitar una tienda. Su publicación requiere aprobación administrativa.</div>
 
         {isAdmin && (
           <Link

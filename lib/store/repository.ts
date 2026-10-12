@@ -302,23 +302,34 @@ function makeNewStoreRecord(
   };
 }
 
-export async function createStoreDraft(
-  ownerUid: string,
-  input: StoreEditableInput,
-): Promise<StoreRecord> {
+async function createOwnerStore(ownerUid: string, input: StoreEditableInput | undefined, plus: boolean): Promise<StoreRecord> {
   const db = getAdminDb();
   const reference = db.collection("stores").doc();
   const store = makeNewStoreRecord(ownerUid, reference.id, input);
-  await reference.set(store);
+  if (plus) {
+    await reference.set(store);
+    return store;
+  }
+  // Count pre-existing stores, including drafts and suspended stores. The lock is
+  // transactional to prevent two simultaneous requests creating two stores.
+  const existing = await db.collection("stores").where("ownerUid", "==", ownerUid).limit(1).get();
+  if (!existing.empty) throw new StoreRepositoryError(409, "Tu cuenta permite una tienda. Para crear otra necesitas Plus.");
+  const lock = db.collection("store_creation_locks").doc(ownerUid);
+  await db.runTransaction(async (transaction) => {
+    const lockSnapshot = await transaction.get(lock);
+    if (lockSnapshot.exists) throw new StoreRepositoryError(409, "Tu cuenta permite una tienda. Para crear otra necesitas Plus.");
+    transaction.create(lock, { storeId: reference.id, ownerUid, createdAt: Timestamp.now() });
+    transaction.create(reference, store);
+  });
   return store;
 }
 
-export async function createEmptyStoreDraft(ownerUid: string): Promise<StoreRecord> {
-  const db = getAdminDb();
-  const reference = db.collection("stores").doc();
-  const store = makeNewStoreRecord(ownerUid, reference.id);
-  await reference.set(store);
-  return store;
+export async function createStoreDraft(ownerUid: string, input: StoreEditableInput, plus = false): Promise<StoreRecord> {
+  return createOwnerStore(ownerUid, input, plus);
+}
+
+export async function createEmptyStoreDraft(ownerUid: string, plus = false): Promise<StoreRecord> {
+  return createOwnerStore(ownerUid, undefined, plus);
 }
 
 export async function listStoresForOwner(ownerUid: string): Promise<StoreRecord[]> {

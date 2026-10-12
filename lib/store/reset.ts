@@ -55,6 +55,10 @@ export async function resetStoreForOwner(
   }
 
   batch.delete(db.collection("stores").doc(storeId));
+  // Release the single-store reservation only when it refers to this draft.
+  const creationLock = db.collection("store_creation_locks").doc(ownerUid);
+  const lockSnapshot = await creationLock.get();
+  if (lockSnapshot.exists && lockSnapshot.data()?.storeId === storeId) batch.delete(creationLock);
 
   await batch.commit();
 

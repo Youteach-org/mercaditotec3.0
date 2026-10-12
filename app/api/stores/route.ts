@@ -14,6 +14,14 @@ import {
 
 export const runtime = "nodejs";
 
+// Reserved Plus account. The email is authenticated and verified by Firebase.
+function isPlusUser(user: { claims: { email?: string; email_verified?: boolean }; profile: Record<string, unknown> }): boolean {
+  const email = (user.claims.email ?? "").trim().toLowerCase();
+  return user.profile.plan === "plus" || user.profile.plan === "premium" ||
+    (user.claims.email_verified === true && email === "l22121079@morelia.tecnm.mx" &&
+      String(user.profile.email ?? "").trim().toLowerCase() === email);
+}
+
 export async function GET(request: Request) {
   try {
     const user = await requireFirebaseUser(request);
@@ -43,8 +51,8 @@ export async function POST(request: Request) {
     );
 
     const store = bootstrap
-      ? await createEmptyStoreDraft(user.uid)
-      : await createStoreDraft(user.uid, parseStoreEditableInput(body));
+      ? await createEmptyStoreDraft(user.uid, isPlusUser(user))
+      : await createStoreDraft(user.uid, parseStoreEditableInput(body), isPlusUser(user));
 
     return NextResponse.json({ store: serializeStore(store) }, { status: 201 });
   } catch (error) {
