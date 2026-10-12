@@ -46,7 +46,6 @@ function ProfileContent() {
   }, [appUser?.nickname, appUser?.emailLocalPart, appUser?.photoURL, appUser?.whatsappNumber, editing]);
 
   async function saveProfilePatch(payload: {
-    nickname?: string;
     photoURL?: string;
     whatsappNumber?: string;
   }) {
@@ -94,10 +93,19 @@ function ProfileContent() {
     try {
       const nextNickname = validateNicknameSyntax(nickname);
       if (!nextNickname.valid) throw new Error(nextNickname.reason);
-      await saveProfilePatch({
-        nickname: nextNickname.nickname,
-        whatsappNumber: whatsappNumber.trim(),
-      });
+      // Save the editable contact number, then use the existing account-wide
+      // nickname service (same reservation used by chat and signup).
+      await saveProfilePatch({ whatsappNumber: whatsappNumber.trim() });
+      if (nextNickname.nickname !== appUser?.nickname) {
+        const token = await firebaseUser.getIdToken(true);
+        const response = await fetch("/api/nickname", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ nickname: nextNickname.nickname }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error ?? "No se pudo guardar el nickname.");
+      }
       setNickname(nextNickname.nickname);
       setMessage("Perfil actualizado.");
       setEditing(false);

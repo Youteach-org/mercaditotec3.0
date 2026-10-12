@@ -67,22 +67,15 @@ describe("buildOwnProfileUpdate WhatsApp", () => {
   });
 });
 
-
-describe("nickname changes and immutable email", () => {
-  const now = new Date("2026-10-12T12:00:00Z");
-  it("normalizes nickname and matches the visible chat name", () => {
-    expect(buildOwnProfileUpdate({ nickname: " Mi_Nick_25 " }, now)).toMatchObject({
-      nickname: "mi_nick_25",
-      nicknameNormalized: "mi_nick_25",
-      displayName: "mi_nick_25",
-    });
-  });
-  it("rejects invalid nicknames and any email or role update", () => {
-    for (const nickname of ["!", "ab", "contiene espacio", "abc-def"]) {
-      expect(() => buildOwnProfileUpdate({ nickname }, now)).toThrow(AccountProfileError);
-    }
-    for (const forbidden of [{ email: "otro@morelia.tecnm.mx" }, { role: "superadmin" }, { emailVerified: true }]) {
-      expect(() => buildOwnProfileUpdate(forbidden, now)).toThrow(AccountProfileError);
+describe("immutable account identity", () => {
+  it("rejects attempts to change the institutional email, roles or verification", () => {
+    for (const input of [
+      { email: "nuevo@morelia.tecnm.mx" },
+      { emailVerified: true },
+      { role: "superadmin" },
+      { nickname: "not-via-profile-patch" },
+    ]) {
+      expect(() => buildOwnProfileUpdate(input)).toThrow(AccountProfileError);
     }
   });
 });
