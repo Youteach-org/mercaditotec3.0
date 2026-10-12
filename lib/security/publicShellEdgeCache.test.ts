@@ -7,10 +7,10 @@ const html = () => new Response("<html>Mercadito</html>", {
   headers: { "content-type": "text/html;charset=utf-8" },
 });
 function cache() {
-  const values = new Map();
+  const values = new Map<string, Response>();
   return {
-    match: vi.fn(async (key) => values.get(key.url)?.clone()),
-    put: vi.fn(async (key, response) => { values.set(key.url, response.clone()); }),
+    match: vi.fn(async (key: Request) => values.get(key.url)?.clone()),
+    put: vi.fn(async (key: Request, response: Response) => { values.set(key.url, response.clone()); }),
   };
 }
 describe("public Marketplace HTML edge caching", () => {
@@ -18,7 +18,7 @@ describe("public Marketplace HTML edge caching", () => {
     const source = vi.fn(async () => html());
     const memory = cache();
     const env = { CF_VERSION_METADATA: { id: "deploy-one" } };
-    const ctx = { waitUntil: (promise) => promise };
+    const ctx = { waitUntil: (_promise: Promise<unknown>) => {} };
     const first = await serveCachedPublicShell(htmlRequest(), env, ctx, source, memory);
     expect(first.headers.get("x-mercadito-html-cache")).toBe("MISS");
     expect(await first.text()).toContain("Mercadito");
@@ -38,7 +38,7 @@ describe("public Marketplace HTML edge caching", () => {
     expect(isCacheablePublicShell(new Request("https://mercaditotec.store/api/admin/users",{headers:{accept:"text/html"}}))).toBe(false);
   });
   it("never caches error pages or responses containing Set-Cookie", async () => {
-    const memory = cache(); const context = {waitUntil:(p)=>p};
+    const memory = cache(); const context = {waitUntil:(_promise: Promise<unknown>)=>{}};
     await serveCachedPublicShell(htmlRequest(), {}, context,
       async () => new Response("broken",{status:503}), memory);
     await serveCachedPublicShell(htmlRequest(), {}, context,
