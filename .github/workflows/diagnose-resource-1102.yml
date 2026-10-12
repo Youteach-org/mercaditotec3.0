@@ -1,0 +1,46 @@
+name: Diagnose Cloudflare 1102 (temporary)
+on:
+  push:
+    branches:
+      - fix/cloudflare-1102-free-tier-20261012
+permissions:
+  contents: read
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Query invocation failures and CPU without exposing credentials or visitor data
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,datetime
+          now=datetime.datetime.now(datetime.timezone.utc)
+          start=now-datetime.timedelta(hours=4)
+          query='''query ($account: String, $start: Time, $end: Time) {
+            viewer { accounts(filter:{accountTag:$account}) {
+              workersInvocationsAdaptive(limit:100,filter:{
+                scriptName:"mercaditotec3-0",datetime_geq:$start,datetime_leq:$end
+              }) { dimensions { status } sum { requests errors } quantiles { cpuTimeP50 cpuTimeP99 } }
+            }}
+          }'''
+          body=json.dumps({"query":query,"variables":{
+            "account":"043e7755b65ac4fc8b8572963a544340",
+            "start":start.isoformat(timespec="seconds").replace("+00:00","Z"),
+            "end":now.isoformat(timespec="seconds").replace("+00:00","Z")
+          }}).encode()
+          req=urllib.request.Request("https://api.cloudflare.com/client/v4/graphql",
+            data=body,method="POST",headers={
+              "Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],
+              "Content-Type":"application/json"
+            })
+          try:
+            with urllib.request.urlopen(req,timeout=20) as response:
+              payload=json.load(response)
+            print("Cloudflare statuses and CPU (last 4h):")
+            print(json.dumps(payload,ensure_ascii=False)[:4500])
+          except Exception as e:
+            print("Cloudflare metrics not available:",type(e).__name__,str(e)[:250])
+          PY
