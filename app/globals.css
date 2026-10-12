@@ -5745,3 +5745,22 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-featured-heading { top: 722px !important; }
   .mkt-preview-chip { top: 732px !important; }
 }
+
+@media (max-width: 620px) {
+  /* Keep brand, bell and hamburger on one line even on narrow phones. */
+  .mkt-shell-header-inner > div:first-child { gap: 7px !important; min-width: 0; }
+  .mkt-shell-header-inner > div:first-child > a:first-child { min-width: 0; }
+  .mkt-shell-header-inner > div:first-child > a:first-child > span > span:first-child {
+    font-size: clamp(21px, 6vw, 27px) !important;
+    white-space: nowrap;
+    letter-spacing: -.065em;
+  }
+  .mkt-shell-header-inner > div:first-child > a:first-child > span > span:nth-child(2) {
+    font-size: clamp(6px, 1.55vw, 8px) !important;
+    letter-spacing: .12em !important;
+    white-space: nowrap;
+  }
+  .mkt-shell-header-inner > div:first-child > a:first-child svg { display: none !important; }
+  .mercadito-shell-bell { width: 38px !important; height: 38px !important; }
+  .mkt-mobile-menu-toggle { width: 40px; height: 40px; }
+}
