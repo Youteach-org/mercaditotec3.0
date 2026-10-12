@@ -1,0 +1,58 @@
+name: Cloudflare 1102 post-deploy verification
+on:
+  push:
+    branches:
+      - diagnostics/check-cloudflare-1102-after-fix-20261012
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check public page HTTP status and cache without user data
+        run: |
+          set -euo pipefail
+          for host in mercaditotec.store mercaditotec3-0.youteach-tk.workers.dev; do
+            echo "HOST: $host"
+            for n in 1 2 3; do
+              headers="$(mktemp)"
+              http="$(curl -sSL --retry 1 --connect-timeout 10 --max-time 25 -H 'Accept: text/html' -D "$headers" -o /dev/null -w '%{http_code}' "https://$host/marketplace")"
+              cache="$(grep -i '^x-mercadito-html-cache:' "$headers" | tail -n 1 | tr -d '\r' || true)"
+              echo "$n HTTP $http | ${cache:-edge-static-or-uncached}"
+              test "$http" = "200"
+              rm "$headers"
+              sleep 1
+            done
+            curl -fsSL --connect-timeout 10 --max-time 25 "https://$host/api/marketplace-v2" -o /dev/null
+            echo "API catalogue: OK"
+          done
+      - name: Query last 10 min invocation CPU and errors
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,datetime
+          now=datetime.datetime.now(datetime.timezone.utc)
+          start=now-datetime.timedelta(minutes=10)
+          query='''query ($account: String, $start: Time, $end: Time) {
+            viewer { accounts(filter:{accountTag:$account}) {
+              workersInvocationsAdaptive(limit:100,filter:{
+                scriptName:"mercaditotec3-0",datetime_geq:$start,datetime_leq:$end
+              }) { dimensions { status } sum { requests errors } quantiles { cpuTimeP50 cpuTimeP99 } }
+            }}
+          }'''
+          body=json.dumps({"query":query,"variables":{
+            "account":"043e7755b65ac4fc8b8572963a544340",
+            "start":start.isoformat(timespec="seconds").replace("+00:00","Z"),
+            "end":now.isoformat(timespec="seconds").replace("+00:00","Z")
+          }}).encode()
+          req=urllib.request.Request("https://api.cloudflare.com/client/v4/graphql",
+            data=body,method="POST",headers={
+              "Authorization":"Bearer "+os.environ["CLOUDFLARE_API_TOKEN"],
+              "Content-Type":"application/json"})
+          with urllib.request.urlopen(req,timeout=20) as response:
+            payload=json.load(response)
+          print("Last 10 min CPU / status, microseconds:")
+          print(json.dumps(payload,ensure_ascii=False)[:4500])
+          PY
