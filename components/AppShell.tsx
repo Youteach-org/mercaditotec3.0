@@ -332,7 +332,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 ) : "MercaditoTec"}
               </Link>
 
-              <nav className={scrapbookShell ? "ml-auto hidden min-w-0 items-center gap-1 xl:flex" : "hidden min-w-0 items-center gap-1 md:flex"} aria-label="Navegación principal">
+              <nav className={scrapbookShell ? "ml-auto hidden min-w-0 items-center gap-1 xl:flex" : "hidden min-w-0 items-center gap-1 xl:flex"} aria-label="Navegación principal">
                 {firebaseUser ? (
                   <>
                     {NAV_ITEMS.map((item) => {
