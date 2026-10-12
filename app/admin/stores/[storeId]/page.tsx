@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import AdminStoreReviewProducts from "@/components/store/AdminStoreReviewProducts";
-import { isAdminRole } from "@/lib/security/domain";
+import { isAdminRole, isSuperadminRole } from "@/lib/security/domain";
 import {
   actionsForStoreStatus,
   adminActionLabel,
@@ -119,6 +119,13 @@ export default function AdminStoreDetailPage() {
   }
 
   function requestAction(action: AdminStoreAction) {
+    if (action === "approve" && store?.status === "changes_required") {
+      const confirmed = window.confirm(
+        "¿Aprobar esta tienda aunque todavía requiera cambios? Se publicará tal como está y se cerrará la solicitud de correcciones.",
+      );
+      if (!confirmed) return;
+    }
+
     if (action === "approve" || action === "reactivate") {
       void executeAction(action);
       return;
@@ -151,7 +158,7 @@ export default function AdminStoreDetailPage() {
     );
   }
 
-  const actions = actionsForStoreStatus(store.status);
+  const actions = actionsForStoreStatus(store.status, isSuperadminRole(appUser));
 
   return (
     <main className="min-h-screen bg-gray-100 p-4">
@@ -237,7 +244,7 @@ export default function AdminStoreDetailPage() {
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <h2 className="text-xl font-bold text-gray-900">Acciones administrativas</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Al aprobar una tienda pendiente se asignará su URL pública y se incorporarán sus categorías sugeridas a la lista general. La decisión queda registrada en el historial administrativo.
+              Al aprobar una tienda pendiente o con cambios solicitados se asignará su URL pública y se incorporarán sus categorías sugeridas a la lista general. La decisión queda registrada en el historial administrativo.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-3">
@@ -255,7 +262,7 @@ export default function AdminStoreDetailPage() {
                         : "rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white disabled:bg-orange-300"
                   }
                 >
-                  {adminActionLabel(action)}
+                  {adminActionLabel(action, store.status)}
                 </button>
               ))}
             </div>
