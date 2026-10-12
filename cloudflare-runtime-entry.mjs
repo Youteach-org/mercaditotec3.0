@@ -4,6 +4,7 @@ import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.m
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
 import { enforceHttps } from "./lib/security/enforceHttps.mjs";
+import { serveCachedPublicShell } from "./lib/security/publicShellEdgeCache.mjs";
 import {
   serveCachedPublicCatalogue, affectsPublicCatalogue, evictPublicCatalogueCache,
 } from "./lib/security/publicCatalogueEdgeCache.mjs";
@@ -50,6 +51,21 @@ export default {
     if (httpsRedirect) return httpsRedirect;
 
     const url = new URL(request.url);
+
+    // Next statically defines "/" as a redirect. Serve it before OpenNext
+    // to avoid spending Workers CPU on every visitor's first request.
+    if (url.pathname === "/" && (request.method === "GET" || request.method === "HEAD")
+        && (request.headers.get("accept") || "").includes("text/html")
+        && !request.headers.has("rsc")) {
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location: new URL("/marketplace" + url.search, url).toString(),
+          "cache-control": "public, max-age=0, s-maxage=300",
+          "strict-transport-security": "max-age=31536000",
+        },
+      });
+    }
 
     if (
       url.pathname === "/api/internal/firebase-rules-sync" ||
@@ -114,10 +130,15 @@ export default {
       const limited = await enforceEdgeBudget(request, env);
       if (limited) return limited;
       const bounded = await boundApiRequest(request);
-      const response = await serveCachedPublicCatalogue(
+      const response = await serveCachedPublicShell(
         bounded,
+        env,
         ctx,
-        () => getHandler().fetch(bounded, env, ctx),
+        () => serveCachedPublicCatalogue(
+          bounded,
+          ctx,
+          () => getHandler().fetch(bounded, env, ctx),
+        ),
       );
 
       if (affectsPublicCatalogue(request, response)) {
