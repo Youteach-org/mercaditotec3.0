@@ -111,7 +111,7 @@ describe("store repository rules", () => {
     ).toThrow("Esta tienda no está pendiente de revisión.");
   });
 
-  it("permite aprobación administrativa solo desde pending_review", () => {
+  it("permite aprobación administrativa desde pending_review y exige superadmin para changes_required", () => {
     expect(
       buildAdminStatusMutation(
         { id: "store-1", ownerUid: "uid-owner", name: "Dulces Fer", description: "", status: "pending_review", slug: null },
@@ -119,10 +119,27 @@ describe("store repository rules", () => {
       ).status,
     ).toBe("active");
 
+    const reviewStore = {
+      id: "store-1",
+      ownerUid: "uid-owner",
+      name: "Dulces Fer",
+      description: "",
+      status: "changes_required" as const,
+      slug: null,
+      reviewMessage: "Corrige la imagen.",
+    };
+
+    expect(() => buildAdminStatusMutation(reviewStore, "active"))
+      .toThrow("Solo el superadmin puede aprobar una tienda que requiere cambios.");
+    expect(buildAdminStatusMutation(reviewStore, "active", undefined, true))
+      .toEqual({ status: "active", reviewMessage: null });
+
     expect(() =>
       buildAdminStatusMutation(
         { id: "store-1", ownerUid: "uid-owner", name: "Dulces Fer", description: "", status: "draft", slug: null },
         "active",
+        undefined,
+        true,
       ),
     ).toThrow();
   });
