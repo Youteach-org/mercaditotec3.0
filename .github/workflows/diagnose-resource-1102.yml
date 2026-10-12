@@ -1,8 +1,6 @@
 name: Diagnose Cloudflare 1102 (temporary)
 on:
-  push:
-    branches:
-      - fix/cloudflare-1102-free-tier-20261012
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:

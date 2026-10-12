@@ -23,11 +23,12 @@ const nextConfig = {
         headers: SECURITY_HEADERS,
       },
       {
+        // Static prerendered marketplace HTML is identical for every visitor;
+        // React loads the session and stores client-side. Edge caching saves CPU.
         source: "/marketplace",
         headers: [
           ...SECURITY_HEADERS,
-          { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, max-age=0" },
-          { key: "Pragma", value: "no-cache" },
+          { key: "Cache-Control", value: "public, max-age=0, s-maxage=120, stale-while-revalidate=180" },
         ],
       },
       {
