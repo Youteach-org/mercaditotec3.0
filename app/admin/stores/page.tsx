@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { isAdminRole } from "@/lib/security/domain";
+import { isAdminRole, isSuperadminRole } from "@/lib/security/domain";
 import { adminTabs } from "@/lib/store/adminClient";
 import {
   storeApiFetch,
@@ -22,7 +22,10 @@ export default function AdminStoresPage() {
   const [stores, setStores] = useState<StoreApiRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const isAdmin = isAdminRole(appUser);
+  const isSuperadmin = isSuperadminRole(appUser);
 
   useEffect(() => {
     if (sessionLoading) return;
@@ -62,6 +65,30 @@ export default function AdminStoresPage() {
   useEffect(() => {
     if (firebaseUser && isAdmin) void loadStores();
   }, [firebaseUser, isAdmin, loadStores]);
+
+  async function approveDespiteChanges(store: StoreApiRecord) {
+    if (!firebaseUser || !isSuperadmin || approvingId) return;
+    if (!window.confirm(`¿Aprobar "${store.name}" pese a los cambios solicitados? Se publicará tal como está.`)) return;
+
+    setApprovingId(store.id);
+    setNotice("");
+    setError("");
+
+    try {
+      const response = await storeApiFetch(firebaseUser, `/api/admin/stores/${store.id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status: "active" }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "No se pudo aprobar la tienda.");
+      setNotice(`"${store.name}" fue aprobada y ya puede aparecer públicamente.`);
+      await loadStores();
+    } catch (actionError) {
+      setError(actionError instanceof Error ? actionError.message : "No se pudo aprobar la tienda.");
+    } finally {
+      setApprovingId(null);
+    }
+  }
 
   if (sessionLoading || !firebaseUser || !isAdmin) {
     return (
@@ -125,6 +152,12 @@ export default function AdminStoresPage() {
           </div>
         )}
 
+        {notice && (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-700" role="status">
+            {notice}
+          </div>
+        )}
+
         {loading ? (
           <section className="rounded-2xl bg-white p-6 shadow-md">
             <p className="text-gray-600">Cargando tiendas...</p>
@@ -164,13 +197,23 @@ export default function AdminStoresPage() {
                   Propietario interno: <span className="font-mono">{store.ownerUid}</span>
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <Link
                     href={`/admin/stores/${store.id}`}
                     className="inline-flex rounded-xl bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700"
                   >
                     Revisar
                   </Link>
+                  {isSuperadmin && store.status === "changes_required" && (
+                    <button
+                      type="button"
+                      disabled={approvingId !== null}
+                      onClick={() => void approveDespiteChanges(store)}
+                      className="rounded-xl bg-emerald-600 px-4 py-2.5 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {approvingId === store.id ? "Aprobando..." : "Aprobar de todos modos"}
+                    </button>
+                  )}
                 </div>
               </article>
             ))}
