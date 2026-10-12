@@ -166,7 +166,7 @@ export default function AccountAccessGate({ children }: { children: ReactNode })
           </>
         ) : (
           <p className="font-semibold">
-            {state === "denied" ? "Cuenta no autorizada. Regresando al inicio de sesión..." : "Comprobando acceso institucional..."}
+            {state === "denied" ? "Cuenta no autorizada. Regresando al inicio de sesión..." : "Comprobando acceso..."}
           </p>
         )}
       </div>

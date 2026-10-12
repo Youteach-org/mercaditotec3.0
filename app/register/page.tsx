@@ -182,8 +182,8 @@ export default function RegisterPage() {
       >
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
-          <p className="text-sm leading-relaxed text-gray-700">
-            Usa tu correo institucional del Tec de Morelia.
+          <p className="rounded-xl border-2 border-red-300 bg-red-50 px-3 py-3 text-center text-base font-black uppercase leading-snug tracking-wide text-red-700 sm:text-lg">
+            DEBES USAR TU CORREO INSTITUCIONAL DEL TEC DE MORELIA
           </p>
         </div>
 
@@ -191,14 +191,14 @@ export default function RegisterPage() {
           <label className="block text-sm font-semibold text-gray-800">
             Correo institucional
           </label>
-          <p id="register-email-help" className="text-xs leading-relaxed text-gray-600">
-            Escribe solamente lo que va antes de <strong>{DOMAIN}</strong>. No escribas el dominio.
+          <p id="register-email-help" className="text-sm font-semibold leading-relaxed text-gray-800">
+            ESCRIBE LA PARTE DE TU CORREO QUE VA ANTES DE <strong>{DOMAIN}</strong>. EL DOMINIO SE AGREGA AUTOMÁTICAMENTE.
           </p>
 
           <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-gray-300 sm:grid-cols-[minmax(0,1fr)_auto]">
             <input
               type="text"
-              placeholder="a22121079"
+              placeholder="Correo"
               value={localPart}
               onChange={(e) => setLocalPart(e.target.value)}
               autoCapitalize="none"
@@ -246,26 +246,12 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-semibold text-gray-800">
-              Contraseña
-            </label>
-            <span className="group relative inline-flex">
-              <button
-                type="button"
-                aria-label="Información de seguridad sobre la contraseña"
-                className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-400 text-xs font-black text-gray-700"
-              >
-                i
-              </button>
-              <span
-                role="tooltip"
-                className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-64 -translate-x-1/2 rounded-xl bg-slate-900 p-3 text-xs font-medium leading-relaxed text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
-              >
-                Por seguridad, crea una contraseña distinta. No uses la contraseña de tu correo institucional.
-              </span>
-            </span>
-          </div>
+          <label className="block text-sm font-semibold text-gray-800">
+            Contraseña
+          </label>
+          <p role="note" className="rounded-xl border-2 border-red-200 bg-red-50 px-3 py-3 text-sm font-extrabold uppercase leading-snug text-red-800 sm:text-base">
+            NO ES NECESARIA TU CONTRASEÑA DEL CORREO, SINO UNA CONTRASEÑA QUE RECUERDES.
+          </p>
 
           <div className="relative">
             <input

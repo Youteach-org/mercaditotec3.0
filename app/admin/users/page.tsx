@@ -35,7 +35,7 @@ interface AdminUserSummary {
 
 const TRUST_LABEL: Record<StudentTrustStatus, string> = {
   pending: "Pendiente",
-  verified: "Alumno confirmado",
+  verified: "Usuario confirmado",
   revoked: "Confirmación revocada",
 };
 
@@ -255,8 +255,8 @@ export default function AdminUsersPage() {
       if (status === "verified") setSelectedUserUid(null);
       setMessage(
         status === "verified"
-          ? "Alumno aprobado manualmente por Superadmin."
-          : "Confirmación de alumno revocada.",
+          ? "Usuario aprobado manualmente por Superadmin."
+          : "Confirmación de usuario revocada.",
       );
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : "No se pudo actualizar al usuario.");
@@ -353,7 +353,7 @@ export default function AdminUsersPage() {
             <div>
               <h1 className="text-3xl font-black text-gray-900">Usuarios y aprobaciones</h1>
               <p className="mt-1 text-gray-600">
-                Revisa alumnos y avales. La confirmación normal llega con 2 avales; el Superadmin puede aprobar manualmente a un alumno pendiente.
+                Revisa usuarios y avales. La confirmación normal llega con 2 avales; el Superadmin puede aprobar manualmente a un usuario pendiente.
               </p>
             </div>
             <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">

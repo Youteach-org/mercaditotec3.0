@@ -185,7 +185,7 @@ export default function AdminUsagePage() {
                 </div>
               )}
               <p className="rounded-xl bg-white p-4 text-xs text-slate-700">
-                <strong>No son usuarios conectados exactos:</strong> una IP puede representar a muchos alumnos
+                <strong>No son usuarios conectados exactos:</strong> una IP puede representar a muchos usuarios
                 detrás de la misma red; los bots pueden influir y una persona puede permanecer leyendo
                 sin hacer nuevas peticiones. Las estadísticas también pueden tardar en aparecer.
                 No sumes las IPs distintas de cada minuto para calcular personas únicas.

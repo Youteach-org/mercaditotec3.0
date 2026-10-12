@@ -7,7 +7,7 @@ const rules = [
   },
   {
     title: "2. Tiendas y verificación",
-    text: "Las tiendas pueden prepararse en borrador, pero solo se publican después de que el propietario esté confirmado como alumno y la tienda haya sido revisada y aprobada por administración.",
+    text: "Las tiendas pueden prepararse en borrador, pero solo se publican después de que el propietario esté confirmado como usuario y la tienda haya sido revisada y aprobada por administración.",
   },
   {
     title: "3. Productos y servicios",
@@ -27,11 +27,11 @@ const rules = [
   },
   {
     title: "7. Reportes y moderación",
-    text: "Los usuarios pueden reportar tiendas, mensajes o cuentas. Administración puede ocultar mensajes, solicitar cambios, suspender tiendas, bloquear temporalmente cuentas o revocar la confirmación de alumno cuando exista una razón de moderación.",
+    text: "Los usuarios pueden reportar tiendas, mensajes o cuentas. Administración puede ocultar mensajes, solicitar cambios, suspender tiendas, bloquear temporalmente cuentas o revocar la confirmación de usuario cuando exista una razón de moderación.",
   },
   {
     title: "8. Responsabilidad de la cuenta",
-    text: "Cada usuario debe proteger sus credenciales y utilizar únicamente su propia cuenta. Los avales de alumno deben darse solo a personas que el usuario conoce y reconoce como integrantes actuales de la comunidad.",
+    text: "Cada usuario debe proteger sus credenciales y utilizar únicamente su propia cuenta. Los avales de usuario deben darse solo a personas que el usuario conoce y reconoce como integrantes actuales de la comunidad.",
   },
 ];
 
