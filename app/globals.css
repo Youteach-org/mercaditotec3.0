@@ -5619,3 +5619,129 @@ img:not([data-no-image-zoom="true"]) {
     font-size: clamp(20px, 5.3vw, 25px) !important;
   }
 }
+
+/* Mobile header: replace the horizontally scrolling navigation with a compact menu. */
+.mkt-mobile-menu-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 43px;
+  height: 43px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #174db4;
+  border-radius: 12px;
+  background: #fff0cf;
+  color: #123d82;
+  cursor: pointer;
+}
+.mkt-mobile-menu-toggle:focus-visible,
+.mkt-mobile-dropdown-link:focus-visible {
+  outline: 3px solid #f15b32;
+  outline-offset: 2px;
+}
+.mkt-mobile-dropdown {
+  position: absolute;
+  z-index: 70;
+  top: calc(100% + 8px);
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(70vh, 550px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 2px solid #f6c968;
+  border-radius: 17px;
+  background: #fffaf0;
+  box-shadow: 0 14px 28px rgba(16, 47, 109, .2);
+}
+.mkt-mobile-dropdown-link {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 12px;
+  border-radius: 11px;
+  padding: 10px 13px;
+  color: #102f6d;
+  font-size: 16px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.mkt-mobile-dropdown-link:hover { background: #fff0cf; }
+.mkt-mobile-dropdown-link-active { background: #174db4 !important; color: #fff; }
+.mkt-mobile-dropdown-badge {
+  margin-left: auto;
+  min-width: 23px;
+  padding: 3px 5px;
+  border-radius: 999px;
+  background: #f15b32;
+  color: #fff;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+@media (min-width: 768px) {
+  .mkt-mobile-menu-toggle, .mkt-mobile-dropdown { display: none !important; }
+}
+@media (max-width: 767px) {
+  .mkt-shell-header-inner > div:first-child { justify-content: space-between; }
+  .mkt-shell-header-inner > div:first-child > a:first-child { margin-right: auto; }
+  .mkt-mobile-menu-toggle { order: 3; }
+  .mercadito-shell-bell { order: 2; }
+}
+@media (max-width: 620px) {
+  /* Compact the yellow paper itself, keeping all elements within its cut edge. */
+  .mkt-approved-canvas .mkt-title-paper {
+    top: 12px !important;
+    left: 2% !important;
+    width: 96% !important;
+    height: 206px !important;
+    padding: 25px 22px 12px !important;
+    transform: rotate(-1deg) !important;
+    box-sizing: border-box;
+  }
+  .mkt-approved-canvas .mkt-title-paper h1,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) h1 {
+    font-size: clamp(30px, 9.1vw, 39px) !important;
+    line-height: .91 !important;
+    letter-spacing: -.055em !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper h1 strong {
+    padding-right: 4% !important;
+    margin-top: 2px;
+    font-size: 1.08em !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-hero-subtitle,
+  .mkt-approved-canvas .mkt-title-paper:has(.mkt-community-counts) .mkt-hero-subtitle {
+    top: 56% !important;
+    left: 6% !important;
+    right: 6% !important;
+    width: 88% !important;
+    font-size: clamp(8px, 2.55vw, 11px) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -.025em !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-align: center !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-counts {
+    top: 75% !important;
+    left: 17% !important;
+    right: 17% !important;
+    width: 66% !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .mkt-approved-canvas .mkt-title-paper .mkt-community-figure strong {
+    font-size: 23px !important;
+  }
+  /* Position nearby notes and search without leaving a second blank hero. */
+  .mkt-pink-note { top: 252px !important; }
+  .mkt-blue-note { top: 250px !important; }
+  .mkt-search { top: 430px !important; }
+  .mkt-category-strip { top: 505px !important; }
+  .mkt-featured-heading { top: 722px !important; }
+  .mkt-preview-chip { top: 732px !important; }
+}

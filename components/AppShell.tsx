@@ -61,6 +61,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [fallbackUnreadCount, setFallbackUnreadCount] = useState(0);
   const [privateUnreadCount, setPrivateUnreadCount] = useState(0);
   const [messageAlert, setMessageAlert] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const previousPrivateUnreadRef = useRef<number | null>(null);
   const [visualPreview, setVisualPreview] = useState(false);
   const [syncDeferred, setSyncDeferred] = useState(false);
@@ -293,6 +294,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [firebaseUser, loading]);
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   const showAdmin = serverAdminVerified && !syncDeferred && Boolean(firebaseUser) && pathname !== "/login" && pathname !== "/register";
   const marketplaceHome = pathname === "/marketplace";
   const adminSurface = pathname.startsWith("/admin");
@@ -403,6 +408,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </nav>
 
+              <button
+                type="button"
+                className="mkt-mobile-menu-toggle md:hidden"
+                aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+                aria-controls="mercadito-mobile-navigation"
+                aria-expanded={mobileMenuOpen}
+                onClick={() => setMobileMenuOpen((open) => !open)}
+              >
+                {mobileMenuOpen ? (
+                  <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                    <path d="M5 5 19 19M19 5 5 19" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                    <path d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+                <span className="sr-only">Menú principal</span>
+              </button>
+
               {firebaseUser && (
                 <Link
                   href="/notifications"
@@ -419,90 +444,61 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            <nav
-              className={scrapbookShell
-                ? "-mx-3 flex gap-2 overflow-x-auto px-3 pb-2 pt-0 md:hidden"
-                : "-mx-3 flex gap-2 overflow-x-auto border-t border-slate-100 px-3 py-2 md:hidden"
-              }
-              aria-label="Navegación principal móvil"
-            >
-              {firebaseUser ? (
-                <>
-                  {NAV_ITEMS.map((item) => {
-                    const active = isCurrentPath(pathname, item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={
-                          scrapbookShell
-                            ? active
-                              ? "shrink-0 rounded-full bg-[#174db4] px-3 py-2 text-xs font-black text-white"
-                              : "shrink-0 rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-bold text-[#102f6d]"
-                            : active
-                              ? "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
-                              : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
-                        }
-                      >
-                        <span className="inline-flex items-center gap-1.5">
-                          {item.label}
+            {mobileMenuOpen && (
+              <nav
+                id="mercadito-mobile-navigation"
+                className="mkt-mobile-dropdown md:hidden"
+                aria-label="Navegación principal móvil"
+              >
+                {firebaseUser ? (
+                  <>
+                    {NAV_ITEMS.map((item) => {
+                      const active = isCurrentPath(pathname, item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={`mkt-mobile-dropdown-link ${active ? "mkt-mobile-dropdown-link-active" : ""}`}
+                        >
+                          <NavIcon icon={item.icon} />
+                          <span>{item.label}</span>
                           {item.href === "/chat/personal" && privateUnreadCount > 0 && (
-                            <span className="inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white">
-                              {privateUnreadCount > 99 ? "99+" : privateUnreadCount}
-                            </span>
+                            <span className="mkt-mobile-dropdown-badge">{privateUnreadCount > 99 ? "99+" : privateUnreadCount}</span>
                           )}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                  {showAdmin && (
-                    <Link
-                      href="/admin"
-                      className={
-                        pathname.startsWith("/admin")
-                          ? scrapbookShell
-                            ? "shrink-0 rounded-full bg-[#174db4] px-3 py-2 text-xs font-black text-white"
-                            : "shrink-0 rounded-xl bg-slate-900 px-3 py-2 text-xs font-black text-white"
-                          : scrapbookShell
-                            ? "shrink-0 rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-bold text-[#102f6d]"
-                            : "shrink-0 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-700"
-                      }
-                    >
-                      <span className="inline-flex items-center gap-1.5">
-                        Admin
-                        {!adminSurface && pendingApprovals && (
-                          <>
-                            {pendingApprovals.usersPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-white/90 px-1.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="profile" />{pendingApprovals.usersPending}</span>}
-                            {pendingApprovals.storesPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-white/90 px-1.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="store" />{pendingApprovals.storesPending}</span>}
-                          </>
+                        </Link>
+                      );
+                    })}
+                    {showAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`mkt-mobile-dropdown-link ${adminSurface ? "mkt-mobile-dropdown-link-active" : ""}`}
+                        aria-current={adminSurface ? "page" : undefined}
+                      >
+                        <span aria-hidden="true">🛡️</span><span>Administración</span>
+                        {!adminSurface && pendingApprovals && pendingApprovals.usersPending + pendingApprovals.storesPending > 0 && (
+                          <span className="mkt-mobile-dropdown-badge">{pendingApprovals.usersPending + pendingApprovals.storesPending}</span>
                         )}
-                      </span>
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Link href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                      <NavIcon icon="home" /><span>Mercadito</span>
                     </Link>
-                  )}
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/marketplace"
-                    className="shrink-0 rounded-full bg-[#fff0cf] px-3 py-2 text-xs font-bold text-[#102f6d]"
-                  >
-                    Mercadito
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="shrink-0 rounded-full border-2 border-[#174db4] bg-white px-3 py-2 text-xs font-black text-[#174db4]"
-                  >
-                    Iniciar sesión
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="shrink-0 rounded-full bg-[#174db4] px-3 py-2 text-xs font-black text-white"
-                  >
-                    Crear cuenta
-                  </Link>
-                </>
-              )}
-            </nav>
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                      <span aria-hidden="true">↪</span><span>Iniciar sesión</span>
+                    </Link>
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                      <span aria-hidden="true">＋</span><span>Crear cuenta</span>
+                    </Link>
+                  </>
+                )}
+              </nav>
+            )}
           </div>
         </header>
       )}
