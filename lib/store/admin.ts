@@ -7,6 +7,10 @@ export interface AdminStoreStatusRequest {
     | "suspended";
 
   message?: string;
+  /** Explicit confirmation that the reviewer inspected the store. */
+  reviewConfirmed?: boolean;
+  /** Superadmin-only approval of the submitted store without requiring edits/products. */
+  approveAsIs?: boolean;
 }
 
 const ALL_STORE_STATUSES: StoreStatus[] = [
@@ -54,8 +58,20 @@ export function parseAdminStoreStatusRequest(
       ? data.message.trim()
       : "";
 
+  if (data.approveAsIs !== undefined && typeof data.approveAsIs !== "boolean") {
+    throw new Error("Aprobación especial inválida.");
+  }
+  if (data.reviewConfirmed !== undefined && typeof data.reviewConfirmed !== "boolean") {
+    throw new Error("Confirmación de revisión inválida.");
+  }
+  if (data.approveAsIs === true && status !== "active") {
+    throw new Error("La aprobación especial solo aplica a tiendas pendientes.");
+  }
+
   return {
     status,
     message: message || undefined,
+    ...(data.reviewConfirmed === true ? { reviewConfirmed: true } : {}),
+    ...(data.approveAsIs === true ? { approveAsIs: true } : {}),
   };
 }

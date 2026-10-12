@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/useSession";
+import { isSuperadminRole } from "@/lib/security/domain";
 
 const destinations = [
   { href: "/admin/users", label: "Usuarios", icon: "👥" },
@@ -17,9 +19,11 @@ const destinations = [
 
 export default function AdminQuickNav() {
   const pathname = usePathname();
+  const { appUser } = useSession();
+  const canManageUsers = isSuperadminRole(appUser);
   return (
     <nav aria-label="Accesos rápidos de administración" className="flex w-full flex-wrap gap-2 rounded-2xl bg-white/90 p-2 shadow-sm">
-      {destinations.map(({ href, label, icon }) => {
+      {destinations.filter(({ href }) => canManageUsers || !href.startsWith("/admin/users")).map(({ href, label, icon }) => {
         const active = pathname === href.split("#")[0] && !href.includes("#");
         return (
           <Link key={href} href={href} aria-current={active ? "page" : undefined}

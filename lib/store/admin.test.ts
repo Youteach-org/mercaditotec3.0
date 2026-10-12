@@ -39,6 +39,17 @@ describe("parseAdminStoreStatusRequest", () => {
     });
   });
 
+  it("acepta aprobación especial explícita", () => {
+    expect(parseAdminStoreStatusRequest({ status: "active", approveAsIs: true }))
+      .toEqual({ status: "active", message: undefined, approveAsIs: true });
+    expect(parseAdminStoreStatusRequest({ status: "active", reviewConfirmed: true }))
+      .toEqual({ status: "active", message: undefined, reviewConfirmed: true });
+    expect(() => parseAdminStoreStatusRequest({ status: "suspended", approveAsIs: true }))
+      .toThrow("La aprobación especial solo aplica a tiendas pendientes.");
+    expect(() => parseAdminStoreStatusRequest({ status: "active", approveAsIs: "true" }))
+      .toThrow("Aprobación especial inválida.");
+  });
+
   it("acepta solicitar cambios", () => {
     expect(
       parseAdminStoreStatusRequest({

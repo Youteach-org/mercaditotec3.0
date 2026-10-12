@@ -7,8 +7,7 @@ import {
 } from "@/lib/security/adminUsers";
 import {
   ApiAuthError,
-  getAuthenticatedAdminRole,
-  requireAdmin,
+  requireSuperadmin,
 } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
@@ -19,16 +18,12 @@ interface RouteContext {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    const actor = await requireAdmin(request);
-    const actorRole = await getAuthenticatedAdminRole(actor);
-    if (!actorRole) {
-      throw new ApiAuthError(403, "No tienes permisos de administrador.");
-    }
+    const actor = await requireSuperadmin(request);
 
     const { uid } = await context.params;
     const body = await request.json().catch(() => ({}));
     const status = parseAdminTrustChange(body);
-    const user = await setStudentTrustByAdmin(actor.uid, actorRole, uid, status);
+    const user = await setStudentTrustByAdmin(actor.uid, "superadmin", uid, status);
     return NextResponse.json({ user });
   } catch (error) {
     if (error instanceof ApiAuthError || error instanceof AdminUserError) {

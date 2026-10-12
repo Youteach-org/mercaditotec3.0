@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import {
-  isAdminRole,
   isSuperadminRole,
   type AdminRole,
   type StudentTrustStatus,
@@ -62,8 +61,7 @@ function isTrustFilter(value: string | null): value is TrustFilter {
 export default function AdminUsersPage() {
   const router = useRouter();
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
-  const isAdmin = isAdminRole(appUser);
-  const isSuperadmin = isSuperadminRole(appUser);
+    const isSuperadmin = isSuperadminRole(appUser);
 
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,8 +85,8 @@ export default function AdminUsersPage() {
       router.replace("/login");
       return;
     }
-    if (!isAdmin) router.replace("/marketplace");
-  }, [firebaseUser, isAdmin, router, sessionLoading]);
+    if (!isSuperadmin) router.replace("/marketplace");
+  }, [firebaseUser, isSuperadmin, router, sessionLoading]);
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("status");
@@ -107,7 +105,7 @@ export default function AdminUsersPage() {
   }
 
   const loadUsers = useCallback(async () => {
-    if (!firebaseUser || !isAdmin) return;
+    if (!firebaseUser || !isSuperadmin) return;
     setLoading(true);
     setUsersLoaded(false);
     setError("");
@@ -124,11 +122,11 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser, isAdmin]);
+  }, [firebaseUser, isSuperadmin]);
 
   useEffect(() => {
-    if (firebaseUser && isAdmin) void loadUsers();
-  }, [firebaseUser, isAdmin, loadUsers]);
+    if (firebaseUser && isSuperadmin) void loadUsers();
+  }, [firebaseUser, isSuperadmin, loadUsers]);
 
   const visibleUsers = useMemo(() => {
     const clean = query.trim().toLowerCase();
@@ -331,7 +329,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (sessionLoading || !firebaseUser || !isAdmin) {
+  if (sessionLoading || !firebaseUser || !isSuperadmin) {
     return (
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="mx-auto max-w-7xl rounded-2xl bg-white p-6 shadow-md">
