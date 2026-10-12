@@ -71,12 +71,12 @@ export function canEndorseStudent(
   if (input.endorserStatus !== "verified") {
     return {
       allowed: false,
-      reason: "Solo un alumno confirmado puede avalar a otro alumno.",
+      reason: "Solo un usuario confirmado puede avalar a otro usuario.",
     };
   }
 
   if (input.targetStatus === "verified") {
-    return { allowed: false, reason: "Este alumno ya está confirmado." };
+    return { allowed: false, reason: "Este usuario ya está confirmado." };
   }
 
   if (input.targetStatus === "revoked") {
@@ -87,7 +87,7 @@ export function canEndorseStudent(
   }
 
   if (input.alreadyEndorsed) {
-    return { allowed: false, reason: "Ya avalaste a este alumno." };
+    return { allowed: false, reason: "Ya avalaste a este usuario." };
   }
 
   if (input.endorsementsGivenThisPeriod >= MAX_ENDORSEMENTS_PER_PERIOD) {

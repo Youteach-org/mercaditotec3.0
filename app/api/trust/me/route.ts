@@ -15,6 +15,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Unexpected trust status error:", error);
-    return NextResponse.json({ error: "No se pudo consultar el estado de alumno." }, { status: 500 });
+    return NextResponse.json({ error: "No se pudo consultar el estado de usuario." }, { status: 500 });
   }
 }

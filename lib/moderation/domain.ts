@@ -143,10 +143,10 @@ export function assertModerationState(
     throw new Error("El usuario no tiene un bloqueo activo.");
   }
   if (action === "trust_revoke" && current.studentStatus === "revoked") {
-    throw new Error("La confirmación del alumno ya está revocada.");
+    throw new Error("La confirmación del usuario ya está revocada.");
   }
   if (action === "trust_restore" && current.studentStatus !== "revoked") {
-    throw new Error("La confirmación del alumno no está revocada.");
+    throw new Error("La confirmación del usuario no está revocada.");
   }
   if (targetType === "store" && action === "store_request_changes") {
     if (current.status !== "active" && current.status !== "pending_review") {

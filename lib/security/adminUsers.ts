@@ -128,14 +128,14 @@ export async function setStudentTrustByAdmin(
   if (status === "verified" && actorRole !== "superadmin") {
     throw new AdminUserError(
       403,
-      "Solo el Superadmin puede aprobar manualmente a un alumno pendiente.",
+      "Solo el Superadmin puede aprobar manualmente a un usuario pendiente.",
     );
   }
 
   if (status === "verified" && previousStatus !== "pending") {
     throw new AdminUserError(
       409,
-      "La aprobación manual solo está disponible para alumnos pendientes.",
+      "La aprobación manual solo está disponible para usuarios pendientes.",
     );
   }
 

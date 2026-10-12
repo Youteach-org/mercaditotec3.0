@@ -63,14 +63,14 @@ describe("student endorsements", () => {
   it("requires a verified endorser", () => {
     expect(canEndorseStudent({ ...base, endorserStatus: "pending" })).toEqual({
       allowed: false,
-      reason: "Solo un alumno confirmado puede avalar a otro alumno.",
+      reason: "Solo un usuario confirmado puede avalar a otro usuario.",
     });
   });
 
   it("does not allow duplicate endorsements", () => {
     expect(canEndorseStudent({ ...base, alreadyEndorsed: true })).toEqual({
       allowed: false,
-      reason: "Ya avalaste a este alumno.",
+      reason: "Ya avalaste a este usuario.",
     });
   });
 
@@ -84,7 +84,7 @@ describe("student endorsements", () => {
   it("only accepts pending targets", () => {
     expect(canEndorseStudent({ ...base, targetStatus: "verified" })).toEqual({
       allowed: false,
-      reason: "Este alumno ya está confirmado.",
+      reason: "Este usuario ya está confirmado.",
     });
     expect(canEndorseStudent({ ...base, targetStatus: "revoked" })).toEqual({
       allowed: false,
