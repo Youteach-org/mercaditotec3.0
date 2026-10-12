@@ -13,7 +13,7 @@ import { useSession } from "@/lib/useSession";
 
 const TRUST_LABEL: Record<StudentTrustStatus, string> = {
   pending: "Pendiente de confirmación",
-  verified: "Alumno confirmado",
+  verified: "Usuario confirmado",
   revoked: "Confirmación en revisión",
 };
 

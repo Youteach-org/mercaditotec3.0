@@ -19,7 +19,7 @@ const cards: Array<{
 }> = [
   {
     title: "Usuarios y aprobaciones",
-    description: "Busca alumnos, revisa avales, aprueba pendientes y depura cuentas.",
+    description: "Busca usuarios, revisa avales, aprueba pendientes y depura cuentas.",
     href: "/admin/users",
     icon: "👥",
   },
