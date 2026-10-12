@@ -13,9 +13,11 @@ import {
 import { useSession } from "@/lib/useSession";
 
 export default function MyStoresPage() {
-  const { firebaseUser, loading: sessionLoading } = useSession();
+  const { firebaseUser, appUser, loading: sessionLoading } = useSession();
+  const plus = appUser?.plan === "premium" || appUser?.plan === "plus" || (firebaseUser?.emailVerified && firebaseUser.email?.toLowerCase() === "l22121079@morelia.tecnm.mx");
   const router = useRouter();
   const [stores, setStores] = useState<StoreApiRecord[]>([]);
+  const canCreateStore = plus || stores.length === 0;
   const [storesLoading, setStoresLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
@@ -43,7 +45,7 @@ export default function MyStoresPage() {
   }, [firebaseUser, loadStores]);
 
   async function createStore() {
-    if (!firebaseUser || creating) return;
+    if (!firebaseUser || creating || !canCreateStore) return;
     setCreating(true);
     setError("");
 
@@ -134,8 +136,8 @@ export default function MyStoresPage() {
               <Link href="/mystore/orders" className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700">
                 Pedidos recibidos
               </Link>
-              <button type="button" onClick={() => void createStore()} disabled={creating} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
-                {creating ? "Abriendo editor..." : "Crear mi tienda"}
+              <button type="button" onClick={() => void createStore()} disabled={creating || !canCreateStore} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
+                {creating ? "Abriendo editor..." : canCreateStore ? "Crear mi tienda" : "Una tienda por cuenta"}
               </button>
             </div>
           </div>

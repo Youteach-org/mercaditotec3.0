@@ -1,9 +1,5 @@
 import { getAdminDb } from "../firestoreRest";
 import {
-  getStudentTrust,
-  TrustRepositoryError,
-} from "../security/trustRepository";
-import {
   normalizeWhatsappNumber,
   WhatsappNumberError,
 } from "../security/whatsapp";
@@ -57,24 +53,6 @@ export async function submitCompleteStore(
   storeId: string,
 ): Promise<StoreRecord> {
   const store = await getStoreForOwner(ownerUid, storeId);
-
-  try {
-    const trust = await getStudentTrust(ownerUid);
-    if (trust.status !== "verified") {
-      throw new StoreRepositoryError(
-        403,
-        trust.status === "revoked"
-          ? "Tu confirmación de alumno está en revisión. Administración debe restaurarla antes de que puedas enviar una tienda."
-          : "Necesitas estar confirmado como alumno con 2 avales antes de enviar una tienda a revisión.",
-      );
-    }
-  } catch (error) {
-    if (error instanceof StoreRepositoryError) throw error;
-    if (error instanceof TrustRepositoryError) {
-      throw new StoreRepositoryError(error.status, error.message);
-    }
-    throw error;
-  }
 
   await requireOwnerWhatsapp(ownerUid);
 

@@ -21,7 +21,7 @@ export type AppUser = {
   email?: string;
   emailLocalPart?: string;
   emailVerified?: boolean;
-  plan?: "free" | "premium";
+  plan?: "free" | "premium" | "plus";
   isActive?: boolean;
   blocked?: boolean;
   blockedUntil?: number | string | { toDate?: () => Date } | null;
