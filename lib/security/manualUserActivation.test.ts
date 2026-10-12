@@ -62,3 +62,14 @@ describe("activation constraints", () => {
     expect(source).toContain("const uid = await createFirebaseUser(data);");
   });
 });
+
+describe("manual signup matches ordinary nickname registration", () => {
+  it("rejects obsolete full-name field and malformed nicknames", () => {
+    const email = "a22121079@morelia.tecnm.mx";
+    for (const bad of [
+      { email, displayName: "No queremos nombre", identityChecked: true },
+      { email, nickname: "a", identityChecked: true },
+      { email, nickname: "bad name", identityChecked: true },
+    ]) expect(() => parseManualRegistration(bad)).toThrow();
+  });
+});
