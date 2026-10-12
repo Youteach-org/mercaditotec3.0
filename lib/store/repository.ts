@@ -151,7 +151,12 @@ export function buildAdminStatusMutation(
   current: StoreRuleRecord,
   target: StoreStatus,
   message?: string,
+  allowChangesRequiredApproval = false,
 ) {
+  if (current.status === "changes_required" && target === "active" && !allowChangesRequiredApproval) {
+    throw new StoreRepositoryError(403, "Solo el superadmin puede aprobar una tienda que requiere cambios.");
+  }
+
   try {
     assertAdminTransition(current.status, target);
   } catch {
@@ -419,6 +424,7 @@ export async function adminSetStoreStatus(
   storeId: string,
   target: StoreStatus,
   message?: string,
+  allowChangesRequiredApproval = false,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
   const reference = db.collection("stores").doc(storeId);
@@ -429,23 +435,31 @@ export async function adminSetStoreStatus(
     if (!snapshot.exists) throw new StoreRepositoryError(404, "Tienda no encontrada.");
 
     const current = toStoreRecord(snapshot.id, snapshot.data()!);
-    const mutation = buildAdminStatusMutation(current, target, message);
+    const mutation = buildAdminStatusMutation(current, target, message, allowChangesRequiredApproval);
     const now = Timestamp.now();
 
     let nextSlug = current.slug;
     let slugReference: DocumentReference | null = null;
     let nameReference: DocumentReference | null = null;
 
-    if (current.status === "pending_review" && target === "active") {
+    const isFirstApproval =
+      (current.status === "pending_review" || current.status === "changes_required") &&
+      target === "active";
+
+    if (isFirstApproval) {
       const slugBase = makeStoreSlug(current.name);
       if (!slugBase) throw new StoreRepositoryError(409, "El nombre no permite generar una URL pública.");
 
       nextSlug = await findAvailableSlug(transaction, slugBase, storeId);
       slugReference = db.collection("store_slug_reservations").doc(nextSlug);
       nameReference = db.collection("store_name_reservations").doc(
-        reservationKeyForName(current.nameNormalized),
+        reservationKeyForName(normalizeStoreName(current.name)),
       );
-      await transaction.get(nameReference);
+
+      const nameReservation = await transaction.get(nameReference);
+      if (nameReservation.exists && String(nameReservation.data()?.storeId ?? "") !== storeId) {
+        throw new StoreRepositoryError(409, "Ese nombre de tienda ya está en uso.");
+      }
     }
 
     if (current.status === "pending_review" && target === "changes_required" && current.nameNormalized) {
@@ -461,7 +475,7 @@ export async function adminSetStoreStatus(
       slug?: string | null;
     } = {};
 
-    if (current.status === "pending_review" && target === "active") {
+    if (isFirstApproval) {
       extra.approvedAt = now;
       extra.slug = nextSlug;
       transaction.set(slugReference!, {
