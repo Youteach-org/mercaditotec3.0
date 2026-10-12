@@ -121,7 +121,7 @@ export default function AdminHomePage() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => {
+          {cards.filter((card) => superadmin || (card.href !== "/admin/users" && card.href !== "/admin/users#administradores")).map((card) => {
             const body = (
               <>
                 <div className="flex items-start justify-between gap-3">

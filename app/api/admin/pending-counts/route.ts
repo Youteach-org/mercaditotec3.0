@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firestoreRest";
 import { ApiAuthError, requireAdmin } from "@/lib/store/auth";
+import { isSuperadminRole } from "@/lib/security/domain";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin(request);
+    const actor = await requireAdmin(request);
     const db = getAdminDb();
+    const usersPendingPromise = isSuperadminRole(actor.profile)
+      ? db.collection("users").where("studentStatus", "==", "pending").count().get()
+      : Promise.resolve(null);
     const [users, stores] = await Promise.all([
-      db.collection("users").where("studentStatus", "==", "pending").count().get(),
+      usersPendingPromise,
       db.collection("stores").where("status", "==", "pending_review").count().get(),
     ]);
     return NextResponse.json(
       {
-        usersPending: users.data().count,
+        usersPending: users?.data().count ?? 0,
         storesPending: stores.data().count,
       },
       { headers: { "Cache-Control": "private, no-store" } },

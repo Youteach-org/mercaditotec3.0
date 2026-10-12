@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import AdminCompleteStoreReview, { type AdminReviewOwner } from "@/components/store/AdminCompleteStoreReview";
 import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
 import type { StoreProductApiRecord } from "@/lib/store/productClient";
-import { isAdminRole } from "@/lib/security/domain";
+import { isAdminRole, isSuperadminRole } from "@/lib/security/domain";
 import {
   actionsForStoreStatus,
   adminActionLabel,
@@ -28,6 +28,7 @@ export default function AdminStoreDetailPage() {
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const storeId = String(params.storeId ?? "");
   const isAdmin = isAdminRole(appUser);
+  const isSuperadmin = isSuperadminRole(appUser);
 
   const [store, setStore] = useState<StoreApiRecord | null>(null);
   const [products, setProducts] = useState<StoreProductApiRecord[]>([]);
@@ -82,7 +83,7 @@ export default function AdminStoreDetailPage() {
     if (firebaseUser && isAdmin) void loadStore();
   }, [firebaseUser, isAdmin, loadStore]);
 
-  async function executeAction(action: AdminStoreAction, actionMessage?: string) {
+  async function executeAction(action: AdminStoreAction, actionMessage?: string, approveAsIs = false) {
     if (!firebaseUser || !store) return;
 
     setWorking(true);
@@ -98,6 +99,8 @@ export default function AdminStoreDetailPage() {
           body: JSON.stringify({
             status: apiStatusForAction(action),
             message: actionMessage,
+            ...(action === "approve" && !approveAsIs ? { reviewConfirmed } : {}),
+            ...(approveAsIs ? { approveAsIs: true } : {}),
           }),
         },
       );
@@ -269,6 +272,20 @@ export default function AdminStoreDetailPage() {
                   {adminActionLabel(action)}
                 </button>
               ))}
+              {isSuperadmin && store.status === "pending_review" && (
+                <button
+                  type="button"
+                  disabled={working}
+                  onClick={() => {
+                    if (window.confirm("¿Aprobar esta tienda tal como fue enviada, sin exigir modificaciones? La decisión quedará registrada en el historial.")) {
+                      void executeAction("approve", undefined, true);
+                    }
+                  }}
+                  className="rounded-xl border-2 border-emerald-700 bg-white px-5 py-3 font-semibold text-emerald-900 disabled:opacity-50"
+                >
+                  Aprobar tal como está (Superadmin)
+                </button>
+              )}
             </div>
           </section>
         )}

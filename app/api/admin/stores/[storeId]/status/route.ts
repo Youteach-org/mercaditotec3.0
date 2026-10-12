@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createNotificationSafely } from "@/lib/notifications/repository";
 
 import { writeAuditEntry } from "@/lib/security/audit";
-import { getStudentTrust, TrustRepositoryError } from "@/lib/security/trustRepository";
 import { parseAdminStoreStatusRequest } from "@/lib/store/admin";
 import {
   ApiAuthError,
@@ -15,7 +14,7 @@ import {
   getStoreForAdmin,
   StoreRepositoryError,
 } from "@/lib/store/repository";
-import { promoteSuggestedCategoriesForStore } from "@/lib/store/productRepository";
+import { promoteSuggestedCategoriesForStore, listProductsForAdmin } from "@/lib/store/productRepository";
 
 export const runtime = "nodejs";
 
@@ -64,25 +63,23 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const current = await getStoreForAdmin(storeId);
+    if (input.approveAsIs && (actorRole !== "superadmin" ||
+        current.status !== "pending_review" || input.status !== "active")) {
+      throw new ApiAuthError(403, "Solo el superadmin puede aprobar sin cambios una tienda pendiente.");
+    }
     if (current.status === "pending_review" && input.status === "active") {
-      try {
-        const trust = await getStudentTrust(current.ownerUid);
-        if (trust.status !== "verified") {
-          throw new StoreRepositoryError(
-            409,
-            trust.status === "revoked"
-              ? "No se puede aprobar la tienda porque la confirmación de alumno del propietario está revocada."
-              : "No se puede aprobar la tienda porque el propietario todavía no está confirmado como alumno.",
-          );
+      // Peer endorsements were retired: they must never block review of a store.
+      // Ordinary approval requires a recorded review and at least one product.
+      // Only the superadmin may bypass the product prerequisite for an as-is approval.
+      if (!input.approveAsIs) {
+        if (!input.reviewConfirmed) {
+          throw new StoreRepositoryError(409, "Confirma la revisión completa antes de aprobar.");
         }
-      } catch (error) {
-        if (error instanceof StoreRepositoryError) throw error;
-        if (error instanceof TrustRepositoryError) {
-          throw new StoreRepositoryError(error.status, error.message);
+        const products = await listProductsForAdmin(storeId);
+        if (products.length === 0) {
+          throw new StoreRepositoryError(409, "La tienda no contiene productos; solo el superadmin puede aprobarla tal como está.");
         }
-        throw error;
       }
-
       await promoteSuggestedCategoriesForStore(storeId);
     }
 
@@ -90,13 +87,14 @@ export async function POST(request: Request, context: RouteContext) {
     await writeAuditEntry({
       actorUid: actor.uid,
       actorRole,
-      action: auditAction(current.status, store.status),
+      action: input.approveAsIs ? "store.approve-as-is" : auditAction(current.status, store.status),
       targetType: "store",
       targetId: storeId,
       metadata: {
         previousStatus: current.status,
         nextStatus: store.status,
         message: input.message ?? null,
+        approveAsIs: input.approveAsIs === true,
         ownerUid: store.ownerUid,
       },
     });

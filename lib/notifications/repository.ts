@@ -9,7 +9,7 @@ import {
   type OrderNotificationSource,
 } from "./domain";
 import { deliverPushSafely } from "./push";
-import { isAdminRole } from "../security/domain";
+import { isAdminRole, isSuperadminRole } from "../security/domain";
 
 export interface NotificationRecord {
   id: string;
@@ -149,7 +149,8 @@ export async function notifyAdminsSafely(event: Omit<NotificationDraft, "recipie
   try {
     const profiles = await getAdminDb().collection("users").list(250);
     const adminUids = profiles.docs
-      .filter((document) => isAdminRole(document.data()) && document.data().isActive !== false)
+      .filter((document) => isAdminRole(document.data()) && document.data().isActive !== false
+        && (event.type !== "student_pending" || isSuperadminRole(document.data())))
       .map((document) => document.id);
     await Promise.all(adminUids.map((recipientUid) =>
       createNotificationSafely({ ...event, recipientUid, dedupeKey: `${event.dedupeKey}:admin:${recipientUid}` }),
