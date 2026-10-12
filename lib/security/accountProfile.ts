@@ -283,9 +283,24 @@ export function buildOwnProfileUpdate(
   }
 
   const body = input as Record<string, unknown>;
+  const allowedFields = ["displayName", "photoURL", "whatsappNumber", "nickname"];
+  if (Object.keys(body).some(key => !allowedFields.includes(key))) {
+    throw new AccountProfileError(400, "No puedes modificar el correo institucional ni los permisos de la cuenta.");
+  }
   const update: Record<string, unknown> = {
     updatedAt: Timestamp.fromDate(now),
   };
+
+  if (Object.prototype.hasOwnProperty.call(body, "nickname")) {
+    if (typeof body.nickname !== "string") {
+      throw new AccountProfileError(400, "Nickname inválido.");
+    }
+    const nickname = validateNicknameSyntax(body.nickname);
+    if (!nickname.valid) throw new AccountProfileError(400, nickname.reason);
+    update.nickname = nickname.nickname;
+    update.nicknameNormalized = nickname.nickname;
+    update.displayName = nickname.nickname;
+  }
 
   if (Object.prototype.hasOwnProperty.call(body, "displayName")) {
     const displayName = String(body.displayName ?? "").trim();
@@ -320,7 +335,8 @@ export function buildOwnProfileUpdate(
   if (
     !("displayName" in update) &&
     !("photoURL" in update) &&
-    !("whatsappNumber" in update)
+    !("whatsappNumber" in update) &&
+    !("nickname" in update)
   ) {
     throw new AccountProfileError(400, "No hay cambios de perfil permitidos.");
   }
@@ -330,12 +346,48 @@ export function buildOwnProfileUpdate(
 
 export async function updateOwnProfile(uid: string, input: unknown): Promise<void> {
   const update = buildOwnProfileUpdate(input, new Date(), uid);
+  const db = getAdminDb();
+  const reference = db.collection("users").doc(uid);
 
-  const reference = getAdminDb().collection("users").doc(uid);
-  const snapshot = await reference.get();
-  if (!snapshot.exists) {
-    throw new AccountProfileError(404, "Tu perfil de usuario no está disponible.");
+  // Nicknames are unique across new registrations, manual registrations,
+  // existing reservations and legacy profiles. Never release another owner's.
+  if (typeof update.nickname === "string") {
+    const requested = update.nickname;
+    const [byNormalized, byLegacy] = await Promise.all([
+      db.collection("users").where("nicknameNormalized", "==", requested).limit(2).get(),
+      db.collection("users").where("nickname", "==", requested).limit(2).get(),
+    ]);
+    if ([...byNormalized.docs, ...byLegacy.docs].some(doc => doc.id !== uid)) {
+      throw new AccountProfileError(409, "Ese nickname ya está en uso.");
+    }
+
+    await db.runTransaction(async transaction => {
+      const profile = await transaction.get(reference);
+      if (!profile.exists) throw new AccountProfileError(404, "Tu perfil de usuario no está disponible.");
+      const current = profile.data() ?? {};
+      const previous = String(current.nicknameNormalized ?? current.nickname ?? "").trim().toLowerCase();
+      const nextReference = db.collection("nicknames").doc(requested);
+      const nextSnapshot = await transaction.get(nextReference);
+      const previousReference = previous && previous !== requested
+        ? db.collection("nicknames").doc(previous) : null;
+      const previousSnapshot = previousReference ? await transaction.get(previousReference) : null;
+
+      if (nextSnapshot.exists && String(nextSnapshot.data()?.uid ?? "") !== uid) {
+        throw new AccountProfileError(409, "Ese nickname ya está en uso.");
+      }
+      if (!nextSnapshot.exists) {
+        transaction.create(nextReference, { uid, nickname: requested, createdAt: Timestamp.now() });
+      }
+      transaction.update(reference, update);
+      if (previousReference && previousSnapshot?.exists &&
+          String(previousSnapshot.data()?.uid ?? "") === uid) {
+        transaction.delete(previousReference);
+      }
+    });
+    return;
   }
 
+  const snapshot = await reference.get();
+  if (!snapshot.exists) throw new AccountProfileError(404, "Tu perfil de usuario no está disponible.");
   await reference.update(update);
 }

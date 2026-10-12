@@ -10,7 +10,7 @@ describe("manual registration validation", () => {
       email: " A22121079@MORELIA.TECNM.MX ", nickname: "  ALUMNA_22 ",
       identityChecked: true,
     })).toEqual({ email: "a22121079@morelia.tecnm.mx", localPart: "a22121079",
-      nickname: "María López" });
+      nickname: "alumna_22" });
   });
   it.each([
     "a22121079@example.com", "admin@morelia.tecnm.mx",
