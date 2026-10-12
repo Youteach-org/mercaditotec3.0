@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireFirebaseUser, requireUnblockedUser } from "@/lib/store/auth";
+import { requireFirebaseUser, requireUnblockedUser, type AuthenticatedUser } from "@/lib/store/auth";
 import {
   parseStoreEditableInput,
   serializeStore,
@@ -15,11 +15,11 @@ import {
 export const runtime = "nodejs";
 
 // Reserved Plus account. The email is authenticated and verified by Firebase.
-function isPlusUser(user: { claims: { email?: string; email_verified?: boolean }; profile: Record<string, unknown> }): boolean {
+function isPlusUser(user: AuthenticatedUser): boolean {
   const email = (user.claims.email ?? "").trim().toLowerCase();
-  return user.profile.plan === "plus" || user.profile.plan === "premium" ||
+  return user.profile?.plan === "plus" || user.profile?.plan === "premium" ||
     (user.claims.email_verified === true && email === "l22121079@morelia.tecnm.mx" &&
-      String(user.profile.email ?? "").trim().toLowerCase() === email);
+      String(user.profile?.email ?? "").trim().toLowerCase() === email);
 }
 
 export async function GET(request: Request) {
