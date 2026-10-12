@@ -16,9 +16,9 @@ import { hasPlusStoreAccess } from "@/lib/store/storeEntitlement";
 export default function MyStoresPage() {
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const isPlus = hasPlusStoreAccess(appUser as Record<string, unknown> | undefined, firebaseUser?.emailVerified ? firebaseUser.email ?? "" : "");
-  const canCreate = isPlus || stores.length === 0;
   const router = useRouter();
   const [stores, setStores] = useState<StoreApiRecord[]>([]);
+  const canCreate = isPlus || stores.length === 0;
   const [storesLoading, setStoresLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
