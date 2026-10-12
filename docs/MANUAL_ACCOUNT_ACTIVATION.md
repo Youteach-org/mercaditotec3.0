@@ -3,7 +3,7 @@
 **Menú:** Administración → Usuarios → **+ Agregar usuario** (Superadmin).
 
 1. Comprobar físicamente la identidad del alumno, número de control y correo institucional.
-2. Escribir su nombre y correo institucional; confirmar la identidad. El servidor valida número de control y restricciones de ocho años.
+2. Escribir su nickname y correo institucional; confirmar la identidad. El servidor valida número de control y restricciones de ocho años.
 3. El sistema crea la identidad Firebase sin verificar correo y un perfil ordinario pendiente de dos avales.
 4. El servidor genera un código de 256 bits de un solo uso; únicamente se conserva su SHA-256 en Firestore. Se muestra una sola vez al Superadmin, para entrega presencial.
 5. El alumno abre /activate, introduce correo, código y contraseña propia. No necesita recibir ningún mensaje.

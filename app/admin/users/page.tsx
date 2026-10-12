@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
   const [selectedUserUid, setSelectedUserUid] = useState<string | null>(null);
   const [trustFilter, setTrustFilter] = useState<TrustFilter>("all");
   const [showNewUser, setShowNewUser] = useState(false);
-  const [newUserName, setNewUserName] = useState("");
+  const [newNickname, setNewNickname] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [identityChecked, setIdentityChecked] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
@@ -154,7 +154,7 @@ export default function AdminUsersPage() {
     try {
       const response = await storeApiFetch(firebaseUser, "/api/admin/users/register", {
         method: "POST",
-        body: JSON.stringify({ email: newUserEmail, displayName: newUserName, identityChecked }),
+        body: JSON.stringify({ email: newUserEmail, nickname: newNickname, identityChecked }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "No se pudo agregar al usuario.");
@@ -164,7 +164,7 @@ export default function AdminUsersPage() {
         expiresAt: result.activationExpiresAt,
       });
       setShowNewUser(false);
-      setNewUserName("");
+      setNewNickname("");
       setNewUserEmail("");
       setIdentityChecked(false);
       await loadUsers();
@@ -381,11 +381,13 @@ export default function AdminUsersPage() {
             </p>
             <form onSubmit={(event) => void createUserManually(event)} className="mt-4 grid gap-3 md:grid-cols-2">
               <label className="text-sm font-semibold text-gray-800">
-                Nombre completo
-                <input required minLength={2} maxLength={60} autoComplete="off"
-                  value={newUserName} onChange={(event) => setNewUserName(event.target.value)}
-                  placeholder="Nombre y apellidos"
+                Nickname
+                <input required minLength={3} maxLength={24} autoComplete="off"
+                  autoCapitalize="none" spellCheck={false}
+                  value={newNickname} onChange={(event) => setNewNickname(event.target.value.toLowerCase())}
+                  placeholder="tu_nickname"
                   className="mt-1 w-full rounded-xl border border-gray-300 px-4 py-3 font-normal text-gray-900" />
+                <span className="mt-1 block text-xs font-normal text-gray-500">Único: de 3 a 24 caracteres, letras, números y guion bajo.</span>
               </label>
               <label className="text-sm font-semibold text-gray-800">
                 Correo institucional

@@ -7,28 +7,28 @@ import { parseManualRegistration, parseActivationInput } from "./manualUserActiv
 describe("manual registration validation", () => {
   it("requires a Superadmin identity check and normalizes institutional address", () => {
     expect(parseManualRegistration({
-      email: " A22121079@MORELIA.TECNM.MX ", displayName: " María   López ",
+      email: " A22121079@MORELIA.TECNM.MX ", nickname: "  ALUMNA_22 ",
       identityChecked: true,
     })).toEqual({ email: "a22121079@morelia.tecnm.mx", localPart: "a22121079",
-      displayName: "María López" });
+      nickname: "María López" });
   });
   it.each([
     "a22121079@example.com", "admin@morelia.tecnm.mx",
     "a17121079@morelia.tecnm.mx", "a27121079@morelia.tecnm.mx",
   ])("rejects invalid institutional addresses: %s", email => {
-    expect(() => parseManualRegistration({ email, displayName: "Luis Pérez",
+    expect(() => parseManualRegistration({ email, nickname: "luis_22",
       identityChecked: true })).toThrow();
   });
   it("does not permit role, endorsements or email verification overrides", () => {
     for (const key of ["role", "studentStatus", "emailVerified", "isAdmin",
       "studentEndorsementCount", "manualIdentityVerifiedAt"]) {
       expect(() => parseManualRegistration({
-        email: "a22121079@morelia.tecnm.mx", displayName: "Luis Pérez",
+        email: "a22121079@morelia.tecnm.mx", nickname: "luis_22",
         identityChecked: true, [key]: "superadmin",
       })).toThrow();
     }
     expect(() => parseManualRegistration({
-      email: "a22121079@morelia.tecnm.mx", displayName: "Luis Pérez",
+      email: "a22121079@morelia.tecnm.mx", nickname: "luis_22",
     })).toThrow("Confirma que comprobaste");
   });
 });
@@ -48,6 +48,8 @@ describe("activation constraints", () => {
     const source = readFileSync(join(root, "lib/security/manualUserActivation.ts"), "utf8");
     expect(source).toContain('role: "user"');
     expect(source).toContain('studentStatus: "pending"');
+    expect(source).toContain('nicknameNormalized: data.nickname');
+    expect(source).toContain('db.collection("nicknames").doc(data.nickname)');
     expect(source).toContain("studentEndorsementCount: 0");
     expect(source).toContain("manualActivationAttempts");
     expect(source).toContain("MAX_ATTEMPTS");
