@@ -142,8 +142,8 @@ export default function AdminCompleteStoreReview({
             <DataField label="Usuario" value={ownerName} />
             <DataField label="Nombre del perfil" value={owner?.displayName} />
             <DataField label="Correo institucional" value={owner?.email} />
-            <DataField label="Confirmación de alumno" value={
-              owner?.studentStatus === "verified" ? "Alumno verificado" :
+            <DataField label="Confirmación de usuario" value={
+              owner?.studentStatus === "verified" ? "Usuario verificado" :
               owner?.studentStatus === "revoked" ? "Confirmación revocada" :
               "Pendiente de confirmar"
             } />

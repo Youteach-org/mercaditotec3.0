@@ -1,11 +1,12 @@
 import { NotificationRepositoryError, type NotificationRecord } from "./repository";
+import { publicNotificationText } from "./presentation";
 
 export function serializeNotification(notification: NotificationRecord) {
   return {
     id: notification.id,
     type: notification.type,
-    title: notification.title,
-    message: notification.message,
+    title: publicNotificationText(notification.title),
+    message: publicNotificationText(notification.message),
     href: notification.href,
     readAt: notification.readAt?.toDate().toISOString() ?? null,
     createdAt: notification.createdAt.toDate().toISOString(),

@@ -278,8 +278,8 @@ export default function StoreBuilderClient() {
     if (appUser?.studentStatus !== "verified") {
       setValidationMessage(
         appUser?.studentStatus === "revoked"
-          ? "Tu confirmación de alumno está en revisión. Administración debe restaurarla antes de que puedas enviar una tienda."
-          : "Necesitas estar confirmado como alumno con 2 avales antes de enviar una tienda a revisión.",
+          ? "Tu confirmación de usuario está en revisión. Administración debe restaurarla antes de que puedas enviar una tienda."
+          : "Necesitas estar confirmado como usuario con 2 avales antes de enviar una tienda a revisión.",
       );
       return;
     }
@@ -601,10 +601,10 @@ export default function StoreBuilderClient() {
                 </div>
                 {!studentVerified && (
                   <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                    <strong>Verificación de alumno requerida.</strong>{" "}
+                    <strong>Verificación de usuario requerida.</strong>{" "}
                     {studentStatus === "revoked"
                       ? "Tu confirmación está en revisión y debe ser restaurada por administración."
-                      : "Necesitas 2 avales de alumnos confirmados antes de enviar la tienda a revisión."}
+                      : "Necesitas 2 avales de usuarios confirmados antes de enviar la tienda a revisión."}
                     <div className="mt-2">
                       <Link href="/verify-student" className="font-bold text-blue-700 hover:underline">
                         Ver mi estado de verificación

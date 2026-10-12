@@ -264,7 +264,7 @@ export default function QuickNoticesPanel({
                     placeholder={
                       composerMode === "found"
                         ? "Describe detalles que ayuden a identificarlo."
-                        : "Escribe lo necesario para que otros alumnos puedan ayudarte."
+                        : "Escribe lo necesario para que otros usuarios puedan ayudarte."
                     }
                   />
                 </label>

@@ -233,8 +233,8 @@ export async function syncVerifiedAccountProfile(
       await reference.set(newStudentProfile(identity, true, nickname, now));
       await notifyAdminsSafely({
         type: "student_pending",
-        title: "Nuevo alumno por aprobar",
-        message: "Se registró un nuevo alumno con correo institucional verificado.",
+        title: "Nuevo usuario por aprobar",
+        message: "Se registró un nuevo usuario con correo institucional verificado.",
         href: "/admin/users",
         dedupeKey: `student:${claims.uid}:verified-pending`,
       });
@@ -254,8 +254,8 @@ export async function syncVerifiedAccountProfile(
   if (existing?.emailVerified !== true && !isAdminRole(existing)) {
     await notifyAdminsSafely({
       type: "student_pending",
-      title: "Nuevo alumno por aprobar",
-      message: "Un alumno verificó su correo institucional y espera aprobación.",
+      title: "Nuevo usuario por aprobar",
+      message: "Un usuario verificó su correo institucional y espera aprobación.",
       href: "/admin/users",
       dedupeKey: `student:${claims.uid}:verified-pending`,
     });

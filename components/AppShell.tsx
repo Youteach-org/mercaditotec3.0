@@ -376,7 +376,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       >
                         Admin
                         {!adminSurface && pendingApprovals && (
-                          <span className="inline-flex items-center gap-1.5" aria-label={`${pendingApprovals.usersPending} alumnos y ${pendingApprovals.storesPending} tiendas por aprobar`}>
+                          <span className="inline-flex items-center gap-1.5" aria-label={`${pendingApprovals.usersPending} usuarios y ${pendingApprovals.storesPending} tiendas por aprobar`}>
                             {pendingApprovals.usersPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff0cf] px-1.5 py-0.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="profile" />{pendingApprovals.usersPending}</span>}
                             {pendingApprovals.storesPending > 0 && <span className="inline-flex items-center gap-0.5 rounded-full bg-[#fff0cf] px-1.5 py-0.5 text-[11px] font-black text-[#102f6d]"><NavIcon icon="store" />{pendingApprovals.storesPending}</span>}
                           </span>

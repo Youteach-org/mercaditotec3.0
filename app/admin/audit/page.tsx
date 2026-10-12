@@ -23,8 +23,8 @@ interface AuditEntry {
 
 function actionLabel(action: string) {
   const labels: Record<string, string> = {
-    "user.student.verify": "Alumno confirmado",
-    "user.student.revoke": "Confirmación de alumno revocada",
+    "user.student.verify": "Usuario confirmado",
+    "user.student.revoke": "Confirmación de usuario revocada",
     "admin.subadmin.assign": "Subadmin asignado",
     "admin.subadmin.remove": "Subadmin retirado",
     "store.approve": "Tienda aprobada",
