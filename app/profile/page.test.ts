@@ -28,3 +28,19 @@ describe("Profile editing", () => {
     expect(pageSource).toContain("saveProfilePatch");
   });
 });
+
+describe("account details editing", () => {
+  it("uses the existing account-wide nickname endpoint", () => {
+    expect(pageSource).toContain('fetch("/api/nickname"');
+    expect(pageSource).toContain("validateNicknameSyntax(nickname)");
+    expect(pageSource).not.toContain("setDisplayName");
+  });
+  it("keeps institutional email readonly and lets the signed-in user change password", () => {
+    expect(pageSource).toContain("Correo institucional (no editable)");
+    expect(pageSource).toContain("EmailAuthProvider.credential");
+    expect(pageSource).toContain("reauthenticateWithCredential(");
+    expect(pageSource).toContain("updatePassword(firebaseUser, nextPassword)");
+    expect(pageSource).toContain('autoComplete="current-password"');
+    expect(pageSource).toContain('autoComplete="new-password"');
+  });
+});

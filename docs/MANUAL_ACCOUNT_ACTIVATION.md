@@ -3,7 +3,7 @@
 **Menú:** Administración → Usuarios → **+ Agregar usuario** (Superadmin).
 
 1. Comprobar físicamente la identidad del alumno, número de control y correo institucional.
-2. Escribir su nombre y correo institucional; confirmar la identidad. El servidor valida número de control y restricciones de ocho años.
+2. Escribir su nickname y correo institucional; confirmar la identidad. El servidor valida número de control y restricciones de ocho años.
 3. El sistema crea la identidad Firebase sin verificar correo y un perfil ordinario pendiente de dos avales.
 4. El servidor genera un código de 256 bits de un solo uso; únicamente se conserva su SHA-256 en Firestore. Se muestra una sola vez al Superadmin, para entrega presencial.
 5. El alumno abre /activate, introduce correo, código y contraseña propia. No necesita recibir ningún mensaje.
@@ -25,3 +25,5 @@
 **Alcance estricto:** esta alternativa solo se permite para usuarios nuevos creados desde Administración → Usuarios. Si el correo ya existe en Firebase, el alta responde que ya existe y no modifica esa cuenta. Ninguna cuenta creada mediante registro normal podrá recibir códigos ni convertirse a alta manual. La verificación habitual por correo y los dos avales no cambian.
 
 **Protección de despliegue:** si Cloudflare todavía no puede sincronizar las reglas de Firestore y Storage (por permisos IAM de Firebase), el alta manual y la reemisión devuelven 503 **antes de modificar ninguna cuenta**. Los registros normales no dependen de esta condición. Una vez corregidos los permisos, el servicio valida/publica las reglas antes de habilitar cada nueva alta manual.
+
+**Datos alineados al registro normal:** el administrador introduce exclusivamente el correo institucional y un nickname único (no solicita nombre completo). La contraseña personal se define en /activate por el propio alumno. Después puede cambiar nickname desde su Perfil mediante la misma API de nicknames del chat y cambiar contraseña usando Firebase con reautenticación de la contraseña actual. El correo es inmutable desde Perfil.

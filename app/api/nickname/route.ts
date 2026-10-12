@@ -170,6 +170,7 @@ export async function POST(request: Request) {
         {
           nickname,
           nicknameNormalized: normalized,
+          displayName: nickname,
           nicknameUpdatedAt: now,
           updatedAt: now,
         },

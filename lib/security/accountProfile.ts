@@ -283,6 +283,10 @@ export function buildOwnProfileUpdate(
   }
 
   const body = input as Record<string, unknown>;
+  const allowed = ["displayName", "photoURL", "whatsappNumber"];
+  if (Object.keys(body).some(key => !allowed.includes(key))) {
+    throw new AccountProfileError(400, "No puedes modificar el correo institucional ni permisos.");
+  }
   const update: Record<string, unknown> = {
     updatedAt: Timestamp.fromDate(now),
   };

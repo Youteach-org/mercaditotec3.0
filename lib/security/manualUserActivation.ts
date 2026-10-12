@@ -4,7 +4,8 @@ import {
   getFirebaseProjectId,
 } from "../firebaseAdmin";
 import { getAdminDb, Timestamp } from "../firestoreRest";
-import { AccountProfileError, institutionalIdentity } from "./accountProfile";
+import { AccountProfileError, institutionalIdentity, isNicknameAvailable } from "./accountProfile";
+import { validateNicknameSyntax } from "./nickname";
 import { AdminUserError } from "./adminUsers";
 import { syncProductionFirebaseRules } from "./firebaseRulesDeployment";
 import { isAdminRole } from "./domain";
@@ -16,7 +17,7 @@ const MAX_ATTEMPTS = 5;
 export interface ManualRegistration {
   email: string;
   localPart: string;
-  displayName: string;
+  nickname: string;
 }
 
 export function parseManualRegistration(input: unknown): ManualRegistration {
@@ -24,14 +25,14 @@ export function parseManualRegistration(input: unknown): ManualRegistration {
     throw new AdminUserError(400, "Datos de alta inválidos.");
   }
   const data = input as Record<string, unknown>;
-  if (Object.keys(data).some(key => !["email", "displayName", "identityChecked"].includes(key))) {
+  if (Object.keys(data).some(key => !["email", "nickname", "identityChecked"].includes(key))) {
     throw new AdminUserError(400, "No se permiten campos de permisos o verificación.");
   }
   if (data.identityChecked !== true) {
     throw new AdminUserError(400, "Confirma que comprobaste personalmente la identidad.");
   }
-  if (typeof data.email !== "string" || typeof data.displayName !== "string") {
-    throw new AdminUserError(400, "Indica nombre y correo institucional.");
+  if (typeof data.email !== "string" || typeof data.nickname !== "string") {
+    throw new AdminUserError(400, "Indica nickname y correo institucional.");
   }
 
   let identity;
@@ -44,12 +45,9 @@ export function parseManualRegistration(input: unknown): ManualRegistration {
     throw error;
   }
 
-  const displayName = data.displayName.trim().replace(/\s+/g, " ");
-  if (displayName.length < 2 || displayName.length > 60 ||
-      /[\u0000-\u001f\u007f]/.test(displayName)) {
-    throw new AdminUserError(400, "El nombre debe tener entre 2 y 60 caracteres.");
-  }
-  return { email: identity.email, localPart: identity.localPart, displayName };
+  const parsed = validateNicknameSyntax(data.nickname);
+  if (!parsed.valid) throw new AdminUserError(400, parsed.reason);
+  return { email: identity.email, localPart: identity.localPart, nickname: parsed.nickname };
 }
 
 async function adminAuthRequest(suffix: string, input: Record<string, unknown>): Promise<Response> {
@@ -72,7 +70,7 @@ async function createFirebaseUser(data: ManualRegistration): Promise<string> {
   const password = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte =>
     byte.toString(16).padStart(2, "0")).join("");
   const response = await adminAuthRequest("", {
-    email: data.email, password, displayName: data.displayName,
+    email: data.email, password, displayName: data.nickname,
     emailVerified: false, disabled: false,
   });
   const result = await response.json().catch(() => ({})) as {
@@ -151,6 +149,9 @@ async function ensureManualActivationRulesReady(): Promise<void> {
 
 export async function createManualUser(actorUid: string, data: ManualRegistration) {
   await ensureManualActivationRulesReady();
+  if (!(await isNicknameAvailable(data.nickname))) {
+    throw new AdminUserError(409, "Ese nickname ya está en uso.");
+  }
   // Existing ordinary registrations are never converted to manual accounts.
   // Firebase rejects duplicate email addresses before writing any profile.
   const uid = await createFirebaseUser(data);
@@ -160,11 +161,15 @@ export async function createManualUser(actorUid: string, data: ManualRegistratio
   const now = Timestamp.now();
 
   const batch = db.batch();
+  // Reserve the nickname atomically with the user profile.
+  batch.create(db.collection("nicknames").doc(data.nickname), { uid, nickname: data.nickname, createdAt: now });
   batch.create(db.collection("users").doc(uid), {
     email: data.email,
     emailLocalPart: data.localPart,
     emailVerified: false,
-    displayName: data.displayName,
+    nickname: data.nickname,
+    nicknameNormalized: data.nickname,
+    displayName: data.nickname,
     photoURL: "",
     plan: "free",
     role: "user",
@@ -208,7 +213,7 @@ export async function createManualUser(actorUid: string, data: ManualRegistratio
     throw new AdminUserError(502, "No se pudo guardar el perfil. Revisa antes de reintentar.");
   }
 
-  return { user: { uid, email: data.email, displayName: data.displayName },
+  return { user: { uid, email: data.email, nickname: data.nickname },
     activationCode: generated.code, activationExpiresAt: expiresAt.toDate().toISOString() };
 }
 
