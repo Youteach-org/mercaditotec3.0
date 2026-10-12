@@ -302,23 +302,44 @@ function makeNewStoreRecord(
   };
 }
 
-export async function createStoreDraft(
+async function createStoreWithLimit(
   ownerUid: string,
-  input: StoreEditableInput,
+  isPlus: boolean,
+  input?: StoreEditableInput,
 ): Promise<StoreRecord> {
   const db = getAdminDb();
-  const reference = db.collection("stores").doc();
+  const collection = db.collection("stores");
+  const existing = await collection.where("ownerUid", "==", ownerUid).get();
+  const alreadyOwned = existing.size;
+  const ownerRef = db.collection("users").doc(ownerUid);
+  const reference = collection.doc();
   const store = makeNewStoreRecord(ownerUid, reference.id, input);
-  await reference.set(store);
+  await db.runTransaction(async transaction => {
+    const owner = await transaction.get(ownerRef);
+    if (!owner.exists) throw new StoreRepositoryError(403, "Cuenta no disponible.");
+    // The profile document acts as a per-owner serialization point to prevent
+    // two concurrent requests from creating a second free store.
+    const storedCount = Number(owner.data()?.storeCreationCount ?? 0);
+    const count = Math.max(alreadyOwned, Number.isFinite(storedCount) ? storedCount : 0);
+    if (!isPlus && count >= 1) {
+      throw new StoreRepositoryError(409, "Tu cuenta permite una tienda. Necesitas Plus para crear otra.");
+    }
+    transaction.set(reference, store);
+    transaction.update(ownerRef, { storeCreationCount: count + 1 });
+  });
   return store;
 }
 
-export async function createEmptyStoreDraft(ownerUid: string): Promise<StoreRecord> {
-  const db = getAdminDb();
-  const reference = db.collection("stores").doc();
-  const store = makeNewStoreRecord(ownerUid, reference.id);
-  await reference.set(store);
-  return store;
+export async function createStoreDraft(
+  ownerUid: string,
+  input: StoreEditableInput,
+  isPlus = false,
+): Promise<StoreRecord> {
+  return createStoreWithLimit(ownerUid, isPlus, input);
+}
+
+export async function createEmptyStoreDraft(ownerUid: string, isPlus = false): Promise<StoreRecord> {
+  return createStoreWithLimit(ownerUid, isPlus);
 }
 
 export async function listStoresForOwner(ownerUid: string): Promise<StoreRecord[]> {

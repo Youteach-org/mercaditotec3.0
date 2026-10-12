@@ -11,9 +11,12 @@ import {
   type StoreApiRecord,
 } from "@/lib/store/client";
 import { useSession } from "@/lib/useSession";
+import { hasPlusStoreAccess } from "@/lib/store/storeEntitlement";
 
 export default function MyStoresPage() {
-  const { firebaseUser, loading: sessionLoading } = useSession();
+  const { firebaseUser, appUser, loading: sessionLoading } = useSession();
+  const isPlus = hasPlusStoreAccess(appUser as Record<string, unknown> | undefined, firebaseUser?.emailVerified ? firebaseUser.email ?? "" : "");
+  const canCreate = isPlus || stores.length === 0;
   const router = useRouter();
   const [stores, setStores] = useState<StoreApiRecord[]>([]);
   const [storesLoading, setStoresLoading] = useState(true);
@@ -43,7 +46,7 @@ export default function MyStoresPage() {
   }, [firebaseUser, loadStores]);
 
   async function createStore() {
-    if (!firebaseUser || creating) return;
+    if (!firebaseUser || creating || !canCreate) return;
     setCreating(true);
     setError("");
 
@@ -134,8 +137,8 @@ export default function MyStoresPage() {
               <Link href="/mystore/orders" className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700">
                 Pedidos recibidos
               </Link>
-              <button type="button" onClick={() => void createStore()} disabled={creating} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
-                {creating ? "Abriendo editor..." : "Crear mi tienda"}
+              <button type="button" onClick={() => void createStore()} disabled={creating || !canCreate} className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
+                {creating ? "Abriendo editor..." : !canCreate ? "Límite de una tienda (Plus para más)" : "Crear mi tienda"}
               </button>
             </div>
           </div>
@@ -149,7 +152,7 @@ export default function MyStoresPage() {
           <section className="rounded-2xl bg-white p-8 text-center shadow-md">
             <h2 className="text-xl font-bold text-gray-900">Todavía no tienes tiendas</h2>
             <p className="mx-auto mt-2 max-w-xl text-gray-600">Crea una tienda y entrarás directamente al editor completo para configurarla.</p>
-            <button type="button" onClick={() => void createStore()} disabled={creating} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
+            <button type="button" onClick={() => void createStore()} disabled={creating || !canCreate} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700 disabled:bg-blue-400">
               {creating ? "Abriendo editor..." : "Crear mi tienda"}
             </button>
           </section>

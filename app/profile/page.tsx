@@ -6,14 +6,9 @@ import { useEffect, useRef, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
-import { isAdminRole, type StudentTrustStatus } from "@/lib/security/domain";
+import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
-
-const TRUST_LABEL: Record<StudentTrustStatus, string> = {
-  pending: "Pendiente de confirmación",
-  verified: "Alumno confirmado",
-  revoked: "Confirmación en revisión",
-};
+import { hasPlusStoreAccess } from "@/lib/store/storeEntitlement";
 
 function ProfileContent() {
   const { firebaseUser, appUser, logout } = useSession();
@@ -24,10 +19,6 @@ function ProfileContent() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const studentStatus: StudentTrustStatus =
-    appUser?.studentStatus === "verified" || appUser?.studentStatus === "revoked"
-      ? appUser.studentStatus
-      : "pending";
   const isAdmin = isAdminRole(appUser);
   const blocked = Boolean(appUser && isAdministrativeBlockActive(appUser));
 
@@ -293,20 +284,15 @@ function ProfileContent() {
         ) : (
           <div className="space-y-1 text-sm text-gray-700">
             <p>WhatsApp: {whatsappNumber ? whatsappNumber : "No registrado"}</p>
-            <p>Plan: {appUser?.plan === "premium" ? "Premium" : "Free"}</p>
+            <p>Plan: {hasPlusStoreAccess(appUser as Record<string, unknown> | undefined, firebaseUser?.emailVerified ? firebaseUser.email ?? "" : "") ? "Plus" : "Gratis"}</p>
             <p>Activo: {appUser?.isActive ? "Sí" : "No"}</p>
           </div>
         )}
 
-        <Link
-          href="/verify-student"
-          className="block rounded-2xl border border-sky-200 bg-sky-50 p-4 hover:bg-sky-100"
-        >
-          <div className="text-sm font-black text-sky-950">Verificación de alumno</div>
-          <div className="mt-1 text-sm text-sky-800">
-            {TRUST_LABEL[studentStatus]} · {Math.min(appUser?.studentEndorsementCount ?? 0, 2)}/2 avales
-          </div>
-        </Link>
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="text-sm font-black text-emerald-950">Acceso a Mercadito</div>
+          <div className="mt-1 text-sm text-emerald-800">Tu correo institucional verificado te permite crear y enviar una tienda a revisión. La publicación requiere aprobación administrativa.</div>
+        </div>
 
         {isAdmin && (
           <Link

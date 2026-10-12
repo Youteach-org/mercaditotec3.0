@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireFirebaseUser, requireUnblockedUser } from "@/lib/store/auth";
+import { hasPlusStoreAccess } from "@/lib/store/storeEntitlement";
 import {
   parseStoreEditableInput,
   serializeStore,
@@ -42,9 +43,10 @@ export async function POST(request: Request) {
         (body as Record<string, unknown>).bootstrap === true,
     );
 
+    const isPlus = hasPlusStoreAccess(user.profile, String(user.claims.email ?? ""));
     const store = bootstrap
-      ? await createEmptyStoreDraft(user.uid)
-      : await createStoreDraft(user.uid, parseStoreEditableInput(body));
+      ? await createEmptyStoreDraft(user.uid, isPlus)
+      : await createStoreDraft(user.uid, parseStoreEditableInput(body), isPlus);
 
     return NextResponse.json({ store: serializeStore(store) }, { status: 201 });
   } catch (error) {
