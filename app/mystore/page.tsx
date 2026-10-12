@@ -15,9 +15,9 @@ import { useSession } from "@/lib/useSession";
 export default function MyStoresPage() {
   const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const plus = appUser?.plan === "premium" || appUser?.plan === "plus" || (firebaseUser?.emailVerified && firebaseUser.email?.toLowerCase() === "l22121079@morelia.tecnm.mx");
-  const canCreateStore = plus || stores.length === 0;
   const router = useRouter();
   const [stores, setStores] = useState<StoreApiRecord[]>([]);
+  const canCreateStore = plus || stores.length === 0;
   const [storesLoading, setStoresLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
