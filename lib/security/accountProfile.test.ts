@@ -66,3 +66,16 @@ describe("buildOwnProfileUpdate WhatsApp", () => {
     ).toThrow(AccountProfileError);
   });
 });
+
+describe("immutable account identity", () => {
+  it("rejects attempts to change the institutional email, roles or verification", () => {
+    for (const input of [
+      { email: "nuevo@morelia.tecnm.mx" },
+      { emailVerified: true },
+      { role: "superadmin" },
+      { nickname: "not-via-profile-patch" },
+    ]) {
+      expect(() => buildOwnProfileUpdate(input)).toThrow(AccountProfileError);
+    }
+  });
+});
