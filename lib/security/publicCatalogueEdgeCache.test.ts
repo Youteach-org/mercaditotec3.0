@@ -60,7 +60,7 @@ describe("Cloudflare public catalogue cache", () => {
     expect(handle).toHaveBeenCalledTimes(1);
     complete(catalogue());
     const results = await Promise.all(requests);
-    expect(await Promise.all(results.map((r) => r.json()))).toHaveLength(12);
+    expect(await Promise.all(results.map((r: Response) => r.json()))).toHaveLength(12);
     expect(handle).toHaveBeenCalledTimes(1);
     await Promise.all(waits);
     expect(cache.put).toHaveBeenCalledTimes(1);
