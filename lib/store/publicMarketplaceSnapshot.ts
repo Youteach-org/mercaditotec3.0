@@ -121,7 +121,7 @@ async function readPreviousSnapshot(): Promise<SavedSnapshot | null> {
  * If persistence is temporarily unavailable, an existing published snapshot
  * remains intact; a later mutation or the safety refresh will retry.
  */
-export async function rebuildPublicMarketplaceSnapshot(): Promise<Snapshot> {
+async function rebuildPublicMarketplaceSnapshotUnshared(): Promise<Snapshot> {
   // Read the revision before querying stores. If an approval happens during
   // the rebuild, its newer revision will survive our merge and trigger a retry.
   const baseline = await materializedReference().get();
@@ -145,6 +145,25 @@ export async function rebuildPublicMarketplaceSnapshot(): Promise<Snapshot> {
     total: result.totalStoreCount,
   });
   return result;
+}
+
+// When several store/product writes land on the same Worker isolate, rebuild
+// the published catalogue only once rather than repeatedly scanning all
+// stores and products. Revision checking prevents a concurrent newer change
+// from being considered processed (the next read rebuilds that revision).
+let pendingRebuild: Promise<Snapshot> | null = null;
+
+export function rebuildPublicMarketplaceSnapshot(): Promise<Snapshot> {
+  if (pendingRebuild) return pendingRebuild;
+  const work = rebuildPublicMarketplaceSnapshotUnshared();
+  pendingRebuild = work;
+  // Use both fulfillment and rejection handlers: a failed refresh must never
+  // poison the next attempt or produce an unhandled rejection.
+  void work.then(
+    () => { if (pendingRebuild === work) pendingRebuild = null; },
+    () => { if (pendingRebuild === work) pendingRebuild = null; },
+  );
+  return work;
 }
 
 let cached: { snapshot: Snapshot; createdAt: number } | null = null;
