@@ -691,6 +691,8 @@ export async function createGeneralChatMessage(
         }
       : null,
     hidden: false,
+    reactionSummaryVersion: 1,
+    reactionCounts: { "👍": 0, "❤️": 0, "😂": 0, "😮": 0, "😢": 0, "🔥": 0 },
   };
   await reference.create(record);
   return generalMessage(reference.id, record);
