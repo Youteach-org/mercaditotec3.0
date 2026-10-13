@@ -22,7 +22,7 @@ describe("Marketplace discover pagination and store ribbons", () => {
   });
 
   it("keeps six featured stores and leaves the rest available", () => {
-    expect(page).toContain("filteredStores.slice(0, 6)");
-    expect(page).toContain("filteredStores.slice(6)");
+    expect(page).toContain("featuredOrder.slice(0, 6)");
+    expect(page).toContain("featuredOrder.slice(6)");
   });
 });

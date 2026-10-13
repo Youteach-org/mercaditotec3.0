@@ -23,6 +23,7 @@ import {
   resolveMarketplaceVariant,
 } from "@/lib/store/marketplacePresentation";
 import { shouldUseMarketplaceDemo } from "@/lib/store/marketplacePreview";
+import { orderMarketplaceFeatured } from "@/lib/store/featuredMarketplace";
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 import type { StoreCategoryApiRecord } from "@/lib/store/categoryClient";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
@@ -497,8 +498,9 @@ export default function MarketplacePage() {
     return previewMode ? matchingStores : matchingStores.filter((store, index) => index < 18 || !("demoCategory" in store));
   }, [approvedCategories, category, normalizedQuery, sourceStores, previewMode]);
 
-  const featured = filteredStores.slice(0, 6);
-  const additionalStores = filteredStores.slice(6);
+  const featuredOrder = useMemo(() => orderMarketplaceFeatured(filteredStores), [filteredStores]);
+  const featured = featuredOrder.slice(0, 6);
+  const additionalStores = featuredOrder.slice(6);
   const storesPerPage = 12;
   const pageCount = Math.max(1, Math.ceil(additionalStores.length / storesPerPage));
   const currentStorePage = Math.min(storePage, pageCount - 1);
