@@ -11,6 +11,7 @@ import {
 } from "@/lib/community/client";
 import type { CommunityPostApiRecord } from "@/lib/community/http";
 import { QUICK_NOTICE_ROTATION_INTERVAL_MS, nextQuickNoticeIndex } from "@/lib/community/carousel";
+import { isCommunityPostVisible } from "@/lib/community/expiry";
 import { buildCommunityPostMediaPath } from "@/lib/community/media";
 import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { validateMediaFileMeta } from "@/lib/store/media";
@@ -72,6 +73,31 @@ export default function QuickNoticesPanel({
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Existing tabs must stop displaying an expired notice even without a
+  // page reload. Check in memory every minute: zero additional Firebase reads.
+  useEffect(() => {
+    if (!user || visualPreview) return;
+    const pruneExpired = () => {
+      const now = Date.now();
+      setPosts((current) => {
+        const valid = current.filter((post) => isCommunityPostVisible(post, now));
+        return valid.length === current.length ? current : valid;
+      });
+    };
+    const timer = window.setInterval(pruneExpired, 60_000);
+    document.addEventListener("visibilitychange", pruneExpired);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", pruneExpired);
+    };
+  }, [user, visualPreview]);
+
+  useEffect(() => {
+    setCurrentIndex((current) =>
+      posts.length === 0 ? 0 : Math.min(current, posts.length - 1)
+    );
+  }, [posts.length]);
 
   // Advance the posts already in memory. Seven-second rotation does not
   // trigger new Firestore reads or rerun the community-posts endpoint.
