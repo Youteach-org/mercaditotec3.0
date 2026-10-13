@@ -171,9 +171,11 @@ let pending: Promise<Snapshot> | null = null;
 
 export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
   const now = Date.now();
-  if (cached && now - cached.createdAt < FRESH_FOR_MS) return cached.snapshot;
+  // Reject entries timestamped in the future (clock corrections/tests).
+  const cacheAge = cached ? now - cached.createdAt : Number.POSITIVE_INFINITY;
+  if (cached && cacheAge >= 0 && cacheAge < FRESH_FOR_MS) return cached.snapshot;
   if (pending) return pending;
-  if (now < throttleUntil && cached && now - cached.createdAt < STALE_ON_THROTTLE_FOR_MS) {
+  if (now < throttleUntil && cached && cacheAge >= 0 && cacheAge < STALE_ON_THROTTLE_FOR_MS) {
     return cached.snapshot;
   }
 
@@ -219,6 +221,7 @@ export async function getPublicMarketplaceSnapshot(): Promise<Snapshot> {
         error instanceof FirestoreRestError &&
         error.status === 429 &&
         cached &&
+        Date.now() >= cached.createdAt &&
         Date.now() - cached.createdAt < STALE_ON_THROTTLE_FOR_MS
       ) {
         return cached.snapshot;
