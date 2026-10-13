@@ -18,7 +18,7 @@ describe("Marketplace demo catalog", () => {
   it("never caps demo stores to the six featured positions", () => {
     expect(snapshot).not.toContain("Math.max(0, 6 - liveStores.length)");
     expect(page).not.toContain("const needed = Math.max(0, 6 - liveStores.length)");
-    expect(page).toContain("filteredStores.slice(0, 6)");
-    expect(page).toContain("filteredStores.slice(6)");
+    expect(page).toContain("featuredOrder.slice(0, 6)");
+    expect(page).toContain("featuredOrder.slice(6)");
   });
 });
