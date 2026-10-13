@@ -19,6 +19,23 @@ describe.skipIf(!process.env.FIRESTORE_EMULATOR_HOST)("real Firestore transactio
     const result = await db.collection("message_reactions").where("messageId", "==", input.messageId).get();
     expect(result.docs).toHaveLength(0);
   }, 60000);
+  it("concurrent accounts increment summarized counts without losing updates", async () => {
+    const db = getAdminDb();
+    const messageId = "summarized-concurrent-message";
+    await db.collection("messages").doc(messageId).set({
+      hidden: false,
+      expiresAt: Date.now() + 60000,
+      reactionSummaryVersion: 1,
+      reactionCounts: { "👍": 0, "❤️": 0, "😂": 0, "😮": 0, "😢": 0, "🔥": 0 },
+    });
+    await Promise.all([
+      toggleMessageReaction("counter-alice", { messageId, emoji: "👍" }),
+      toggleMessageReaction("counter-bob", { messageId, emoji: "👍" }),
+    ]);
+    expect((await db.collection("messages").doc(messageId).get()).data()?.reactionCounts["👍"]).toBe(2);
+    const persisted = await db.collection("message_reactions").where("messageId", "==", messageId).get();
+    expect(persisted.docs).toHaveLength(2);
+  }, 60000);
   it("simultaneous personal saves produce one record", async () => {
     const input = { url: "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/chat/concurrent-alice/product/2026-10/a.png" };
     await Promise.all([savePersonalImage("concurrent-alice", input), savePersonalImage("concurrent-alice", input)]);

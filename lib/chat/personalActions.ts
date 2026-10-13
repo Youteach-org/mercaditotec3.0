@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { getAdminDb } from "../firestoreRest";
+import { isSummarizedMessage, nextReactionCounts } from "./reactionSummary";
 import { ApiAuthError } from "../store/auth";
 import { parseImageUploadPath } from "../store/media";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -14,11 +15,20 @@ export async function toggleMessageReaction(uid: string, input: unknown) {
   const db = getAdminDb();
   const reference = db.collection("message_reactions").doc(digest(JSON.stringify([uid, messageId])));
   await db.runTransaction(async (transaction) => {
-    const message = await transaction.get(db.collection("messages").doc(messageId));
+    const messageRef = db.collection("messages").doc(messageId);
+    const message = await transaction.get(messageRef);
     const previous = await transaction.get(reference);
     const content = message.data();
     if (!message.exists || content?.hidden === true || (typeof content?.expiresAt === "number" && content.expiresAt <= Date.now())) throw new ApiAuthError(404, "Mensaje no disponible.");
     const current = previous.data();
+    // Keep legacy messages on the legacy reaction reader until their 48-hour
+    // retention expires. New messages have counts from creation; updating the
+    // existing message document avoids 500 global reaction reads per viewer.
+    if (isSummarizedMessage(content ?? {})) {
+      transaction.update(messageRef, {
+        reactionCounts: nextReactionCounts(content?.reactionCounts, current?.emoji, emoji),
+      });
+    }
     if (current?.emoji === emoji) transaction.delete(reference);
     else transaction.set(reference, { messageId, userId: uid, emoji, createdAt: Date.now() });
   });

@@ -4,11 +4,32 @@ const records = new Map<string, Record<string, unknown>>();
 const ref = (path: string) => ({ path, id: path.split('/').at(-1), get: async () => snap(path), collection: (name: string) => collection(`${path}/${name}`) });
 const snap = (path: string) => ({ exists: records.has(path), id: path.split('/').at(-1), ref: ref(path), data: () => records.get(path) });
 const collection = (path: string) => ({ doc: (id: string) => ref(`${path}/${id}`), where: () => ({ where: () => ({ limit: () => ({ get: async () => ({ docs: [] }) }) }) }) });
-vi.mock('../firestoreRest', () => ({ getAdminDb: () => ({ collection, runTransaction: async (fn: (transaction: { get: (r: {path:string}) => Promise<ReturnType<typeof snap>>; set: (r: {path:string}, v: Record<string,unknown>) => unknown; delete: (r: {path:string}) => unknown }) => Promise<unknown>) => fn({ get: async (r: {path:string}) => snap(r.path), set: (r: {path:string}, v: Record<string,unknown>) => records.set(r.path, v), delete: (r: {path:string}) => records.delete(r.path) }) }) }));
+vi.mock('../firestoreRest', () => ({ getAdminDb: () => ({ collection, runTransaction: async (fn: (transaction: { get: (r: {path:string}) => Promise<ReturnType<typeof snap>>; set: (r: {path:string}, v: Record<string,unknown>) => unknown; delete: (r: {path:string}) => unknown; update: (r: {path:string}, v: Record<string,unknown>) => unknown }) => Promise<unknown>) => fn({ get: async (r: {path:string}) => snap(r.path), set: (r: {path:string}, v: Record<string,unknown>) => records.set(r.path, v), delete: (r: {path:string}) => records.delete(r.path), update: (r: {path:string}, v: Record<string,unknown>) => records.set(r.path, { ...(records.get(r.path) ?? {}), ...v }) }) }) }));
 async function api() { return actions; }
 beforeEach(() => { records.clear(); records.set('messages/m1', { hidden: false, expiresAt: Date.now()+100000 }); });
 describe('server owned chat actions', () => {
  it('keeps one reaction per account and message and toggles it off', async () => { const m = await api(); await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '👍', userId: 'victim' }); await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '🔥' }); const reactions = [...records.entries()].filter(([k])=>k.startsWith('message_reactions/')); expect(reactions).toHaveLength(1); expect(reactions[0][1]).toMatchObject({ userId: 'alice', emoji: '🔥' }); await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '🔥' }); expect([...records.keys()].filter(k=>k.startsWith('message_reactions/'))).toHaveLength(0); });
+ it('preserves accurate counts on new messages across add, switch and remove', async () => {
+   records.set('messages/m1', { hidden: false, expiresAt: Date.now()+100000, reactionSummaryVersion: 1,
+     reactionCounts: { '👍': 0, '❤️': 0, '😂': 0, '😮': 0, '😢': 0, '🔥': 0 } });
+   const m = await api();
+   await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '👍' });
+   await m.toggleMessageReaction('bob', { messageId: 'm1', emoji: '👍' });
+   expect((records.get('messages/m1')?.reactionCounts as Record<string, number>)['👍']).toBe(2);
+   await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '🔥' });
+   expect(records.get('messages/m1')?.reactionCounts).toMatchObject({ '👍': 1, '🔥': 1 });
+   await m.toggleMessageReaction('bob', { messageId: 'm1', emoji: '👍' });
+   expect(records.get('messages/m1')?.reactionCounts).toMatchObject({ '👍': 0, '🔥': 1 });
+   await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '🔥' });
+   expect(records.get('messages/m1')?.reactionCounts).toMatchObject({ '👍': 0, '🔥': 0 });
+   expect([...records.keys()].filter(key => key.startsWith('message_reactions/'))).toHaveLength(0);
+ });
+ it('keeps legacy messages untouched for safe 48-hour transition', async () => {
+   const m = await api();
+   await m.toggleMessageReaction('alice', { messageId: 'm1', emoji: '👍' });
+   expect(records.get('messages/m1')).not.toHaveProperty('reactionCounts');
+   expect([...records.keys()].filter(key => key.startsWith('message_reactions/'))).toHaveLength(1);
+ });
  it('rejects hidden, expired, missing messages and unsupported emojis', async () => { const m = await api(); for (const data of [{ hidden:true }, { expiresAt:1 }]) { records.set('messages/m1', data); await expect(m.toggleMessageReaction('alice',{messageId:'m1',emoji:'👍'})).rejects.toThrow(); } await expect(m.toggleMessageReaction('alice',{messageId:'missing',emoji:'👍'})).rejects.toThrow(); await expect(m.toggleMessageReaction('alice',{messageId:'m1',emoji:'x'})).rejects.toThrow(); });
  it('rejects external URLs and another users private image', async () => { const m = await api(); for (const url of ['https://evil.example/a.png','https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/chat/victim/product/2026-10/a.png']) await expect(m.savePersonalImage('alice',{url})).rejects.toThrow(); });
  it('deduplicates owned images and derives the owner on the server', async () => { const m = await api(); const input = { url:'https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/chat/alice/product/2026-10/a.png', originalOwnerUid:'victim', createdAt:1 }; await m.savePersonalImage('alice',input); await m.savePersonalImage('alice',input); const saved = [...records.entries()].filter(([k])=>k.startsWith('users/alice/images/')); expect(saved).toHaveLength(1); expect(saved[0][1].originalOwnerUid).toBe('alice'); expect(saved[0][1].createdAt).toBeGreaterThan(1); });
