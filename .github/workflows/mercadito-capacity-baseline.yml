@@ -1,0 +1,33 @@
+name: Mercadito — read-only capacity baseline
+
+on:
+  push:
+    branches:
+      - perf/capacity-baseline-20261013
+      - feature/student-stores
+    paths:
+      - ".github/workflows/mercadito-capacity-baseline.yml"
+      - "scripts/cloudflare-capacity-metrics.mjs"
+      - "scripts/capacity-baseline.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Read Cloudflare Worker CPU and errors (no production traffic)
+        run: node scripts/capacity-baseline.mjs
