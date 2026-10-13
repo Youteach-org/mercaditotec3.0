@@ -135,6 +135,14 @@ jobs:
           }
           echo "Official domain: redirects HTTP to HTTPS and serves HSTS + CSP"
 
+          # Cheap liveness must work independently of Firebase rules synchronization.
+          LIVE="$(curl -fsS "$BASE/__live")"
+          printf '%s' "$LIVE" | jq -e '.ok == true and .live == true' >/dev/null || {
+            echo "::error::Cheap Worker liveness failed"
+            exit 1
+          }
+          echo "Worker liveness passed without Firebase/Next.js initialization"
+
           HEALTH="$(curl -fsS "$BASE/__health")"
           printf '%s\n' "$HEALTH"
           printf '%s' "$HEALTH" | grep -q '"ok":true' || {
