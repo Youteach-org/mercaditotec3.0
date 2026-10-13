@@ -40,9 +40,9 @@ function requestWithJwt(id: string) {
 }
 function authLimits() {
   return {
-    API_RATE_LIMITER: { limit: vi.fn(async () => ({ success: true })) },
-    AUTH_API_RATE_LIMITER: { limit: vi.fn(async () => ({ success: true })) },
-    API_IP_SAFETY_LIMITER: { limit: vi.fn(async () => ({ success: true })) },
+    API_RATE_LIMITER: { limit: vi.fn(async (_request: { key: string }) => ({ success: true })) },
+    AUTH_API_RATE_LIMITER: { limit: vi.fn(async (_request: { key: string }) => ({ success: true })) },
+    API_IP_SAFETY_LIMITER: { limit: vi.fn(async (_request: { key: string }) => ({ success: true })) },
   };
 }
 
