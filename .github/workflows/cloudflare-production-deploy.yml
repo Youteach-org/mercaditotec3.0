@@ -18,6 +18,14 @@ jobs:
       PRODUCTION_WORKER_NAME: "mercaditotec3-0"
 
     steps:
+      - name: Refuse stale main deployments
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "feature/student-stores" ]; then
+            echo "::error::DEPLOY BLOCKED: main is behind the actual production source feature/student-stores. Do not deploy main until the branches are reconciled."
+            exit 1
+          fi
+
       - name: Check out production branch
         uses: actions/checkout@v4
 
