@@ -23,7 +23,9 @@ describe("Mercadito monitoring and efficient chat", () => {
     expect(chat).toContain("const watchMessages = () =>");
     expect(chat).toContain('document.addEventListener("visibilitychange", watchMessages)');
     expect(chat).toContain('document.addEventListener("visibilitychange", watchImages)');
-    expect(chat).toContain('document.addEventListener("visibilitychange", watchReactions)');
+    expect(chat).toContain('document.addEventListener("visibilitychange", watchMyReactions)');
+    expect(chat).toContain('document.addEventListener("visibilitychange", watchLegacyReactions)');
+    expect(chat).toContain("if (!firebaseUser || !hasLegacyMessages)");
     expect(chat).toContain("}, [firebaseUser?.uid]);");
     expect(chat).not.toContain("}, [firebaseUser?.uid, retentionNow]);");
     expect(chat).toContain("isGeneralChatMessageCurrent(Number(msg.createdAt), retentionNow)");
