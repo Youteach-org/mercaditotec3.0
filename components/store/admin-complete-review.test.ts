@@ -65,7 +65,8 @@ describe("admin full store review before approval", () => {
 
   it("does not enable Approve until admin confirms inspecting full store", () => {
     expect(adminPage).toContain("reviewConfirmed");
-    expect(adminPage).toContain('action === "approve" && (!reviewConfirmed || products.length === 0)');
+    expect(adminPage).toContain('action === "approve" && store.status === "pending_review" && (!reviewConfirmed || products.length === 0)');
+    expect(adminPage).toContain('store?.status === "changes_required" && isSuperadmin');
     expect(adminPage).toContain("Revisé la tienda COMPLETA");
     expect(adminPage).toContain("setReviewConfirmed(false)");
     expect(adminPage).toContain('action === "changes_required"');
