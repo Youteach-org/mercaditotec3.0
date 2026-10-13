@@ -22,6 +22,7 @@ import {
   isGeneralChatMessageCurrent,
 } from "@/lib/chat/generalRetention";
 import { useSession } from "@/lib/useSession";
+import { isSummarizedMessage, readReactionCounts } from "@/lib/chat/reactionSummary";
 import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
 import { moderationApiFetch } from "@/lib/moderation/client";
@@ -58,6 +59,8 @@ type ChatMessage = {
   imageUrls?: string[];
   createdAt: number;
   expiresAt?: number;
+  reactionSummaryVersion?: number;
+  reactionCounts?: Record<string, number>;
   replyTo?: ReplyTo | null;
   hidden?: boolean;
   hiddenAt?: unknown;
@@ -267,7 +270,8 @@ function ChatContent() {
   const [retentionNow, setRetentionNow] = useState(() => Date.now());
   const [userImages, setUserImages] = useState<UserImage[]>([]);
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
-  const [reactions, setReactions] = useState<ReactionRecord[]>([]);
+  const [legacyReactions, setLegacyReactions] = useState<ReactionRecord[]>([]);
+  const [myReactions, setMyReactions] = useState<ReactionRecord[]>([]);
   const [nicknameOverride, setNicknameOverride] =
     useState("");
   const [nicknameResolved, setNicknameResolved] =
@@ -739,10 +743,50 @@ function ChatContent() {
     };
   }, [firebaseUser, galleryOpen]);
 
+  // New messages read aggregated counts from the existing messages listener.
+  // Only a user's own reaction records are required to mark selected emoji.
   useEffect(() => {
     if (!firebaseUser) return;
     let unsubscribe: (() => void) | null = null;
-    const watchReactions = () => {
+    const watchMyReactions = () => {
+      unsubscribe?.();
+      unsubscribe = null;
+      if (document.hidden) return;
+      const q = query(
+        collection(db, "message_reactions"),
+        where("userId", "==", firebaseUser.uid),
+        limit(500),
+      );
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        setMyReactions(snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<ReactionRecord, "id">),
+        })));
+      });
+    };
+    watchMyReactions();
+    document.addEventListener("visibilitychange", watchMyReactions);
+    return () => {
+      document.removeEventListener("visibilitychange", watchMyReactions);
+      unsubscribe?.();
+    };
+  }, [firebaseUser?.uid]);
+
+  // Old messages do not have counters. Keep their previous listener only
+  // while legacy messages remain visible in the 48-hour retention window.
+  // Once they expire, the costly 500-reaction global stream disappears.
+  const hasLegacyMessages = messages.some((message) =>
+    !isSummarizedMessage(message) &&
+    isGeneralChatMessageCurrent(Number(message.createdAt), retentionNow)
+  );
+
+  useEffect(() => {
+    if (!firebaseUser || !hasLegacyMessages) {
+      setLegacyReactions([]);
+      return;
+    }
+    let unsubscribe: (() => void) | null = null;
+    const watchLegacyReactions = () => {
       unsubscribe?.();
       unsubscribe = null;
       if (document.hidden) return;
@@ -752,21 +796,19 @@ function ChatContent() {
         limit(500),
       );
       unsubscribe = onSnapshot(q, (snapshot) => {
-        setReactions(
-          snapshot.docs.map((d) => ({
-            id: d.id,
-            ...(d.data() as Omit<ReactionRecord, "id">),
-          }))
-        );
+        setLegacyReactions(snapshot.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<ReactionRecord, "id">),
+        })));
       });
     };
-    watchReactions();
-    document.addEventListener("visibilitychange", watchReactions);
+    watchLegacyReactions();
+    document.addEventListener("visibilitychange", watchLegacyReactions);
     return () => {
-      document.removeEventListener("visibilitychange", watchReactions);
+      document.removeEventListener("visibilitychange", watchLegacyReactions);
       unsubscribe?.();
     };
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, hasLegacyMessages]);
 
   useEffect(() => {
     const urls = selectedImages.map((file) => URL.createObjectURL(file));
@@ -799,8 +841,17 @@ function ChatContent() {
     setNewMessagesWaiting(0);
   }
 
-  function reactionsForMessage(messageId: string) {
-    const related = reactions.filter((r) => r.messageId === messageId);
+  function reactionsForMessage(message: ChatMessage) {
+    if (isSummarizedMessage(message)) {
+      const counts = readReactionCounts(message.reactionCounts);
+      const myEmoji = myReactions.find((r) => r.messageId === message.id)?.emoji;
+      return QUICK_EMOJIS.map((emoji) => ({
+        emoji,
+        count: Math.max(counts[emoji] ?? 0, myEmoji === emoji ? 1 : 0),
+        mine: myEmoji === emoji,
+      })).filter((reaction) => reaction.count > 0);
+    }
+    const related = legacyReactions.filter((r) => r.messageId === message.id);
     return QUICK_EMOJIS.map((emoji) => {
       const users = related.filter((r) => r.emoji === emoji);
       return {
@@ -808,7 +859,7 @@ function ChatContent() {
         count: users.length,
         mine: users.some((r) => r.userId === firebaseUser?.uid),
       };
-    }).filter((x) => x.count > 0);
+    }).filter((reaction) => reaction.count > 0);
   }
 
   async function toggleReaction(messageId: string, emoji: string) {
@@ -1328,7 +1379,7 @@ function ChatContent() {
             const isMine = msg.senderId === firebaseUser?.uid;
             const role = msg.senderRole ?? "buyer";
             const isAdmin = appUser?.role === "admin";
-            const groupedReactions = reactionsForMessage(msg.id);
+            const groupedReactions = reactionsForMessage(msg);
 
             if (msg.hidden) {
               return (
