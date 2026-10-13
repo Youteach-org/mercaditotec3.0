@@ -45,6 +45,42 @@ describe("Cloudflare public catalogue cache", () => {
     expect(cache.match.mock.calls[1][0].url).toBe(cache.match.mock.calls[0][0].url);
   });
 
+  it("coalesces simultaneous cold cache misses instead of rendering the same catalogue repeatedly", async () => {
+    const cache = memoryCache();
+    let complete!: (value: Response) => void;
+    const barrier = new Promise<Response>((resolve) => { complete = resolve; });
+    const handle = vi.fn(async () => barrier);
+    const waits: Promise<unknown>[] = [];
+    const ctx = { waitUntil: (promise: Promise<unknown>) => { waits.push(promise); } };
+    const requests = Array.from({ length: 12 }, () => serveCachedPublicCatalogue(
+      new Request("https://mercaditotec.store/api/marketplace?visitor=random"), ctx, handle, cache,
+    ));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(handle).toHaveBeenCalledTimes(1);
+    complete(catalogue());
+    const results = await Promise.all(requests);
+    expect(await Promise.all(results.map((r) => r.json()))).toHaveLength(12);
+    expect(handle).toHaveBeenCalledTimes(1);
+    await Promise.all(waits);
+    expect(cache.put).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets a failed cold-cache attempt and allows later successful reads", async () => {
+    const cache = memoryCache();
+    const handle = vi.fn()
+      .mockRejectedValueOnce(new Error("temporary"))
+      .mockResolvedValue(catalogue());
+    await expect(serveCachedPublicCatalogue(
+      new Request("https://mercaditotec.store/api/marketplace"), {}, handle, cache,
+    )).rejects.toThrow("temporary");
+    const response = await serveCachedPublicCatalogue(
+      new Request("https://mercaditotec.store/api/marketplace"), {}, handle, cache,
+    );
+    expect(response.status).toBe(200);
+    expect(handle).toHaveBeenCalledTimes(2);
+  });
+
   it("never caches failure responses", async () => {
     const cache = memoryCache();
     const handle = vi.fn(async () => new Response("Unavailable", {
