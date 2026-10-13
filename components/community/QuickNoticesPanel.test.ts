@@ -23,6 +23,17 @@ describe("Quick notices mini board", () => {
     expect(intervalBody).not.toContain("refresh(");
   });
 
+  it("prunes stale quick notices on existing tabs without polling Firebase", () => {
+    expect(panelSource).toContain("isCommunityPostVisible(post, now)");
+    expect(panelSource).toContain("window.setInterval(pruneExpired, 60_000)");
+    expect(panelSource).toContain('document.addEventListener("visibilitychange", pruneExpired)');
+    expect(panelSource).toContain('document.removeEventListener("visibilitychange", pruneExpired)');
+    const maintenance = panelSource.split("const pruneExpired = () => {")[1]?.split("const timer = window.setInterval(pruneExpired, 60_000)")[0];
+    expect(maintenance).not.toContain("loadCommunityPosts");
+    expect(maintenance).not.toContain("refresh(");
+    expect(panelSource).toContain("posts.length === 0 ? 0 : Math.min(current, posts.length - 1)");
+  });
+
   it("lets people pause, swipe or use arrows and animates the active notice", () => {
     expect(panelSource).toContain("Pausar rotación de avisos");
     expect(panelSource).toContain("Reanudar rotación de avisos");
