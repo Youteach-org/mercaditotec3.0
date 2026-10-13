@@ -5,7 +5,8 @@ import type {
   CommunityPostType,
 } from "./domain";
 
-export const QUICK_NOTICE_LIFETIME_MS = 48 * 60 * 60 * 1000;
+import { QUICK_NOTICE_LIFETIME_MS } from "./expiry";
+export { QUICK_NOTICE_LIFETIME_MS } from "./expiry";
 
 export class CommunityRepositoryError extends Error {
   constructor(public readonly status: number, message: string) {
