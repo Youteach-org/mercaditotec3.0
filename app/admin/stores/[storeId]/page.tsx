@@ -134,6 +134,12 @@ export default function AdminStoreDetailPage() {
 
   function requestAction(action: AdminStoreAction) {
     if (action === "approve") {
+      if (store?.status === "changes_required" && isSuperadmin) {
+        if (window.confirm("¿Aprobar esta tienda a pesar de requerir cambios? La tienda se publicará como está, sin nuevas correcciones.")) {
+          void executeAction("approve", undefined, true);
+        }
+        return;
+      }
       if (!reviewConfirmed || products.length === 0) {
         setError("Revisa todos los datos y productos y marca la confirmación antes de aprobar.");
         return;
@@ -174,7 +180,7 @@ export default function AdminStoreDetailPage() {
     );
   }
 
-  const actions = actionsForStoreStatus(store.status);
+  const actions = actionsForStoreStatus(store.status, isSuperadmin);
 
   return (
     <main className="min-h-screen bg-gray-100 p-4">
@@ -259,7 +265,7 @@ export default function AdminStoreDetailPage() {
                 <button
                   key={action}
                   type="button"
-                  disabled={working || (action === "approve" && (!reviewConfirmed || products.length === 0))}
+                  disabled={working || (action === "approve" && store.status === "pending_review" && (!reviewConfirmed || products.length === 0))}
                   onClick={() => requestAction(action)}
                   className={
                     action === "approve" || action === "reactivate"
@@ -269,7 +275,7 @@ export default function AdminStoreDetailPage() {
                         : "rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white disabled:bg-orange-300"
                   }
                 >
-                  {adminActionLabel(action)}
+                  {adminActionLabel(action, store.status)}
                 </button>
               ))}
               {isSuperadmin && store.status === "pending_review" && (
