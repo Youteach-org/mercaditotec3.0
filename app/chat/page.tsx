@@ -687,7 +687,9 @@ function ChatContent() {
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
-    if (!firebaseUser) return;
+    // Personal image history is only needed inside the image picker.
+    // Avoid loading up to 100 documents for every student entering chat.
+    if (!firebaseUser || !galleryOpen) return;
     let unsubscribe: (() => void) | null = null;
     const watchImages = () => {
       unsubscribe?.();
@@ -713,7 +715,7 @@ function ChatContent() {
       document.removeEventListener("visibilitychange", watchImages);
       unsubscribe?.();
     };
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, galleryOpen]);
 
   useEffect(() => {
     if (!firebaseUser || !galleryOpen) return;
