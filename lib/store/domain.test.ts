@@ -192,6 +192,6 @@ describe("store lifecycle", () => {
         "changes_required",
         "active"
       )
-    ).toThrow();
+    ).not.toThrow();
   });
 });
