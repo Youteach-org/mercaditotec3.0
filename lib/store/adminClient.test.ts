@@ -37,8 +37,11 @@ describe("actionsForStoreStatus", () => {
     ]);
   });
 
-  it("no ofrece acciones mientras espera correcciones del vendedor", () => {
+  it("solo el superadmin recibe accion excepcional desde requiere cambios", () => {
     expect(actionsForStoreStatus("changes_required")).toEqual([]);
+    expect(actionsForStoreStatus("changes_required", false)).toEqual([]);
+    expect(actionsForStoreStatus("changes_required", true)).toEqual(["approve"]);
+    expect(adminActionLabel("approve", "changes_required")).toBe("Aprobar a pesar de requerir cambios");
   });
 });
 
