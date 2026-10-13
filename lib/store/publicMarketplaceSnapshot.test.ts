@@ -87,6 +87,55 @@ describe("shared, materialized public marketplace", () => {
     expect(manuallyRebuilt.stores.some((store) => store.id === "manually-rebuilt")).toBe(true);
   });
 
+  it("shares one Firestore rebuild across simultaneous requests and retains new revisions", async () => {
+    let state: Record<string, unknown> = { revision: "before" };
+    let releaseStores!: (items: Array<{ id: string }>) => void;
+    const barrier = new Promise<Array<{ id: string }>>((resolve) => { releaseStores = resolve; });
+    const doc = {
+      get: vi.fn(async () => ({ exists: true, data: () => state })),
+      set: vi.fn(async (data: Record<string, unknown>) => {
+        state = { ...state, ...data };
+      }),
+    };
+    vi.mocked(getAdminDb).mockReturnValue({
+      collection: () => ({ doc: () => doc }),
+    } as unknown as ReturnType<typeof getAdminDb>);
+    vi.mocked(listActiveCategories).mockResolvedValue([] as never);
+    vi.mocked(getMarketplaceContent).mockResolvedValue({ featuredHeading: "Destacadas" } as never);
+    vi.mocked(listPublicStores).mockImplementation(() => barrier as never);
+
+    const requests = Array.from({ length: 12 }, () => rebuildPublicMarketplaceSnapshot());
+    expect(new Set(requests).size).toBe(1);
+    // A revision arriving after the baseline was read must not be lost.
+    await Promise.resolve();
+    await Promise.resolve();
+    state = { ...state, revision: "newer" };
+    releaseStores([{ id: "approved-store" }]);
+    await Promise.all(requests);
+    expect(listPublicStores).toHaveBeenCalledTimes(1);
+    expect(doc.set).toHaveBeenCalledTimes(1);
+    expect(state.processedRevision).toBe("before");
+    expect(state.revision).toBe("newer");
+  });
+
+  it("recovers from a failed rebuild instead of caching its rejection", async () => {
+    let state: Record<string, unknown> = {};
+    const doc = {
+      get: vi.fn(async () => ({ exists: true, data: () => state })),
+      set: vi.fn(async (data: Record<string, unknown>) => { state = { ...state, ...data }; }),
+    };
+    vi.mocked(getAdminDb).mockReturnValue({
+      collection: () => ({ doc: () => doc }),
+    } as unknown as ReturnType<typeof getAdminDb>);
+    vi.mocked(listActiveCategories).mockResolvedValue([] as never);
+    vi.mocked(getMarketplaceContent).mockResolvedValue({ featuredHeading: "Destacadas" } as never);
+    vi.mocked(listPublicStores).mockRejectedValueOnce(new Error("temporary"));
+    await expect(rebuildPublicMarketplaceSnapshot()).rejects.toThrow("temporary");
+    vi.mocked(listPublicStores).mockResolvedValue([{ id: "retry-success" }] as never);
+    const recovered = await rebuildPublicMarketplaceSnapshot();
+    expect(recovered.stores.some((store) => store.id === "retry-success")).toBe(true);
+  });
+
   it("keeps the previous published catalogue available if migration refresh fails", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-10T12:00:00.000Z"));

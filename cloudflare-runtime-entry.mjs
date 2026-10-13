@@ -45,6 +45,7 @@ export default {
     ctx.waitUntil(job);
   },
   async fetch(request, env, ctx) {
+    const requestStartedAt = Date.now();
     // The browser can land on http://mercaditotec.store otherwise, despite
     // a completely valid certificate on the HTTPS version of the site.
     const httpsRedirect = enforceHttps(request);
@@ -79,6 +80,18 @@ export default {
           "cache-control": "no-store",
         },
       });
+    }
+
+    // Cheap liveness check: monitoring should not invoke Next.js, Firebase
+    // token exchange or Firebase Rules deployment on every health probe.
+    // Keep /__health for the existing deployment-time rules verification.
+    if (url.pathname === "/__live") {
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        return new Response(null, { status: 405, headers: { allow: "GET, HEAD", "cache-control": "no-store" } });
+      }
+      return request.method === "HEAD"
+        ? new Response(null, { status: 204, headers: { "cache-control": "no-store" } })
+        : json({ ok: true, live: true });
     }
 
     if (url.pathname === "/__health") {
@@ -140,6 +153,17 @@ export default {
           () => getHandler().fetch(bounded, env, ctx),
         ),
       );
+
+      // Wall time includes upstream I/O and is not a CPU metric. Log only a
+      // small sample of very slow responses, never URL IDs, tokens or bodies.
+      if (url.pathname.startsWith("/api/") && Date.now() - requestStartedAt > 2000 && Math.random() < 0.05) {
+        const family = url.pathname.split("/").slice(0, 3).join("/");
+        console.warn("SLOW_API_WALL_TIME", {
+          family,
+          status: response.status,
+          elapsedMs: Date.now() - requestStartedAt,
+        });
+      }
 
       if (affectsPublicCatalogue(request, response)) {
         // Once an authorized mutation completes, rebuild the shared public
