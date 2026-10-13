@@ -134,7 +134,7 @@ export function canOwnerEditStore(status: StoreStatus): boolean {
 const ADMIN_TRANSITIONS: Record<StoreStatus, StoreStatus[]> = {
   draft: [],
   pending_review: ["active", "changes_required"],
-  changes_required: [],
+  changes_required: ["active"],
   active: ["suspended"],
   suspended: ["active"],
 };

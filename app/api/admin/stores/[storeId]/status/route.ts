@@ -24,6 +24,7 @@ interface RouteContext {
 
 function auditAction(previousStatus: string, nextStatus: string) {
   if (previousStatus === "pending_review" && nextStatus === "active") return "store.approve";
+  if (previousStatus === "changes_required" && nextStatus === "active") return "store.approve-override";
   if (previousStatus === "pending_review" && nextStatus === "changes_required") return "store.changes_required";
   if (previousStatus === "active" && nextStatus === "suspended") return "store.suspend";
   if (previousStatus === "suspended" && nextStatus === "active") return "store.reactivate";
@@ -63,9 +64,12 @@ export async function POST(request: Request, context: RouteContext) {
     }
 
     const current = await getStoreForAdmin(storeId);
+    if (current.status === "changes_required" && input.status === "active" && (actorRole !== "superadmin" || input.approveAsIs !== true)) {
+      throw new ApiAuthError(403, "Solo el superadmin puede aprobar una tienda con cambios solicitados.");
+    }
     if (input.approveAsIs && (actorRole !== "superadmin" ||
-        current.status !== "pending_review" || input.status !== "active")) {
-      throw new ApiAuthError(403, "Solo el superadmin puede aprobar sin cambios una tienda pendiente.");
+        (current.status !== "pending_review" && current.status !== "changes_required") || input.status !== "active")) {
+      throw new ApiAuthError(403, "Solo el superadmin puede aprobar una tienda tal como está.");
     }
     if (current.status === "pending_review" && input.status === "active") {
       // Peer endorsements were retired: they must never block review of a store.
@@ -80,14 +84,22 @@ export async function POST(request: Request, context: RouteContext) {
           throw new StoreRepositoryError(409, "La tienda no contiene productos; solo el superadmin puede aprobarla tal como está.");
         }
       }
+    }
+
+    if ((current.status === "pending_review" || current.status === "changes_required") && input.status === "active") {
       await promoteSuggestedCategoriesForStore(storeId);
     }
 
-    const store = await adminSetStoreStatus(storeId, input.status, input.message);
+    const store = await adminSetStoreStatus(
+      storeId,
+      input.status,
+      input.message,
+      actorRole === "superadmin" && input.approveAsIs === true,
+    );
     await writeAuditEntry({
       actorUid: actor.uid,
       actorRole,
-      action: input.approveAsIs ? "store.approve-as-is" : auditAction(current.status, store.status),
+      action: current.status === "changes_required" && input.approveAsIs ? "store.approve-override" : input.approveAsIs ? "store.approve-as-is" : auditAction(current.status, store.status),
       targetType: "store",
       targetId: storeId,
       metadata: {

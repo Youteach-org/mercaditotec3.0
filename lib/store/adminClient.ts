@@ -32,6 +32,7 @@ export const adminTabs: Array<{
 
 export function actionsForStoreStatus(
   status: StoreStatus,
+  isSuperadmin = false,
 ): AdminStoreAction[] {
   switch (status) {
     case "pending_review":
@@ -46,18 +47,21 @@ export function actionsForStoreStatus(
     case "suspended":
       return ["reactivate"];
 
-    case "draft":
     case "changes_required":
+      return isSuperadmin ? ["approve"] : [];
+
+    case "draft":
       return [];
   }
 }
 
 export function adminActionLabel(
   action: AdminStoreAction,
+  status?: StoreStatus,
 ): string {
   switch (action) {
     case "approve":
-      return "Aprobar";
+      return status === "changes_required" ? "Aprobar a pesar de requerir cambios" : "Aprobar";
 
     case "changes_required":
       return "Requiere cambios";
