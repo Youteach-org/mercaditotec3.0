@@ -75,7 +75,7 @@ export async function watchForegroundPush(): Promise<() => void> {
         body: data.body || "Tienes una nueva notificación.",
         icon: "/icon.svg",
         tag: data.notificationId || "mercaditotec",
-        data: { href },
+        data: { href, notificationId: data.notificationId || "" },
       }))
       .catch(() => undefined);
   });
