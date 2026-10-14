@@ -21,6 +21,19 @@ describe("Marketplace discover pagination and store ribbons", () => {
     expect(css).toContain("right: 3% !important");
   });
 
+  it("makes mobile community cards swipeable without overlapping the featured layout", () => {
+    const mobileCarousel = css.split("/* MOBILE COMMUNITY STORE CAROUSEL")[1];
+    expect(mobileCarousel).toBeDefined();
+    expect(mobileCarousel).toContain("flex-wrap: nowrap !important");
+    expect(mobileCarousel).toContain("overflow-x: auto !important");
+    expect(mobileCarousel).toContain("scroll-snap-type: x mandatory");
+    expect(mobileCarousel).toContain(".mkt-more-stores > .mkt-more-store:nth-child(n)");
+    expect(mobileCarousel).toContain("margin: 0 !important");
+    expect(page).toContain("ref={moreStoresRef}");
+    expect(page).toContain('moreStoresRef.current?.scrollTo({ left: 0, behavior: "auto" })');
+    expect(page).toContain("featuredOrder.slice(0, 6)");
+  });
+
   it("keeps six featured stores and leaves the rest available", () => {
     expect(page).toContain("featuredOrder.slice(0, 6)");
     expect(page).toContain("featuredOrder.slice(6)");
