@@ -39,6 +39,7 @@ describe("public marketplace visibility", () => {
       marketplaceNote: "BUENAS TORTAS, MEJORES PLÁTICAS",
       marketplaceTags: ["Comida", "Tortas"],
       marketplaceVariant: "cloud-3",
+      ratingStats: { count: 2, total: 9, distribution: [0, 0, 0, 1, 1] },
     });
 
     expect(value).toMatchObject({
@@ -49,6 +50,9 @@ describe("public marketplace visibility", () => {
       marketplaceNote: "BUENAS TORTAS, MEJORES PLÁTICAS",
       marketplaceTags: ["Comida", "Tortas"],
       marketplaceVariant: "cloud-3",
+      ratingAverage: 4.5,
+      ratingCount: 2,
+      ratingDistribution: [0, 0, 0, 1, 1],
     });
     expect(value).not.toHaveProperty("ownerUid");
   });

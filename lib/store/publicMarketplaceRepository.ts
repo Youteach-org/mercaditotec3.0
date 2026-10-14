@@ -1,6 +1,7 @@
 import { FirestoreRestError, getAdminDb } from "../firestoreRest";
 import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
+import { readStoreRatingStats } from "./storeRating";
 import { listActiveCategories } from "./categoryRepository";
 import {
   isPublicProductVisibility,
@@ -39,6 +40,7 @@ function storeSource(id: string, data: Record<string, unknown>): PublicStoreSour
   return {
     id,
     ownerUid: typeof data.ownerUid === "string" ? data.ownerUid : "",
+    ratingStats: readStoreRatingStats(data.ratingStats),
     name: typeof data.name === "string" ? data.name : "",
     slug: typeof data.slug === "string" && data.slug.trim() ? data.slug : null,
     description: typeof data.description === "string" ? data.description : "",

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
+import StoreEmojiRating from "@/components/store/StoreEmojiRating";
 import { createOrderRequest } from "@/lib/orders/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
 import { useSession } from "@/lib/useSession";
@@ -180,6 +181,7 @@ export default function PublicStorePage() {
                   </span>
                 </div>
                 <p className="mt-3 max-w-3xl leading-relaxed text-slate-600">{store.description || "Sin descripción."}</p>
+                <StoreEmojiRating key={store.id} user={firebaseUser} store={store} />
                 {store.deliveryLocation && (
                   <p className="mt-4 font-semibold text-slate-800">📍 Entrega: {store.deliveryLocation}</p>
                 )}
