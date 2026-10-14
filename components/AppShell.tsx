@@ -135,19 +135,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     const marker = `${firebaseUser.uid}:${pathname}:${profileUnreadCount ?? "unknown"}`;
     if (lastNotificationAckRef.current === marker) return;
     lastNotificationAckRef.current = marker;
-    let cancelled = false;
     void acknowledgeNotificationsAtDestination(firebaseUser, pathname)
       .then((result) => {
-        if (cancelled || result.updatedCount === 0) return;
+        // The profile listener can update unreadCount before this request
+        // resolves and rerun the effect. Still dismiss the delivered OS alerts.
+        if (result.updatedCount === 0) return;
         void dismissDeviceNotificationAlerts(result.notificationIds);
         announceNotificationsChanged();
       })
       .catch(() => {
-        if (!cancelled && lastNotificationAckRef.current === marker) {
+        if (lastNotificationAckRef.current === marker) {
           lastNotificationAckRef.current = "";
         }
       });
-    return () => { cancelled = true; };
   }, [firebaseUser, loading, pathname, profileUnreadCount]);
 
   const unreadCount = fallbackUnreadCount;
