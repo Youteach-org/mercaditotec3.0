@@ -20,7 +20,7 @@ messaging.onBackgroundMessage((payload) => {
     body: data.body || "Hay novedades en tu Mercadito.",
     tag: data.notificationId || "mercaditotec",
     icon: "/icon.svg",
-    data: { href: destination },
+    data: { href: destination, notificationId: data.notificationId || "" },
   });
 });
 
