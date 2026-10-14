@@ -3197,24 +3197,32 @@ body {
 @media (max-width: 620px) {
   .mkt-more-stores {
     display: flex !important;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 28px !important;
-    padding-left: 0;
-    padding-right: 0;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 56px !important;
+    padding: 22px 8px 36px;
+    overflow: visible;
   }
 
-  .mkt-more-store {
-    min-width: 0;
-    height: 320px !important;
+  /* Every non-featured shop gets its own full-width row in normal
+     page flow. Override the alternating collage widths/margins/rotations. */
+  .mkt-more-stores > .mkt-more-store:nth-child(n) {
+    position: relative !important;
+    display: block;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    max-width: 460px;
+    min-width: 0 !important;
+    height: clamp(400px, 112vw, 500px) !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    margin: 0 !important;
+    transform: none !important;
   }
-
-  .mkt-more-store:nth-child(6n + 1) { width: 94% !important; margin-left: -2% !important; margin-right: auto !important; margin-top: 0 !important; }
-  .mkt-more-store:nth-child(6n + 2) { width: 82% !important; margin-left: auto !important; margin-right: -1% !important; margin-top: -4px !important; }
-  .mkt-more-store:nth-child(6n + 3) { width: 89% !important; margin-left: 3% !important; margin-right: auto !important; margin-top: 2px !important; }
-  .mkt-more-store:nth-child(6n + 4) { width: 96% !important; margin-left: 7% !important; margin-right: -3% !important; margin-top: -8px !important; }
-  .mkt-more-store:nth-child(6n + 5) { width: 80% !important; margin-left: -1% !important; margin-right: auto !important; margin-top: 4px !important; }
-  .mkt-more-store:nth-child(6n) { width: 91% !important; margin-left: auto !important; margin-right: -2% !important; margin-top: -2px !important; }
 }
 
 /* Store editor: same paper, cutout, sticker and handwritten language as the
@@ -5849,50 +5857,4 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-shell-header-inner > div:first-child > a:first-child svg { display: none !important; }
   .mercadito-shell-bell { width: 38px !important; height: 38px !important; }
   .mkt-mobile-menu-toggle { width: 40px; height: 40px; }
-}
-
-/* MOBILE COMMUNITY STORE CAROUSEL — 2026-10-13
-   Keep the editorial cards while letting visitors swipe through the
-   non-featured stores instead of stacking uneven columns on phones. */
-@media (max-width: 620px) {
-  .mkt-more-stores {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 16px !important;
-    padding: 18px 12px 28px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 12px;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-
-  /* One card per swipe, with part of the next card visible as a cue.
-     Higher specificity also cancels the old nth-child widths/margins. */
-  .mkt-more-stores > .mkt-more-store:nth-child(n) {
-    position: relative !important;
-    flex: 0 0 calc(100% - 48px) !important;
-    width: calc(100% - 48px) !important;
-    max-width: 420px;
-    min-width: 0 !important;
-    height: clamp(340px, 98vw, 410px) !important;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
-    margin: 0 !important;
-    transform: none !important;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-  }
-
-  .mkt-more-stores:focus-visible {
-    outline: 3px solid #123d84;
-    outline-offset: -3px;
-  }
 }
