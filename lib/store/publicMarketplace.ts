@@ -1,4 +1,5 @@
 import type { MarketplaceVariant, StoreStatus } from "./domain";
+import { publicStoreRatingStats, readStoreRatingStats, type StoreRatingStats } from "./storeRating";
 import type { ProductPriceType, ProductVisibility } from "./productDomain";
 import {
   isStoreOpenNow,
@@ -9,6 +10,7 @@ import {
 export interface PublicStoreSource {
   id: string;
   ownerUid?: string;
+  ratingStats?: StoreRatingStats;
   name: string;
   slug: string | null;
   description: string;
@@ -42,6 +44,9 @@ export interface PublicStoreSummary {
   marketplaceVariant: MarketplaceVariant | null;
   categoryIds?: string[];
   openNow: boolean;
+  ratingAverage?: number | null;
+  ratingCount?: number;
+  ratingDistribution?: number[];
 }
 
 export interface PublicProductSource {
@@ -105,6 +110,7 @@ export function serializePublicStore(
     marketplaceTags: [...store.marketplaceTags],
     marketplaceVariant: store.marketplaceVariant,
     categoryIds: [...(store.categoryIds ?? [])],
+    ...publicStoreRatingStats(readStoreRatingStats(store.ratingStats)),
     openNow: isStoreOpenNow(
       store.schedule,
       store.operationalMode,
