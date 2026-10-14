@@ -3,7 +3,7 @@
 // Marketplace page intentionally triggers deploy after cache-control changes.
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
@@ -330,6 +330,7 @@ export default function MarketplacePage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [storePage, setStorePage] = useState(0);
+  const moreStoresRef = useRef<HTMLDivElement>(null);
   const [category, setCategory] = useState("all");
   const [approvedCategories, setApprovedCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
@@ -506,6 +507,11 @@ export default function MarketplacePage() {
   const currentStorePage = Math.min(storePage, pageCount - 1);
   const visibleAdditionalStores = additionalStores.slice(currentStorePage * storesPerPage, (currentStorePage + 1) * storesPerPage);
 
+  useEffect(() => {
+    // A newly loaded page should start at its first card, not at the previous swipe offset.
+    moreStoresRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [currentStorePage, query, category]);
+
   function showNextStores() {
     if (additionalStores.length === 0) return;
     setStorePage((current) => (current + 1) % pageCount);
@@ -647,7 +653,7 @@ export default function MarketplacePage() {
             <span>{marketplaceContent.moreStoresHeading}</span>
             <b aria-hidden="true">↘</b>
           </div>
-          <div className="mkt-more-stores">
+          <div className="mkt-more-stores" ref={moreStoresRef} role="region" tabIndex={0} aria-label="Tiendas adicionales: desliza horizontalmente para recorrerlas">
             {visibleAdditionalStores.map((store, index) => (
               <StoreCard
                 key={store.id}
