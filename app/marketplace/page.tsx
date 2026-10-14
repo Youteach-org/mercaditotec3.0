@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
+import { StoreRatingBadge } from "@/components/store/StoreEmojiRating";
+import { STORE_RATING_CHOICES } from "@/lib/store/storeRating";
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
 import MarketplaceRibbon from "@/components/store/MarketplaceRibbon";
 
@@ -266,9 +268,11 @@ function StoreCard({
           <h3>{store.name}</h3>
           <p>{store.description || "Conoce esta tienda y lo que ofrece."}</p>
           <div className="mkt-store-details">
-            {rating !== null && reviewCount !== null && (
-              <span className="mkt-rating"><b>★</b> {rating.toFixed(1)} ({reviewCount})</span>
-            )}
+            {demo && rating !== null && reviewCount !== null ? (
+              <span className="mkt-rating" title="Datos de ejemplo">{STORE_RATING_CHOICES[Math.round(rating) - 1].emoji} {rating.toFixed(1)}/5 ({reviewCount})</span>
+            ) : !demo ? (
+              <StoreRatingBadge store={store} />
+            ) : null}
             {tags.map((tag) => (
               <span key={tag} className="mkt-tag">{tag}</span>
             ))}
