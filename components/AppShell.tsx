@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 
 import GlobalImageViewer from "@/components/GlobalImageViewer";
 import AccountAccessGate from "@/components/AccountAccessGate";
-import { loadUnreadNotificationCount } from "@/lib/notifications/client";
+import { acknowledgeNotificationsAtDestination, announceNotificationsChanged, dismissDeviceNotificationAlerts, loadUnreadNotificationCount } from "@/lib/notifications/client";
+import { shouldAcknowledgeDestination } from "@/lib/notifications/destination";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { storeApiFetch } from "@/lib/store/client";
 import { isAdminRole } from "@/lib/security/domain";
@@ -63,6 +64,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [messageAlert, setMessageAlert] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const previousPrivateUnreadRef = useRef<number | null>(null);
+  const lastNotificationAckRef = useRef("");
   const [visualPreview, setVisualPreview] = useState(false);
   const [syncDeferred, setSyncDeferred] = useState(false);
   const [serverAdminVerified, setServerAdminVerified] = useState(false);
@@ -122,6 +124,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("notifications:changed", refreshFallback);
     };
   }, [firebaseUser, loading, profileUnreadCount]);
+
+
+  // An alert must be consumed when its actual destination is opened directly,
+  // not only when entering through the bell. A changed unread total retries
+  // the check for genuinely new events while already viewing the destination.
+  useEffect(() => {
+    if (loading || !firebaseUser || !shouldAcknowledgeDestination(pathname)) return;
+    if (profileUnreadCount === 0) return;
+    const marker = `${firebaseUser.uid}:${pathname}:${profileUnreadCount ?? "unknown"}`;
+    if (lastNotificationAckRef.current === marker) return;
+    lastNotificationAckRef.current = marker;
+    let cancelled = false;
+    void acknowledgeNotificationsAtDestination(firebaseUser, pathname)
+      .then((result) => {
+        if (cancelled || result.updatedCount === 0) return;
+        void dismissDeviceNotificationAlerts(result.notificationIds);
+        announceNotificationsChanged();
+      })
+      .catch(() => {
+        if (!cancelled && lastNotificationAckRef.current === marker) {
+          lastNotificationAckRef.current = "";
+        }
+      });
+    return () => { cancelled = true; };
+  }, [firebaseUser, loading, pathname, profileUnreadCount]);
 
   const unreadCount = fallbackUnreadCount;
 
