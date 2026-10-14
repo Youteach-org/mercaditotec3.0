@@ -35,7 +35,7 @@ beforeEach(() => {
         }) };
       }
       const filters: Array<[string, unknown]> = [];
-      const query = {
+      const query: Record<string, unknown> = {
         where: (key: string, _op: string, value: unknown) => {
           filters.push([key, value]);
           return query;
