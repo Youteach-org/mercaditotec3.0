@@ -48,7 +48,7 @@ describe("Marketplace discover pagination and store ribbons", () => {
   });
 
   it("moves every cloud logo right without changing its vertical position or size", () => {
-    const logoRule = css.split("/* COMMUNITY AND FEATURED STORE LOGOS — 2026-10-13")[1];
+    const logoRule = css.split("/* COMMUNITY AND FEATURED STORE LOGOS — 2026-10-13")[1]?.split("/* STORE EMOJI RATINGS — 2026-10-14")[0];
     expect(logoRule).toBeDefined();
     expect(logoRule).toContain(".mkt-store-card > .mkt-store-logo");
     expect(logoRule).toContain("left: auto !important");
