@@ -22,7 +22,7 @@ describe("Marketplace discover pagination and store ribbons", () => {
   });
 
   it("keeps community stores in a vertical, non-overlapping mobile column", () => {
-    const mobileList = css.split("@media (max-width: 620px) {\\n  .mkt-more-stores {")[1]?.split("/* Store editor:")[0];
+    const mobileList = css.split("@media (max-width: 620px) {" + String.fromCharCode(10) + "  .mkt-more-stores {")[1]?.split("/* Store editor:")[0];
     expect(mobileList).toBeDefined();
     expect(mobileList).toContain("flex-direction: column !important");
     expect(mobileList).toContain("flex-wrap: nowrap !important");
