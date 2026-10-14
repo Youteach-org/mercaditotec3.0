@@ -5866,3 +5866,139 @@ img:not([data-no-image-zoom="true"]) {
   left: auto !important;
   right: 8% !important;
 }
+
+/* STORE EMOJI RATINGS — 2026-10-14
+   Tiny, authenticated card overlay; no oversized rating panel. */
+.mkt-store-card-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.mkt-card-emoji-rating {
+  position: absolute !important;
+  z-index: 90 !important;
+  top: 57% !important;
+  right: 7% !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  max-width: 87%;
+  min-height: 28px;
+  padding: 5px 9px !important;
+  border: 2px solid #fff !important;
+  border-radius: 999px !important;
+  background: #fffaf7 !important;
+  color: #703047 !important;
+  box-shadow: 0 3px 10px rgba(30, 30, 35, .19);
+  font: 800 clamp(11px, .9vw, 13px)/1 Arial, Helvetica, sans-serif !important;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mkt-card-emoji-rating:hover,
+.mkt-card-emoji-rating:focus-visible {
+  background: #ffeaf1 !important;
+  outline: 2px solid #d62e64;
+  outline-offset: 2px;
+}
+
+.mkt-store-rating-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid #eedbdc;
+  border-radius: 999px;
+  background: #fff4f3;
+  color: #7b294a;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.mkt-emoji-rating-dismiss {
+  position: fixed;
+  z-index: 100001;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.mkt-emoji-rating-picker {
+  position: fixed;
+  z-index: 100002;
+  width: min(296px, calc(100vw - 24px));
+  padding: 12px;
+  border: 1px solid #f2bbc9;
+  border-radius: 15px;
+  background: #fffaf9;
+  color: #273047;
+  box-shadow: 0 12px 30px rgba(23, 27, 48, .22);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.mkt-emoji-rating-picker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+
+.mkt-emoji-rating-picker-head button {
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: #5f6573;
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mkt-emoji-rating-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.mkt-emoji-rating-options button {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 0;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mkt-emoji-rating-options button:hover,
+.mkt-emoji-rating-options button.is-selected {
+  border-color: #d62e64;
+  background: #ffe6ef;
+}
+
+.mkt-emoji-rating-options button:disabled { opacity: .5; cursor: wait; }
+.mkt-emoji-rating-options button span { font-size: 29px; line-height: 1.15; }
+.mkt-emoji-rating-options button small { color: #60687a; font-size: 10px; font-weight: 800; }
+.mkt-emoji-rating-status { margin: 10px 0 3px; font-size: 12px; }
+.mkt-emoji-rating-error { margin: 8px 0 0; color: #ae1832; font-size: 12px; font-weight: 700; }
+
+@media (max-width: 620px) {
+  .mkt-card-emoji-rating {
+    right: 6% !important;
+    top: 56% !important;
+    min-height: 27px;
+    padding: 5px 9px !important;
+    font-size: 12px !important;
+  }
+}

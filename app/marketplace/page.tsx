@@ -3,11 +3,11 @@
 // Marketplace page intentionally triggers deploy after cache-control changes.
 
 import Link from "next/link";
+import type { User } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
 
 import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
-import { StoreRatingBadge } from "@/components/store/StoreEmojiRating";
-import { STORE_RATING_CHOICES } from "@/lib/store/storeRating";
+import { StoreEmojiRatingCard } from "@/components/store/StoreEmojiRating";
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
 import MarketplaceRibbon from "@/components/store/MarketplaceRibbon";
 
@@ -214,6 +214,7 @@ function StoreCard({
   onPreview,
   gallery = false,
   categoryLabels,
+  ratingUser,
 }: {
   store: PublicStoreSummary;
   slotIndex: number;
@@ -222,6 +223,7 @@ function StoreCard({
   onPreview: (store: PublicStoreSummary) => void;
   gallery?: boolean;
   categoryLabels: MarketplaceContent["categoryLabels"];
+  ratingUser: User | null;
 }) {
   const demo = "demoRating" in store ? (store as DemoMarketplaceStore) : null;
   const variant = resolveMarketplaceVariant(store.marketplaceVariant, store.id);
@@ -230,8 +232,6 @@ function StoreCard({
     store.marketplaceTags.length > 0
       ? store.marketplaceTags
       : demo?.demoTags ?? [categoryLabel(inferredCategory(store), categoryLabels)];
-  const rating = demo?.demoRating ?? null;
-  const reviewCount = demo?.demoReviewCount ?? null;
   const ribbonLabel = store.marketplaceLabel.trim() || store.name;
   const note = store.marketplaceNote.trim();
   const storeHref = `/marketplace/stores/${store.slug}`;
@@ -268,11 +268,6 @@ function StoreCard({
           <h3>{store.name}</h3>
           <p>{store.description || "Conoce esta tienda y lo que ofrece."}</p>
           <div className="mkt-store-details">
-            {demo && rating !== null && reviewCount !== null ? (
-              <span className="mkt-rating" title="Datos de ejemplo">{STORE_RATING_CHOICES[Math.round(rating) - 1].emoji} {rating.toFixed(1)}/5 ({reviewCount})</span>
-            ) : !demo ? (
-              <StoreRatingBadge store={store} />
-            ) : null}
             {tags.map((tag) => (
               <span key={tag} className="mkt-tag">{tag}</span>
             ))}
@@ -304,24 +299,27 @@ function StoreCard({
   }
 
   return (
-    <Link prefetch={false}
-      href={requiresLogin ? "/login" : storeHref}
-      className={className}
-      onClickCapture={(event) => {
-        // The image has its own 1-tap zoom / 2-tap navigation gesture.
-        // Prevent Next Link navigation even if a delegated click handler
-        // is registered before the global viewer on this device.
-        const target = event.target;
-        if (
-          target instanceof Element &&
-          target.closest(".mkt-store-photo, .mkt-store-logo")
-        ) {
-          event.preventDefault();
-        }
-      }}
-    >
-      {body}
-    </Link>
+    <div className={className}>
+      <Link prefetch={false}
+        href={requiresLogin ? "/login" : storeHref}
+        className="mkt-store-card-link"
+        onClickCapture={(event) => {
+          // The image keeps its existing tap-to-zoom and double-tap gesture.
+          const target = event.target;
+          if (
+            target instanceof Element &&
+            target.closest(".mkt-store-photo, .mkt-store-logo")
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
+        {body}
+      </Link>
+      {ratingUser && !requiresLogin && (
+        <StoreEmojiRatingCard user={ratingUser} store={store} />
+      )}
+    </div>
   );
 }
 
@@ -631,6 +629,7 @@ export default function MarketplacePage() {
                 requiresLogin={!firebaseUser || sessionLoading}
                 onPreview={setPreviewStore}
                 categoryLabels={marketplaceContent.categoryLabels}
+                ratingUser={!forceDemo && firebaseUser ? firebaseUser : null}
               />
             ))}
 
@@ -662,6 +661,7 @@ export default function MarketplacePage() {
                 requiresLogin={!firebaseUser || sessionLoading}
                 onPreview={setPreviewStore}
                 categoryLabels={marketplaceContent.categoryLabels}
+                ratingUser={!forceDemo && firebaseUser ? firebaseUser : null}
               />
             ))}
           </div>
