@@ -79,3 +79,48 @@ export function announceNotificationsChanged() {
     window.dispatchEvent(new Event("notifications:changed"));
   }
 }
+
+
+export interface AcknowledgedNotifications {
+  updatedCount: number;
+  notificationIds: string[];
+}
+
+export async function acknowledgeNotificationsAtDestination(
+  user: User,
+  pathname: string,
+): Promise<AcknowledgedNotifications> {
+  const response = await storeApiFetch(user, "/api/notifications/acknowledge-destination", {
+    method: "PATCH",
+    body: JSON.stringify({ pathname }),
+  });
+  const data = await notificationResponse(response);
+  return {
+    updatedCount: typeof data.updatedCount === "number" ? data.updatedCount : 0,
+    notificationIds: Array.isArray(data.notificationIds)
+      ? data.notificationIds.filter((id: unknown): id is string => typeof id === "string")
+      : [],
+  };
+}
+
+/** Closing the alert inside Mercadito also clears its Android tray entry.
+ * Older FCM messages without a stored ID will age out naturally.
+ */
+export async function dismissDeviceNotificationAlerts(ids?: readonly string[]): Promise<void> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+  if (ids && ids.length === 0) return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    if (!registration || !("getNotifications" in registration)) return;
+    const notifications = await registration.getNotifications();
+    const selected = ids ? new Set(ids) : null;
+    for (const notification of notifications) {
+      const data = notification.data as { notificationId?: unknown } | undefined;
+      if (!selected || (typeof data?.notificationId === "string" && selected.has(data.notificationId))) {
+        notification.close();
+      }
+    }
+  } catch {
+    // A missing Android notification permission must not block navigation.
+  }
+}

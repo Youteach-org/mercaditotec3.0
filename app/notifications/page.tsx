@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import {
   announceNotificationsChanged,
+  dismissDeviceNotificationAlerts,
   loadNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -58,7 +59,7 @@ export default function NotificationsPage() {
     setError("");
     try {
       const result = await loadNotifications(firebaseUser);
-      setNotifications(result.notifications);
+      setNotifications(result.notifications.filter((notice) => !notice.readAt));
       setUnreadCount(result.unreadCount);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "No se pudieron cargar las notificaciones.");
@@ -83,6 +84,9 @@ export default function NotificationsPage() {
     try {
       if (!notification.readAt) {
         await markNotificationRead(firebaseUser, notification.id);
+        setNotifications((current) => current.filter((item) => item.id !== notification.id));
+        setUnreadCount((current) => Math.max(0, current - 1));
+        void dismissDeviceNotificationAlerts([notification.id]);
         announceNotificationsChanged();
       }
       const destination = notification.type === "student_pending"
@@ -103,8 +107,8 @@ export default function NotificationsPage() {
     setError("");
     try {
       await markAllNotificationsRead(firebaseUser);
-      const now = new Date().toISOString();
-      setNotifications((current) => current.map((item) => item.readAt ? item : { ...item, readAt: now }));
+      setNotifications([]);
+      void dismissDeviceNotificationAlerts();
       setUnreadCount(0);
       announceNotificationsChanged();
     } catch (readError) {
@@ -192,8 +196,8 @@ export default function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <section className="rounded-3xl bg-white p-8 text-center shadow-sm">
             <div className="text-4xl" aria-hidden="true">🔔</div>
-            <h2 className="mt-3 text-xl font-black text-slate-900">Todavía no hay notificaciones</h2>
-            <p className="mt-2 text-sm text-slate-600">Aquí aparecerán los cambios importantes de tus pedidos y solicitudes.</p>
+            <h2 className="mt-3 text-xl font-black text-slate-900">No tienes notificaciones pendientes</h2>
+            <p className="mt-2 text-sm text-slate-600">Las notificaciones atendidas desaparecen de esta lista. Los avisos nuevos aparecerán aquí.</p>
           </section>
         ) : (
           <section className="space-y-3">
