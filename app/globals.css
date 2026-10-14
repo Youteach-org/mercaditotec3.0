@@ -3194,7 +3194,7 @@ body {
   .mkt-more-store:nth-child(6n) { width: 56% !important; margin-top: 40px !important; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 1100px) {
   .mkt-more-stores {
     display: flex !important;
     flex-direction: column !important;
@@ -5857,4 +5857,12 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-shell-header-inner > div:first-child > a:first-child svg { display: none !important; }
   .mercadito-shell-bell { width: 38px !important; height: 38px !important; }
   .mkt-mobile-menu-toggle { width: 40px; height: 40px; }
+}
+
+/* COMMUNITY AND FEATURED STORE LOGOS — 2026-10-13
+   Keep each logo at its existing vertical position, but anchor its outer
+   edge on the right side of every marketplace cloud/card. */
+.mkt-store-card > .mkt-store-logo {
+  left: auto !important;
+  right: 8% !important;
 }
