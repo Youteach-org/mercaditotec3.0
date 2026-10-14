@@ -1,3 +1,5 @@
+> **REVOCADO / NO UTILIZAR:** el carrusel horizontal descrito en este documento fue rechazado. La corrección solicitada es una lista **vertical** normal, sin encimamientos. Véase `2026-10-13-mobile-community-stores-vertical.md`.
+
 # 2026-10-13 — Carrusel móvil de tiendas no destacadas
 
 ## Problema
