@@ -21,17 +21,20 @@ describe("Marketplace discover pagination and store ribbons", () => {
     expect(css).toContain("right: 3% !important");
   });
 
-  it("makes mobile community cards swipeable without overlapping the featured layout", () => {
-    const mobileCarousel = css.split("/* MOBILE COMMUNITY STORE CAROUSEL")[1];
-    expect(mobileCarousel).toBeDefined();
-    expect(mobileCarousel).toContain("flex-wrap: nowrap !important");
-    expect(mobileCarousel).toContain("overflow-x: auto !important");
-    expect(mobileCarousel).toContain("scroll-snap-type: x mandatory");
-    expect(mobileCarousel).toContain(".mkt-more-stores > .mkt-more-store:nth-child(n)");
-    expect(mobileCarousel).toContain("margin: 0 !important");
-    expect(page).toContain("ref={moreStoresRef}");
-    expect(page).toContain('moreStoresRef.current?.scrollTo({ left: 0, behavior: "auto" })');
-    expect(page).toContain("featuredOrder.slice(0, 6)");
+  it("keeps community stores in a vertical, non-overlapping mobile column", () => {
+    const mobileList = css.split("@media (max-width: 620px) {\\n  .mkt-more-stores {")[1]?.split("/* Store editor:")[0];
+    expect(mobileList).toBeDefined();
+    expect(mobileList).toContain("flex-direction: column !important");
+    expect(mobileList).toContain("flex-wrap: nowrap !important");
+    expect(mobileList).toContain("gap: 56px !important");
+    expect(mobileList).toContain(".mkt-more-stores > .mkt-more-store:nth-child(n)");
+    expect(mobileList).toContain("width: 100% !important");
+    expect(mobileList).toContain("margin: 0 !important");
+    expect(mobileList).toContain("transform: none !important");
+    expect(mobileList).not.toContain("overflow-x: auto");
+    expect(mobileList).not.toContain("scroll-snap-type: x");
+    expect(page).not.toContain("moreStoresRef");
+    expect(page).not.toContain("desliza horizontalmente");
   });
 
   it("keeps six featured stores and leaves the rest available", () => {
