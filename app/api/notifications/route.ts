@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { serializeNotification, toNotificationApiError } from "@/lib/notifications/http";
 import {
-  listNotificationsForUser,
+  listUnreadNotificationsForUser,
   syncUnreadNotificationCount,
 } from "@/lib/notifications/repository";
 import { requireFirebaseUser } from "@/lib/store/auth";
@@ -17,9 +17,9 @@ export async function GET(request: Request) {
 
     const hideStudentApprovals = !isSuperadminRole(user.profile);
     if (searchParams.get("summary") === "1" && isAdminRole(user.profile) && hideStudentApprovals) {
-      const notifications = await listNotificationsForUser(user.uid);
+      const notifications = await listUnreadNotificationsForUser(user.uid);
       return NextResponse.json({
-        unreadCount: notifications.filter((notice) => notice.type !== "student_pending" && !notice.readAt).length,
+        unreadCount: notifications.filter((notice) => notice.type !== "student_pending").length,
       }, { headers: { "Cache-Control": "private, no-store" } });
     }
 
@@ -34,11 +34,11 @@ export async function GET(request: Request) {
       });
     }
 
-    const allNotifications = await listNotificationsForUser(user.uid);
+    const allNotifications = await listUnreadNotificationsForUser(user.uid);
     const notifications = hideStudentApprovals
       ? allNotifications.filter((notification) => notification.type !== "student_pending")
       : allNotifications;
-    const unreadCount = notifications.filter((notification) => !notification.readAt).length;
+    const unreadCount = notifications.length;
     return NextResponse.json({
       notifications: notifications.map(serializeNotification),
       unreadCount,
