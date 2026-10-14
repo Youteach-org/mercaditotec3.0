@@ -40,8 +40,8 @@ export function readStoreRatingStats(value: unknown): StoreRatingStats {
   if (
     distribution.length !== 5 ||
     distribution.some((n) => !Number.isSafeInteger(n) || n < 0) ||
-    !Number.isSafeInteger(record.count) ||
-    !Number.isSafeInteger(record.total) ||
+    typeof record.count !== "number" || !Number.isSafeInteger(record.count) ||
+    typeof record.total !== "number" || !Number.isSafeInteger(record.total) ||
     record.count !== distribution.reduce((a, b) => a + b, 0) ||
     record.total !== distribution.reduce((sum, n, i) => sum + n * (i + 1), 0)
   ) {
