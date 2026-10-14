@@ -27,36 +27,6 @@ beforeEach(() => {
   rows.clear();
   userCounters.clear();
   updatedIds.length = 0;
-  const collection = (name: string) => ({
-    where: () => {
-      const filters: Array<[string, unknown]> = [];
-      const query = {
-        where: (key: string, _op: string, value: unknown) => {
-          filters.push([key, value]);
-          return query;
-        },
-        limit: (_count: number) => query,
-        get: async () => ({
-          docs: [...rows.entries()]
-            .filter(([, value]) => filters.every(([field, expected]) => value[field] === expected))
-            .map(([id, data]) => ({
-              id, data: () => data,
-              ref: { id },
-            })),
-        }),
-        count: () => ({
-          get: async () => ({
-            data: () => ({
-              count: [...rows.values()]
-                .filter((row) => filters.every(([field, expected]) => row[field] === expected))
-                .length,
-            }),
-          }),
-        }),
-      };
-      return query.where.bind(query);
-    },
-  });
   vi.mocked(getAdminDb).mockReturnValue({
     collection: (name: string) => {
       if (name === "users") {
