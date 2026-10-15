@@ -10,6 +10,7 @@ import {
   browserLocalPersistence,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { passwordResetActionSettings, verificationActionSettings } from "@/lib/security/emailAction";
 import { useRouter } from "next/navigation";
 
 const DOMAIN = "@morelia.tecnm.mx";
@@ -123,7 +124,7 @@ export default function LoginPage() {
           router.replace("/marketplace");
           return;
         } catch {
-          try { await sendEmailVerification(result.user); } catch {}
+          try { await sendEmailVerification(result.user, verificationActionSettings); } catch {}
           await signOut(auth);
           setError("Tu correo aún no ha sido verificado. Te reenviamos el enlace de confirmación.");
           return;
@@ -163,7 +164,7 @@ export default function LoginPage() {
 
     try {
       setLoadingReset(true);
-      await sendPasswordResetEmail(auth, fullEmail);
+      await sendPasswordResetEmail(auth, fullEmail, passwordResetActionSettings);
       setSuccess("Se envió un enlace para restablecer tu contraseña a tu correo institucional.");
     } catch {
       setError("No se pudo enviar el correo de recuperación.");
@@ -197,7 +198,7 @@ export default function LoginPage() {
         return;
       }
 
-      await sendEmailVerification(result.user);
+      await sendEmailVerification(result.user, verificationActionSettings);
       await signOut(auth);
       setSuccess("Se reenvió el correo de verificación a tu cuenta institucional.");
     } catch (err: any) {
