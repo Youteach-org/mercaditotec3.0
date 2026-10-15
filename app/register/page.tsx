@@ -10,6 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { auth } from "@/lib/firebase";
+import { verificationActionSettings } from "@/lib/security/emailAction";
 import { studentControlEligibility } from "@/lib/security/domain";
 import { validateNicknameSyntax } from "@/lib/security/nickname";
 
@@ -131,7 +132,7 @@ export default function RegisterPage() {
       }
 
       try {
-        await sendEmailVerification(result.user);
+        await sendEmailVerification(result.user, verificationActionSettings);
         setSuccess(
           "Cuenta creada. Te enviamos un correo de verificación. Revisa tu bandeja o spam.",
         );
