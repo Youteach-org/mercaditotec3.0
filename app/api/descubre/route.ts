@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireFirebaseUser, ApiAuthError } from "@/lib/store/auth";
 import { getPublicMarketplaceSnapshot } from "@/lib/store/publicMarketplaceSnapshot";
+import { mergeDiscoverListings } from "@/lib/descubre/feed";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +15,10 @@ export async function GET(request: Request) {
     const snapshot = await getPublicMarketplaceSnapshot();
     return NextResponse.json(
       {
-        products: Array.isArray(snapshot.discoverProducts) ? snapshot.discoverProducts : [],
+        products: mergeDiscoverListings(
+          Array.isArray(snapshot.discoverProducts) ? snapshot.discoverProducts : [],
+          Array.isArray(snapshot.discoverListings) ? snapshot.discoverListings : [],
+        ),
         categories: snapshot.categories,
       },
       { headers: { "Cache-Control": "private, no-store" } },
