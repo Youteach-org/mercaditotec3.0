@@ -83,7 +83,6 @@ function isPublicSnapshot(value: unknown): value is Snapshot {
   return (
     Array.isArray(record.stores) &&
     Array.isArray(record.categories) &&
-    Array.isArray(record.discoverProducts) &&
     record.content !== null &&
     typeof record.content === "object" &&
     typeof record.totalStoreCount === "number"
@@ -102,7 +101,9 @@ function savedSnapshotData(data: Record<string, unknown> | undefined): SavedSnap
   return {
     snapshot,
     ageMs: Math.max(0, Date.now() - stamp.toMillis()),
-    invalidated: revision !== processedRevision,
+    // v2 materializations remain valid for outage fallback, but must rebuild
+    // once to add the new, bounded Descubre listings.
+    invalidated: revision !== processedRevision || !Array.isArray((snapshot as { discoverProducts?: unknown }).discoverProducts),
   };
 }
 
