@@ -5975,13 +5975,14 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-card-emoji-rating {
   position: absolute !important;
   z-index: 90 !important;
-  /* Top center INSIDE the cloud (cloud artwork fills about 69–73%
-     of the card). Never overlap the description at its lower edge. */
-  left: 50% !important;
+  /* Position is measured per card against its ribbon, description,
+     hand note and logo. CSS fallback is hidden until the safe spot is found. */
+  left: var(--mkt-rating-x, 74%) !important;
   right: auto !important;
-  top: 11% !important;
+  top: var(--mkt-rating-y, 40%) !important;
   bottom: auto !important;
   transform: translateX(-50%) !important;
+  visibility: hidden !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -5996,6 +5997,10 @@ img:not([data-no-image-zoom="true"]) {
   font: 800 clamp(11px, .9vw, 13px)/1 Arial, Helvetica, sans-serif !important;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.mkt-card-emoji-rating[data-positioned="true"] {
+  visibility: visible !important;
 }
 
 .mkt-card-emoji-rating:hover,
@@ -6095,9 +6100,9 @@ img:not([data-no-image-zoom="true"]) {
 
 @media (max-width: 620px) {
   .mkt-card-emoji-rating {
-    left: 50% !important;
+    left: var(--mkt-rating-x, 74%) !important;
     right: auto !important;
-    top: 12% !important;
+    top: var(--mkt-rating-y, 40%) !important;
     bottom: auto !important;
     transform: translateX(-50%) !important;
     min-height: 27px;

@@ -30,28 +30,26 @@ describe("compact emoji ratings on Marketplace cards", () => {
     expect(css).toContain(".mkt-card-emoji-rating {");
   });
 
-  it("places the rating in the upper center of the cloud on mobile and landscape", () => {
+  it("finds an actual unobstructed cloud location, instead of a fixed position over store names", () => {
     const cssBlock = css.split("/* STORE EMOJI RATINGS — 2026-10-14")[1];
     expect(cssBlock).toBeDefined();
     const desktop = cssBlock.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
-    expect(desktop).toContain("left: 50% !important;");
-    expect(desktop).toContain("right: auto !important;");
-    expect(desktop).toContain("top: 11% !important;");
-    expect(desktop).toContain("bottom: auto !important;");
-    expect(desktop).toContain("transform: translateX(-50%) !important;");
-    expect(desktop).not.toContain("bottom: 32% !important;");
-    const mobile = cssBlock.split("@media (max-width: 620px) {")[1];
-    expect(mobile).toBeDefined();
-    const mobileBadge = mobile.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
-    expect(mobileBadge).toContain("left: 50% !important;");
-    expect(mobileBadge).toContain("top: 12% !important;");
-    expect(mobileBadge).toContain("bottom: auto !important;");
-    expect(mobileBadge).toContain("transform: translateX(-50%) !important;");
-    expect(mobileBadge).not.toContain("bottom: 31%");
-    // The right-side shop logo stays in front without being relocated.
-    expect(css).toContain(".mkt-store-card > .mkt-store-logo {");
+    expect(desktop).toContain("left: var(--mkt-rating-x, 74%) !important;");
+    expect(desktop).toContain("top: var(--mkt-rating-y, 40%) !important;");
+    expect(desktop).toContain("visibility: hidden !important;");
+    expect(cssBlock).toContain('.mkt-card-emoji-rating[data-positioned="true"]');
+    const phone = cssBlock.split("@media (max-width: 620px) {")[1];
+    expect(phone).toContain("left: var(--mkt-rating-x, 74%) !important;");
+    expect(phone).toContain("top: var(--mkt-rating-y, 40%) !important;");
+    expect(rating).toContain('".mkt-store-ribbon, .mkt-store-copy, .mkt-store-logo, .mkt-hand-note"');
+    expect(rating).toContain("ratingBadgeCandidates(");
+    expect(rating).toContain("ratingBadgeOverlapArea(bounds, obstacle.rect)");
+    expect(rating).toContain('button.dataset.positioned = "true"');
+    expect(rating).toContain('window.addEventListener("orientationchange", schedule)');
+    expect(rating).toContain("new ResizeObserver(schedule)");
+    expect(rating).not.toContain("top: 11%");
+    expect(rating).not.toContain("bottom: 32%");
     expect(css).toContain("right: 8% !important;");
-    expect(css).toContain("z-index: 95 !important; /* Never allow the rating button to cover the logo. */");
   });
 
   it("fetches own votes only when a card is tapped, not at Marketplace startup", () => {

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { User } from "firebase/auth";
 
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
+import { ratingBadgeCandidates, ratingBadgeOverlapArea } from "./ratingBadgePlacement";
 import {
   compactStoreRating,
   STORE_RATING_CHOICES,
@@ -55,6 +56,78 @@ export function StoreEmojiRatingCard({ user, store }: { user: User; store: Publi
   const [position, setPosition] = useState({ left: 12, top: 12 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const endpoint = `/api/marketplace/store-ratings/${encodeURIComponent(store.id)}`;
+
+  /* Each cloud has a different title length, paper size and logo position.
+     Find a free spot in the cloud instead of covering handwritten names or
+     descriptions with a fixed percentage position. Remeasure on rotation. */
+  useEffect(() => {
+    const button = triggerRef.current;
+    const slot = button?.closest<HTMLElement>(".mkt-store-slot");
+    const photo = slot?.querySelector<HTMLElement>(".mkt-store-photo");
+    if (!button || !slot || !photo) return;
+
+    const protectedElements = Array.from(slot.querySelectorAll<HTMLElement>(
+      ".mkt-store-ribbon, .mkt-store-copy, .mkt-store-logo, .mkt-hand-note",
+    ));
+    let frame = 0;
+    let disposed = false;
+    const placeBadge = () => {
+      const candidates = ratingBadgeCandidates({
+        left: photo.offsetLeft,
+        top: photo.offsetTop,
+        width: photo.offsetWidth,
+        height: photo.offsetHeight,
+      }, { width: button.offsetWidth, height: button.offsetHeight });
+      if (!candidates.length) {
+        button.dataset.positioned = "true";
+        return;
+      }
+
+      const obstacles = protectedElements
+        .filter((element) => element.getClientRects().length > 0)
+        .map((element) => ({
+          rect: element.getBoundingClientRect(),
+          priority: element.matches(".mkt-store-copy, .mkt-store-ribbon") ? 3 : 2,
+        }));
+      let best = candidates[0];
+      let leastOverlap = Infinity;
+      for (const candidate of candidates) {
+        button.style.setProperty("--mkt-rating-x", `${candidate.left}px`);
+        button.style.setProperty("--mkt-rating-y", `${candidate.top}px`);
+        const bounds = button.getBoundingClientRect();
+        const overlap = obstacles.reduce((total, obstacle) =>
+          total + ratingBadgeOverlapArea(bounds, obstacle.rect) * obstacle.priority, 0);
+        if (overlap < leastOverlap) {
+          leastOverlap = overlap;
+          best = candidate;
+        }
+        if (overlap === 0) break;
+      }
+      button.style.setProperty("--mkt-rating-x", `${best.left}px`);
+      button.style.setProperty("--mkt-rating-y", `${best.top}px`);
+      button.dataset.positioned = "true";
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(placeBadge);
+    };
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    observer?.observe(slot);
+    observer?.observe(photo);
+    observer?.observe(button);
+    protectedElements.forEach((element) => observer?.observe(element));
+    window.addEventListener("resize", schedule);
+    window.addEventListener("orientationchange", schedule);
+    void document.fonts?.ready.then(() => { if (!disposed) schedule(); });
+    schedule();
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("orientationchange", schedule);
+    };
+  }, [store.id, rating.ratingAverage, rating.ratingCount]);
 
   useEffect(() => {
     if (!open) return;
