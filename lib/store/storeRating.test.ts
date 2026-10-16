@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  compactStoreRating,
   dominantStoreRating,
   parseStoreRatingValue,
   publicStoreRatingStats,
@@ -14,6 +15,15 @@ describe("store emoji ratings", () => {
     for (const invalid of [0, 6, 2.5, "5", true, null, undefined, NaN]) {
       expect(() => parseStoreRatingValue(invalid)).toThrow(StoreRatingError);
     }
+  });
+
+  it("formats a rating as the matching emoji plus one whole number", () => {
+    expect(compactStoreRating(5)).toEqual({ emoji: "😍", score: 5 });
+    expect(compactStoreRating(4.7)).toEqual({ emoji: "😍", score: 5 });
+    expect(compactStoreRating(4.2)).toEqual({ emoji: "😊", score: 4 });
+    expect(compactStoreRating(2.3)).toEqual({ emoji: "😕", score: 2 });
+    expect(compactStoreRating(null)).toBeNull();
+    expect(compactStoreRating(NaN)).toBeNull();
   });
 
   it("starts empty and computes a new vote without duplicates", () => {
