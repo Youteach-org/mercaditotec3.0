@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({ snapshot: vi.fn() }));
 vi.mock("@/lib/store/publicMarketplaceSnapshot", () => ({
   getPublicMarketplaceSnapshot: mocks.snapshot,
 }));
+vi.mock("@/lib/firestoreRest", () => ({
+  FirestoreRestError: class FirestoreRestError extends Error { constructor(public status: number) { super("quota"); } },
+}));
 
 import { GET } from "./route";
 
