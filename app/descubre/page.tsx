@@ -109,9 +109,11 @@ export default function DescubrePage() {
     return () => controller.abort();
   }, [sessionLoading, firebaseUser]);
 
+  // Show ALL active real categories, even before the first product arrives.
+  // The Marketplace category strip is the visual reference; no generic pills.
   const visibleCategories = useMemo(
-    () => categories.filter((cat) => products.some((product) => product.categoryId === cat.id)),
-    [categories, products],
+    () => categories.filter((cat) => cat.id && cat.name).slice(0, 24),
+    [categories],
   );
   const matching = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("es-MX");
@@ -152,18 +154,31 @@ export default function DescubrePage() {
           <button type="button" className="discover-publish" onClick={() => setPublishModal(true)}>
             <span aria-hidden="true">＋</span> Publicar
           </button>
-          <div className="discover-hero-note" aria-hidden="true">Encuentra, compra<br />y apoya a la comunidad ↗</div>
         </section>
 
-        <nav className="discover-filters" aria-label="Filtrar productos">
-          <button type="button" className={filter === "all" ? "is-active" : ""} onClick={() => { setFilter("all"); setLimit(BATCH_SIZE); }}>▦ Todos</button>
-          <button type="button" className={filter === "offers" ? "is-active" : ""} onClick={() => { setFilter("offers"); setLimit(BATCH_SIZE); }}>⚡ Ofertas</button>
-          {visibleCategories.map((category) => (
-            <button key={category.id} type="button" className={filter === category.id ? "is-active" : ""} onClick={() => { setFilter(category.id); setLimit(BATCH_SIZE); }}>
-              <CategoryIcon id={category.iconKey} /> {category.name}
+        <section className="discover-category-section" aria-label="Explora por categoría">
+          <div className="discover-category-heading">
+            <span className="discover-category-brush" aria-hidden="true" />
+            <h2>Explora</h2>
+            <span className="discover-category-spark" aria-hidden="true">✳</span>
+          </div>
+          <nav className="discover-filters" aria-label="Filtrar productos">
+            <button type="button" aria-pressed={filter === "all"} className={filter === "all" ? "discover-category-button is-active" : "discover-category-button"} onClick={() => { setFilter("all"); setLimit(BATCH_SIZE); }}>
+              <span className="discover-category-icon"><CategoryIcon id="all" /></span>
+              <span className="discover-category-label">Todas</span>
             </button>
-          ))}
-        </nav>
+            <button type="button" aria-pressed={filter === "offers"} className={filter === "offers" ? "discover-category-button is-active" : "discover-category-button"} onClick={() => { setFilter("offers"); setLimit(BATCH_SIZE); }}>
+              <span className="discover-category-icon discover-category-flash" aria-hidden="true">ϟ</span>
+              <span className="discover-category-label">Ofertas</span>
+            </button>
+            {visibleCategories.map((category) => (
+              <button key={category.id} type="button" aria-pressed={filter === category.id} className={filter === category.id ? "discover-category-button is-active" : "discover-category-button"} onClick={() => { setFilter(category.id); setLimit(BATCH_SIZE); }}>
+                <span className="discover-category-icon"><CategoryIcon id={category.iconKey} /></span>
+                <span className="discover-category-label">{category.name}</span>
+              </button>
+            ))}
+          </nav>
+        </section>
 
         <div className="discover-intro">
           <p>Descubre productos<br />de la comunidad <span aria-hidden="true">♡</span></p>
