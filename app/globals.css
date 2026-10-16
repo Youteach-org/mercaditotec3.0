@@ -5880,8 +5880,13 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-card-emoji-rating {
   position: absolute !important;
   z-index: 90 !important;
-  top: 57% !important;
-  right: 7% !important;
+  /* Center horizontally on the lower portion of the cloud, ABOVE the logo
+     (which starts around 56% of card height on the smallest mobile cards). */
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 46% !important;
+  transform: translateX(-50%) !important;
   display: inline-flex !important;
   align-items: center;
   justify-content: center;
@@ -5995,8 +6000,11 @@ img:not([data-no-image-zoom="true"]) {
 
 @media (max-width: 620px) {
   .mkt-card-emoji-rating {
-    right: 6% !important;
-    top: 56% !important;
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: 48% !important;
+    transform: translateX(-50%) !important;
     min-height: 27px;
     padding: 5px 9px !important;
     font-size: 12px !important;
