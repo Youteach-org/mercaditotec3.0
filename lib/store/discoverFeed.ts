@@ -1,3 +1,4 @@
+import { orderMarketplaceFeatured } from "./featuredMarketplace";
 export interface DiscoverProduct {
   id: string;
   storeId: string;
@@ -66,12 +67,11 @@ export function buildDiscoverFeed(
   nowMs = Date.now(),
 ): DiscoverProduct[] {
   const byStore = new Map(stores.filter((s) => s.id && s.slug).map((s) => [s.id, s]));
-  return products
+  const eligible = products
     .filter(isEligibleForDiscover)
     .filter((p) => byStore.has(p.storeId))
     .filter((p) => !p.flashEndsAt || Date.parse(p.flashEndsAt) > nowMs)
     .sort((a, b) => b.createdAt - a.createdAt || a.id.localeCompare(b.id))
-    .slice(0, MAX_FEED_PRODUCTS)
     .map((product) => {
       const store = byStore.get(product.storeId)!;
       return {
@@ -91,4 +91,15 @@ export function buildDiscoverFeed(
         flashEndsAt: product.flashEndsAt ?? null,
       };
     });
+  // Ke-Rollos and (once available) YouTeach retain their Marketplace rule:
+  // one of their eligible items lands among the first six, in a daily
+  // rotating position, while the rest of the feed remains varied.
+  const ordered = orderMarketplaceFeatured(
+    eligible.map((product) => ({
+      id: product.id, name: product.storeName, slug: product.storeSlug,
+      product,
+    })),
+    new Date(nowMs),
+  );
+  return ordered.slice(0, MAX_FEED_PRODUCTS).map((item) => item.product);
 }
