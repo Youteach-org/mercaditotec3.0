@@ -21,30 +21,44 @@ describe("Marketplace discover pagination and store ribbons", () => {
     expect(css).toContain("right: 3% !important");
   });
 
-  it("keeps community stores in a vertical, non-overlapping mobile column", () => {
-    const mobileList = css.split("@media (max-width: 1100px) {" + String.fromCharCode(10) + "  .mkt-more-stores {")[1]?.split("/* Store editor:")[0];
-    expect(mobileList).toBeDefined();
-    expect(mobileList).toContain("flex-direction: column !important");
-    expect(mobileList).toContain("flex-wrap: nowrap !important");
-    expect(mobileList).toContain("gap: 56px !important");
-    expect(mobileList).toContain(".mkt-more-stores > .mkt-more-store:nth-child(n)");
-    expect(mobileList).toContain("width: 100% !important");
-    expect(mobileList).toContain("margin: 0 !important");
-    expect(mobileList).toContain("transform: none !important");
-    expect(mobileList).not.toContain("overflow-x: auto");
-    expect(mobileList).not.toContain("scroll-snap-type: x");
+  it("keeps extra shops tilted and staggered while scrolling vertically on phones", () => {
+    const scrapbook = css.split("/* RESPONSIVE COMMUNITY SCRAPBOOK — 2026-10-16")[1]?.split("/* Store editor:")[0];
+    expect(scrapbook).toBeDefined();
+    const phone = scrapbook.split("@media (max-width: 620px) {")[1];
+    expect(phone).toBeDefined();
+    expect(phone).toContain("display: grid !important");
+    expect(phone).toContain("grid-template-columns: minmax(0, 1fr) !important");
+    expect(phone).toContain("row-gap: clamp(52px, 11vw, 70px) !important");
+    expect(phone).toContain("height: clamp(360px, 120vw, 490px) !important");
+    expect(phone).toContain("width: 88% !important");
+    expect(phone).toContain("width: 79% !important");
+    expect(phone).toContain("justify-self: start");
+    expect(phone).toContain("justify-self: end");
+    expect(phone).toContain("transform: rotate(-3deg) !important");
+    expect(phone).toContain("transform: rotate(2.8deg) !important");
+    expect(phone).not.toContain("transform: none !important");
+    expect(phone).not.toContain("overflow-x: auto");
+    expect(phone).not.toContain("flex-direction: column");
     expect(page).not.toContain("moreStoresRef");
-    expect(page).not.toContain("desliza horizontalmente");
   });
 
-  it("applies the vertical layout to Android's wide mobile CSS viewport", () => {
-    const mobileList = css.split("@media (max-width: 1100px) {" + String.fromCharCode(10) + "  .mkt-more-stores {")[1]?.split("/* Store editor:")[0];
-    expect(mobileList).toBeDefined();
-    expect(mobileList).toContain("flex-direction: column !important");
-    expect(mobileList).toContain("width: 100% !important");
-    expect(mobileList).toContain("margin: 0 !important");
-    expect(mobileList).toContain("transform: none !important");
-    expect(mobileList).not.toContain("overflow-x: auto");
+  it("arranges landscape Android and tablet shops in two separated tilted columns", () => {
+    const scrapbook = css.split("/* RESPONSIVE COMMUNITY SCRAPBOOK — 2026-10-16")[1]?.split("/* Store editor:")[0];
+    expect(scrapbook).toBeDefined();
+    const landscape = scrapbook.split("@media (min-width: 621px) and (max-width: 1100px) {")[1]?.split("@media (max-width: 620px) {")[0];
+    expect(landscape).toBeDefined();
+    expect(landscape).toContain("display: grid !important");
+    expect(landscape).toContain("grid-template-columns: repeat(2, minmax(0, 1fr)) !important");
+    expect(landscape).toContain("row-gap: clamp(48px, 6vw, 72px) !important");
+    expect(landscape).toContain("height: clamp(330px, 39vw, 440px) !important");
+    expect(landscape).toContain("transform: rotate(-2.7deg) !important");
+    expect(landscape).toContain("transform: rotate(2.4deg) !important");
+    expect(landscape).toContain("width: 85% !important");
+    expect(landscape).toContain("justify-self: end");
+    expect(landscape).not.toContain("flex-direction: column");
+    expect(landscape).not.toContain("transform: none !important");
+    expect(landscape).not.toContain("margin-top: -");
+    expect(page).not.toContain("desliza horizontalmente");
   });
 
   it("moves every cloud logo right without changing its vertical position or size", () => {

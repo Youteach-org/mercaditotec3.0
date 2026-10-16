@@ -3194,34 +3194,128 @@ body {
   .mkt-more-store:nth-child(6n) { width: 56% !important; margin-top: 40px !important; }
 }
 
-@media (max-width: 1100px) {
+/* RESPONSIVE COMMUNITY SCRAPBOOK — 2026-10-16
+   Keep shops in normal document flow so they remain accessible while the
+   widths, sideways offsets and gentle rotations preserve the featured clouds'
+   hand-placed feel. Grid tracks account for each card and its positive offset. */
+@media (min-width: 621px) and (max-width: 1100px) {
   .mkt-more-stores {
-    display: flex !important;
-    flex-direction: column !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 56px !important;
-    padding: 22px 8px 36px;
-    overflow: visible;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: start !important;
+    justify-items: stretch;
+    column-gap: 6% !important;
+    row-gap: clamp(48px, 6vw, 72px) !important;
+    padding: 24px 2% 48px !important;
+    overflow: visible !important;
   }
 
-  /* Every non-featured shop gets its own full-width row in normal
-     page flow. Override the alternating collage widths/margins/rotations. */
   .mkt-more-stores > .mkt-more-store:nth-child(n) {
     position: relative !important;
-    display: block;
-    flex: 0 0 auto !important;
-    width: 100% !important;
-    max-width: 460px;
     min-width: 0 !important;
-    height: clamp(400px, 112vw, 500px) !important;
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
+    max-width: none !important;
+    width: 90% !important;
+    height: clamp(330px, 39vw, 440px) !important;
     margin: 0 !important;
-    transform: none !important;
+    inset: auto !important;
+    flex: none !important;
+    transform: rotate(-1.8deg) !important;
+    transform-origin: center center !important;
+    justify-self: center;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 1) {
+    width: 95% !important;
+    justify-self: start;
+    transform: rotate(-2.7deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 2) {
+    width: 85% !important;
+    margin-top: 25px !important;
+    justify-self: end;
+    transform: rotate(2.4deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 3) {
+    width: 89% !important;
+    justify-self: end;
+    transform: rotate(1.9deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 4) {
+    width: 95% !important;
+    margin-top: 17px !important;
+    justify-self: start;
+    transform: rotate(-2.2deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 5) {
+    width: 92% !important;
+    margin-top: 13px !important;
+    justify-self: start;
+    transform: rotate(-1.5deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n) {
+    width: 87% !important;
+    justify-self: end;
+    transform: rotate(2.8deg) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .mkt-more-stores {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    column-gap: 0 !important;
+    row-gap: clamp(52px, 11vw, 70px) !important;
+    padding: 24px 4% 48px !important;
+    overflow: visible !important;
+  }
+
+  /* One store per row, but never an identical straight-sided stack.
+     Staggered widths and alternating angles stay within the section. */
+  .mkt-more-stores > .mkt-more-store:nth-child(n) {
+    position: relative !important;
+    display: block !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 86% !important;
+    height: clamp(360px, 120vw, 490px) !important;
+    margin: 0 !important;
+    inset: auto !important;
+    transform: rotate(-2deg) !important;
+    transform-origin: center center !important;
+    justify-self: center;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 1) {
+    width: 88% !important;
+    justify-self: start;
+    transform: rotate(-3deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 2) {
+    width: 79% !important;
+    margin-top: 12px !important;
+    justify-self: end;
+    transform: rotate(2.8deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 3) {
+    width: 86% !important;
+    justify-self: center;
+    transform: rotate(-1.7deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 4) {
+    width: 81% !important;
+    margin-top: 9px !important;
+    justify-self: start;
+    transform: rotate(2.6deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n + 5) {
+    width: 84% !important;
+    justify-self: end;
+    transform: rotate(-2.5deg) !important;
+  }
+  .mkt-more-stores > .mkt-more-store:nth-child(6n) {
+    width: 78% !important;
+    margin-top: 14px !important;
+    justify-self: center;
+    transform: rotate(2.2deg) !important;
   }
 }
 
@@ -5881,12 +5975,12 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-card-emoji-rating {
   position: absolute !important;
   z-index: 90 !important;
-  /* The cloud ends near 69–73% of the card height. Anchor this badge
-     at 68%, on the cloud's LOWER EDGE (not at the middle of the image). */
+  /* Top center INSIDE the cloud (cloud artwork fills about 69–73%
+     of the card). Never overlap the description at its lower edge. */
   left: 50% !important;
   right: auto !important;
-  top: auto !important;
-  bottom: 32% !important;
+  top: 11% !important;
+  bottom: auto !important;
   transform: translateX(-50%) !important;
   display: inline-flex !important;
   align-items: center;
@@ -6003,8 +6097,8 @@ img:not([data-no-image-zoom="true"]) {
   .mkt-card-emoji-rating {
     left: 50% !important;
     right: auto !important;
-    top: auto !important;
-    bottom: 31% !important;
+    top: 12% !important;
+    bottom: auto !important;
     transform: translateX(-50%) !important;
     min-height: 27px;
     padding: 5px 9px !important;
