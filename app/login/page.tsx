@@ -121,7 +121,7 @@ export default function LoginPage() {
           if (status === "deferred") {
             window.sessionStorage.setItem("mercadito-profile-sync-pending", "1");
           }
-          router.replace("/marketplace");
+          router.replace("/descubre");
           return;
         } catch {
           try { await sendEmailVerification(result.user, verificationActionSettings); } catch {}
@@ -141,7 +141,7 @@ export default function LoginPage() {
         window.sessionStorage.removeItem("mercadito-profile-sync-pending");
       }
 
-      router.replace("/marketplace");
+      router.replace("/descubre");
     } catch (err: any) {
       // If Firebase accepted the credentials but account validation failed
       // for a non-retryable reason, remove that partially signed-in state.
