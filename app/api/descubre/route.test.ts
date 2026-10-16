@@ -13,6 +13,7 @@ vi.mock("@/lib/store/auth", () => ({
 vi.mock("@/lib/store/publicMarketplaceSnapshot", () => ({
   getPublicMarketplaceSnapshot: mocks.catalogue,
 }));
+vi.mock("@/lib/descubre/feed", () => ({ mergeDiscoverListings: (stores: unknown[]) => stores }));
 
 import { GET } from "./route";
 
