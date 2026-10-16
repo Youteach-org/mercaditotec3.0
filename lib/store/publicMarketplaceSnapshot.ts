@@ -2,6 +2,7 @@ import { FirestoreRestError, Timestamp, getAdminDb } from "../firestoreRest";
 import { DEMO_MARKETPLACE_STORES } from "./demoMarketplace";
 import { getMarketplaceContent } from "./marketplaceContentRepository";
 import { listPublicStores } from "./publicMarketplaceRepository";
+import type { DiscoverProduct } from "./discoverFeed";
 import { listActiveCategories, serializeCategory } from "./categoryRepository";
 
 // Public data may be slightly delayed; privileged data and authorization
@@ -29,8 +30,9 @@ async function readSnapshot() {
     }
   };
   const categoriesRequest = observe("categories", listActiveCategories());
+  const discoverProducts: DiscoverProduct[] = [];
   const [liveStores, content, categories] = await Promise.all([
-    listPublicStores(categoriesRequest),
+    listPublicStores(categoriesRequest, (products) => discoverProducts.push(...products)),
     observe("site_config", getMarketplaceContent()),
     categoriesRequest,
   ]);
@@ -49,6 +51,7 @@ async function readSnapshot() {
     stores,
     content,
     categories: categories.map(serializeCategory),
+    discoverProducts,
     temporaryExamplesEnabled: true,
     realStoreCount: liveStores.length,
     exampleStoreCount: temporaryExamples.length,
@@ -64,8 +67,8 @@ type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
 // updates made directly in Firebase outside of Mercadito's APIs.
 const SNAPSHOT_COLLECTION = "public_marketplace_cache";
 // Version 2 forces a fresh read of stores already approved before this repair.
-const SNAPSHOT_ID = "catalog-v2";
-const PREVIOUS_SNAPSHOT_ID = "catalog-v1";
+const SNAPSHOT_ID = "catalog-v3";
+const PREVIOUS_SNAPSHOT_ID = "catalog-v2";
 const SAFETY_REFRESH_MS = 24 * 60 * 60 * 1000;
 const MAX_STALE_ON_OUTAGE_MS = 48 * 60 * 60 * 1000;
 const MAX_DOCUMENT_BYTES = 700_000;
@@ -98,7 +101,9 @@ function savedSnapshotData(data: Record<string, unknown> | undefined): SavedSnap
   return {
     snapshot,
     ageMs: Math.max(0, Date.now() - stamp.toMillis()),
-    invalidated: revision !== processedRevision,
+    // v2 materializations remain valid for outage fallback, but must rebuild
+    // once to add the new, bounded Descubre listings.
+    invalidated: revision !== processedRevision || !Array.isArray((snapshot as { discoverProducts?: unknown }).discoverProducts),
   };
 }
 
@@ -108,11 +113,18 @@ async function readMaterialized(): Promise<SavedSnapshot | null> {
 }
 
 async function readPreviousSnapshot(): Promise<SavedSnapshot | null> {
-  const doc = await getAdminDb()
-    .collection(SNAPSHOT_COLLECTION)
-    .doc(PREVIOUS_SNAPSHOT_ID)
-    .get();
-  return doc.exists ? savedSnapshotData(doc.data()) : null;
+  // Preserve the original legacy fallback while migrating from v2 to v3.
+  for (const id of [PREVIOUS_SNAPSHOT_ID, "catalog-v1"]) {
+    const doc = await getAdminDb()
+      .collection(SNAPSHOT_COLLECTION)
+      .doc(id)
+      .get();
+    if (doc.exists) {
+      const data = savedSnapshotData(doc.data());
+      if (data) return data;
+    }
+  }
+  return null;
 }
 
 /**

@@ -223,7 +223,7 @@ export default function PublicStorePage() {
             ) : (
               <div className={`grid gap-4 ${store.products.length === 1 ? "grid-cols-1" : "sm:grid-cols-2"}`}>
                 {store.products.map((product) => (
-                  <article key={product.id} className="overflow-hidden rounded-3xl bg-white shadow-sm">
+                  <article key={product.id} id={`producto-${product.id}`} className="scroll-mt-28 overflow-hidden rounded-3xl bg-white shadow-sm">
                     <div className={store.products.length === 1 ? "h-56 bg-slate-100 sm:h-72" : "h-48 bg-slate-100 sm:h-56"}>
                       {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element

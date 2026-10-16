@@ -14,7 +14,8 @@ import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
 
 const NAV_ITEMS = [
-  { href: "/marketplace", label: "Mercadito", icon: "home" },
+  { href: "/descubre", label: "Descubre", icon: "home" },
+  { href: "/marketplace", label: "Tiendas", icon: "store" },
   { href: "/orders", label: "Pedidos", icon: "bag" },
   { href: "/mystore", label: "Mis tiendas", icon: "store" },
   { href: "/chat/personal", label: "Mensajes", icon: "chat" },
@@ -340,7 +341,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }>
           <div className={scrapbookShell ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
             <div className={scrapbookShell ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
-              <Link prefetch={false} href="/marketplace" className={scrapbookShell
+              <Link prefetch={false} href={firebaseUser ? "/descubre" : "/marketplace"} className={scrapbookShell
                 ? "w-auto max-w-[270px] shrink-0 leading-none sm:w-[300px]"
                 : "shrink-0 font-black tracking-tight text-slate-950"
               }>
