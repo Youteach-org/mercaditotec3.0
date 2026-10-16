@@ -1,3 +1,4 @@
+import { featuredPriorityBrand } from "./featuredMarketplace";
 export interface DiscoverProduct {
   id: string;
   storeId: string;
@@ -66,12 +67,11 @@ export function buildDiscoverFeed(
   nowMs = Date.now(),
 ): DiscoverProduct[] {
   const byStore = new Map(stores.filter((s) => s.id && s.slug).map((s) => [s.id, s]));
-  return products
+  const eligible = products
     .filter(isEligibleForDiscover)
     .filter((p) => byStore.has(p.storeId))
     .filter((p) => !p.flashEndsAt || Date.parse(p.flashEndsAt) > nowMs)
     .sort((a, b) => b.createdAt - a.createdAt || a.id.localeCompare(b.id))
-    .slice(0, MAX_FEED_PRODUCTS)
     .map((product) => {
       const store = byStore.get(product.storeId)!;
       return {
@@ -91,4 +91,30 @@ export function buildDiscoverFeed(
         flashEndsAt: product.flashEndsAt ?? null,
       };
     });
+  // Reserve one product for each eligible priority brand, exactly as in the
+  // original Marketplace. Move only those entries; all remaining discoveries
+  // stay ordered by recency (important for the fast-moving product wall).
+  const reserved: DiscoverProduct[] = [];
+  const reservedIds = new Set<string>();
+  for (const brand of ["ke-rollos", "youteach"] as const) {
+    const item = eligible.find((product) => !reservedIds.has(product.id) &&
+      featuredPriorityBrand({ id: product.storeId, name: product.storeName, slug: product.storeSlug }) === brand);
+    if (item) { reservedIds.add(item.id); reserved.push(item); }
+  }
+  if (!reserved.length) return eligible.slice(0, MAX_FEED_PRODUCTS);
+  const remaining = eligible.filter((product) => !reservedIds.has(product.id));
+  const slots = remaining.slice(0, Math.max(0, 6 - reserved.length));
+  // Mexican local day determines the position, not render order or timezone.
+  const day = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(nowMs));
+  for (const item of reserved) {
+    let hash = 2166136261;
+    for (const char of day + ":" + item.id) {
+      hash ^= char.charCodeAt(0);
+      hash = Math.imul(hash, 16777619);
+    }
+    slots.splice((hash >>> 0) % (slots.length + 1), 0, item);
+  }
+  return [...slots, ...remaining.slice(Math.max(0, 6 - reserved.length))].slice(0, MAX_FEED_PRODUCTS);
 }

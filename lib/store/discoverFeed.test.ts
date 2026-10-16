@@ -51,4 +51,42 @@ describe("Descubre eligibility and security", () => {
     const products = Array.from({ length: 200 }, (_, i) => make({ id: String(i) }));
     expect(buildDiscoverFeed(products, [store])).toHaveLength(72);
   });
+  it("keeps Ke-Rollos in the first six whenever an eligible item is available", () => {
+    const otherStores = Array.from({ length: 12 }, (_, index) => ({
+      ...store, id: "shop-" + index, name: "Tienda " + index, slug: "tienda-" + index,
+    }));
+    const keRollos = { ...store, id: "ke-rollos-store", name: "Ke-Rollos!", slug: "k-rollos" };
+    const rows = [
+      ...otherStores.map((shop, i) =>
+        make({ id: "regular-" + i, storeId: shop.id, createdAt: oldDate + (i + 1) * 1000, updatedAt: oldDate + (i + 1) * 1000 })),
+      make({ id: "ke-rollos-product", storeId: keRollos.id, createdAt: oldDate, updatedAt: oldDate }),
+    ];
+    for (const timestamp of ["2026-10-16T12:00:00Z", "2026-10-17T12:00:00Z", "2026-10-18T12:00:00Z"]) {
+      const result = buildDiscoverFeed(rows, [...otherStores, keRollos], Date.parse(timestamp));
+      expect(result).toHaveLength(13);
+      expect(result.slice(0, 6).map((entry) => entry.id)).toContain("ke-rollos-product");
+      expect(new Set(result.map((entry) => entry.id)).size).toBe(13);
+    }
+  });
+
+  it("reserves Ke-Rollos and YouTeach simultaneously, without promoting unreviewed products", () => {
+    const shops = Array.from({ length: 8 }, (_, i) => ({
+      ...store, id: "normal-" + i, name: "Tienda " + i, slug: "normal-" + i,
+    }));
+    const ke = { ...store, id: "ke", name: "Ke-Rollos", slug: "k-rollos" };
+    const youteach = { ...store, id: "yt", name: "YouTeach", slug: "youteach" };
+    const rows = [
+      ...shops.map((shop, i) =>
+        make({ id: "item-" + i, storeId: shop.id, createdAt: oldDate + i * 1000, updatedAt: oldDate + i * 1000 })),
+      make({ id: "rollos", storeId: ke.id }),
+      make({ id: "yt", storeId: youteach.id }),
+      make({ id: "blocked-rollos", storeId: ke.id, reviewStatus: "needs_changes" }),
+    ];
+    const result = buildDiscoverFeed(rows, [...shops, ke, youteach], Date.parse("2026-10-16T12:00:00Z"));
+    const firstSix = result.slice(0, 6).map((entry) => entry.id);
+    expect(firstSix).toContain("rollos");
+    expect(firstSix).toContain("yt");
+    expect(result.map((entry) => entry.id)).not.toContain("blocked-rollos");
+  });
+
 });

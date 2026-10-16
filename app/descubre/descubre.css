@@ -116,35 +116,126 @@
 }
 .discover-publish:hover, .discover-publish:focus-visible { background: #e74724; transform: rotate(0); }
 .discover-publish span { font: 900 1.4em Arial, sans-serif; vertical-align: -5%; }
-.discover-hero-note { display: none; }
-.discover-filters {
-  display: flex;
-  gap: clamp(5px, .8vw, 12px);
-  align-items: center;
-  overflow-x: auto;
-  padding: 11px 2px 20px;
-  scrollbar-width: thin;
+/* Explora reuses the original Marketplace's separate category icons and
+   handwritten name UNDER each icon, not generic ecommerce filter pills.
+   This section occupies its own grid track, so no right-side paper/banner
+   can float over or intercept category controls. */
+.discover-category-section {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 13px 0 10px;
+  padding: 3px 4px 14px;
+  isolation: isolate;
 }
-.discover-filters button {
-  flex: 0 0 auto;
-  display: inline-flex;
+.discover-category-heading {
+  position: relative;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 43px;
-  padding: 6px 14px;
-  border: 1px solid rgba(24,60,125,.09);
-  border-radius: 30px;
-  background: #fffbf2;
+  gap: 12px;
+  min-height: 45px;
+  padding: 0 0 3px 13px;
+}
+.discover-category-heading h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #123d82;
+  font: 1000 clamp(24px, 2.75vw, 38px)/1 var(--font-market-hand), "Segoe Print", cursive;
+  transform: rotate(-3deg);
+}
+.discover-category-brush {
+  position: absolute;
+  z-index: 0;
+  top: 8px;
+  left: 2px;
+  width: clamp(124px, 13.4vw, 185px);
+  height: 33px;
+  background: #ffd54c;
+  clip-path: polygon(0 10%, 22% 1%, 42% 7%, 61% 0, 80% 8%, 100% 0, 96% 93%, 74% 100%, 51% 94%, 28% 100%, 0 94%);
+  transform: rotate(-2deg);
+}
+.discover-category-spark {
+  color: #f15b32;
+  font-size: 21px;
+  transform: rotate(15deg);
+}
+.discover-filters {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 14px 9px;
+  align-items: start;
+  width: 100%;
+  padding: 12px 0 7px;
+}
+.discover-filters .discover-category-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+  gap: 3px;
+  min-width: 0;
+  min-height: 102px;
+  margin: 0;
+  padding: 1px 3px 0;
+  border: 0;
+  border-radius: 0;
   color: #12346f;
-  font-size: clamp(12px, .95vw, 15px);
-  font-weight: 900;
-  box-shadow: 0 4px 8px rgba(13,52,121,.06);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
 }
-.discover-filters button svg { width: 21px; height: 21px; }
-.discover-filters button.is-active { background: var(--discover-yellow); }
-.discover-filters button:hover, .discover-filters button:focus-visible { outline: 2px solid var(--discover-orange); outline-offset: 2px; }
+.discover-filters .discover-category-icon {
+  display: grid;
+  place-items: center;
+  width: clamp(52px, 5.2vw, 70px);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  border-radius: 52% 48% 56% 44% / 48% 56% 44% 52%;
+  background: #fff0c8;
+  box-shadow: 0 5px 11px rgba(13,52,121,.06);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.discover-filters .discover-category-button:nth-child(4n + 2) .discover-category-icon { background: #ffe9c9; }
+.discover-filters .discover-category-button:nth-child(4n + 3) .discover-category-icon { background: #ffe7c5; }
+.discover-filters .discover-category-button:nth-child(4n) .discover-category-icon { background: #ffedbd; }
+.discover-filters .discover-category-button:nth-child(4n + 2) .mkt-category-svg,
+.discover-filters .discover-category-button:nth-child(4n + 3) .mkt-category-svg { stroke: #f15b32; }
+.discover-filters .discover-category-icon .mkt-category-svg {
+  width: 68%;
+  height: 68%;
+}
+.discover-filters .discover-category-flash {
+  color: #f15b32;
+  font: 1000 47px/1 var(--font-market-hand), "Segoe Print", cursive;
+}
+.discover-filters .discover-category-label {
+  display: -webkit-box;
+  width: 100%;
+  max-width: 125px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-align: center;
+  text-wrap: balance;
+  color: #12346f;
+  font: 1000 clamp(10px, .9vw, 13px)/1.13 var(--font-market-hand), "Segoe Print", cursive;
+  overflow-wrap: anywhere;
+}
+.discover-filters .discover-category-button:is(:hover, :focus-visible, .is-active) .discover-category-icon {
+  transform: translateY(-3px) rotate(-3deg);
+  box-shadow: 0 8px 15px rgba(13,52,121,.12);
+  outline: 3px solid rgba(241,91,50,.55);
+}
+.discover-filters .discover-category-button:focus-visible {
+  outline: 2px solid #f15b32;
+  outline-offset: 3px;
+}
+.discover-filters .discover-category-button.is-active .discover-category-label {
+  color: #eb512d;
+}
 .discover-intro {
   display: flex;
   align-items: center;
@@ -333,18 +424,10 @@
 
 @media (min-width: 1100px) {
   .discover-hero { grid-template-columns: 26% minmax(280px, 1fr) auto; }
-  .discover-hero-note {
-    display: block;
-    position: absolute;
-    right: 1%;
-    top: 100%;
-    font: 1000 16px/1.1 var(--font-market-hand), "Segoe Print", cursive;
-    transform: rotate(-9deg);
-    text-align: center;
-    pointer-events: none;
-  }
 }
 @media (max-width: 1050px) {
+  .discover-filters { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .discover-filters .discover-category-icon { width: clamp(52px, 7.2vw, 70px); }
   .discover-hero { grid-template-columns: 1fr 1fr; padding: 10px 0 15px; }
   .discover-hero-title { grid-column: 1 / -1; }
   .discover-search { grid-column: 1 / 2; }
@@ -360,7 +443,11 @@
   .discover-search::before { inset: -7px; }
   .discover-search input { font-size: 13px; }
   .discover-publish { min-width: 0; font-size: 22px; min-height: 57px; }
-  .discover-filters { padding-top: 5px; }
+  .discover-category-section { margin-top: 10px; padding-bottom: 0; }
+  .discover-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 5px; row-gap: 9px; padding-top: 9px; }
+  .discover-filters .discover-category-button { min-height: 92px; padding: 1px; }
+  .discover-filters .discover-category-icon { width: clamp(48px, 13vw, 68px); }
+  .discover-filters .discover-category-label { font-size: clamp(10px, 2.85vw, 12px); }
   .discover-intro { min-height: 70px; }
   .discover-intro p { font-size: 17px; margin-left: 6px; }
   .discover-intro p::after { display: none; }
