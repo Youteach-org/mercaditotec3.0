@@ -30,25 +30,25 @@ describe("compact emoji ratings on Marketplace cards", () => {
     expect(css).toContain(".mkt-card-emoji-rating {");
   });
 
-  it("anchors the rating at the cloud bottom while leaving the right-side logo visible", () => {
+  it("places the rating in the upper center of the cloud on mobile and landscape", () => {
     const cssBlock = css.split("/* STORE EMOJI RATINGS — 2026-10-14")[1];
     expect(cssBlock).toBeDefined();
     const desktop = cssBlock.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
     expect(desktop).toContain("left: 50% !important;");
     expect(desktop).toContain("right: auto !important;");
-    expect(desktop).toContain("top: auto !important;");
-    expect(desktop).toContain("bottom: 32% !important;");
-    expect(desktop).not.toContain("bottom: 46% !important;");
+    expect(desktop).toContain("top: 11% !important;");
+    expect(desktop).toContain("bottom: auto !important;");
     expect(desktop).toContain("transform: translateX(-50%) !important;");
+    expect(desktop).not.toContain("bottom: 32% !important;");
     const mobile = cssBlock.split("@media (max-width: 620px) {")[1];
     expect(mobile).toBeDefined();
     const mobileBadge = mobile.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
     expect(mobileBadge).toContain("left: 50% !important;");
-    expect(mobileBadge).toContain("bottom: 31% !important;");
-    expect(mobileBadge).not.toContain("bottom: 48% !important;");
+    expect(mobileBadge).toContain("top: 12% !important;");
+    expect(mobileBadge).toContain("bottom: auto !important;");
     expect(mobileBadge).toContain("transform: translateX(-50%) !important;");
-    expect(mobileBadge).not.toContain("right: 6%");
-    // The logo remains anchored on the right, with no DOM or position changes.
+    expect(mobileBadge).not.toContain("bottom: 31%");
+    // The right-side shop logo stays in front without being relocated.
     expect(css).toContain(".mkt-store-card > .mkt-store-logo {");
     expect(css).toContain("right: 8% !important;");
     expect(css).toContain("z-index: 95 !important; /* Never allow the rating button to cover the logo. */");
