@@ -1,4 +1,4 @@
-import { Timestamp, getAdminDb } from "../firestoreRest";
+import { getAdminDb } from "../firestoreRest";
 import { requireActiveCategory } from "../store/categoryRepository";
 
 export class ListingError extends Error {
@@ -123,7 +123,7 @@ export async function finishAutomaticScreening(id: string, decision: "approved" 
     status: decision,
     screenedAt: Date.now(),
     screeningReason: decision === "approved" ? null : reason.slice(0, 180),
-    screeningModel: "cloudflare/clef-omni",
+    screeningModel: "@cf/google/gemma-4-26b-a4b-it",
     screeningVersion: 1,
   });
   return decision;
