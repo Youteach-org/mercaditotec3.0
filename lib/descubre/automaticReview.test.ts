@@ -34,7 +34,7 @@ describe("automatic prepublication product screening", () => {
   });
 
   it("approves ordinary goods only after explicit visual AI approval", async () => {
-    const ai = { run: vi.fn(async () => ({ response: JSON.stringify({
+    const ai = { run: vi.fn(async (_model: string, _payload: unknown) => ({ response: JSON.stringify({
       decision: "APPROVE", matchesText: true, containsProhibited: false,
       item: "flat screen television", confidence: 0.99,
     }) })) };
