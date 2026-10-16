@@ -5865,6 +5865,7 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-store-card > .mkt-store-logo {
   left: auto !important;
   right: 8% !important;
+  z-index: 95 !important; /* Never allow the rating button to cover the logo. */
 }
 
 /* STORE EMOJI RATINGS — 2026-10-14
@@ -5880,12 +5881,12 @@ img:not([data-no-image-zoom="true"]) {
 .mkt-card-emoji-rating {
   position: absolute !important;
   z-index: 90 !important;
-  /* Center horizontally on the lower portion of the cloud, ABOVE the logo
-     (which starts around 56% of card height on the smallest mobile cards). */
+  /* The cloud ends near 69–73% of the card height. Anchor this badge
+     at 68%, on the cloud's LOWER EDGE (not at the middle of the image). */
   left: 50% !important;
   right: auto !important;
   top: auto !important;
-  bottom: 46% !important;
+  bottom: 32% !important;
   transform: translateX(-50%) !important;
   display: inline-flex !important;
   align-items: center;
@@ -6003,7 +6004,7 @@ img:not([data-no-image-zoom="true"]) {
     left: 50% !important;
     right: auto !important;
     top: auto !important;
-    bottom: 48% !important;
+    bottom: 31% !important;
     transform: translateX(-50%) !important;
     min-height: 27px;
     padding: 5px 9px !important;
