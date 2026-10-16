@@ -30,6 +30,27 @@ describe("compact emoji ratings on Marketplace cards", () => {
     expect(css).toContain(".mkt-card-emoji-rating {");
   });
 
+  it("centers the rating badge low on the cloud, above the logo on phones and desktop", () => {
+    const cssBlock = css.split("/* STORE EMOJI RATINGS — 2026-10-14")[1];
+    expect(cssBlock).toBeDefined();
+    const desktop = cssBlock.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
+    expect(desktop).toContain("left: 50% !important;");
+    expect(desktop).toContain("right: auto !important;");
+    expect(desktop).toContain("top: auto !important;");
+    expect(desktop).toContain("bottom: 46% !important;");
+    expect(desktop).toContain("transform: translateX(-50%) !important;");
+    const mobile = cssBlock.split("@media (max-width: 620px) {")[1];
+    expect(mobile).toBeDefined();
+    const mobileBadge = mobile.split(".mkt-card-emoji-rating {")[1]?.split("}")[0];
+    expect(mobileBadge).toContain("left: 50% !important;");
+    expect(mobileBadge).toContain("bottom: 48% !important;");
+    expect(mobileBadge).toContain("transform: translateX(-50%) !important;");
+    expect(mobileBadge).not.toContain("right: 6%");
+    // The logo remains anchored on the right, with no DOM or position changes.
+    expect(css).toContain(".mkt-store-card > .mkt-store-logo {");
+    expect(css).toContain("right: 8% !important;");
+  });
+
   it("fetches own votes only when a card is tapped, not at Marketplace startup", () => {
     expect(rating).toContain("async function openPicker()");
     expect(rating).toContain('cache: "no-store"');
