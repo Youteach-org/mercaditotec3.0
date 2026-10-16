@@ -1,5 +1,6 @@
 import { FirestoreRestError, getAdminDb } from "../firestoreRest";
-import { buildDiscoverFeed, type DiscoverProduct, type DiscoverSourceProduct } from "./discoverFeed";
+import { buildDiscoverFeed, isEligibleForDiscover, type DiscoverProduct, type DiscoverSourceProduct } from "./discoverFeed";
+import { featuredPriorityBrand } from "./featuredMarketplace";
 import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
 import { readStoreRatingStats } from "./storeRating";
@@ -130,8 +131,9 @@ export async function listPublicStores(
     categoriesByStore.set(storeId, categories);
   }
 
-  // Reuse the same bounded products query used for storefront categories.
-  // No additional Firestore queries are added for the Descubre feed.
+  // Reuse the bounded products query used for store categories. Only when a
+  // reserved brand is missing may the daily shared snapshot need one small
+  // additional lookup for that brand (never one lookup per visitor).
   const activeStores = storeSnapshot.docs
     .filter((document) => document.data().status === "active")
     .map((document) => ({
@@ -149,7 +151,7 @@ export async function listPublicStores(
       }
       return 0;
     };
-    const candidates: DiscoverSourceProduct[] = productSnapshot.docs.map((document) => {
+    const candidateFromDocument = (document: (typeof productSnapshot.docs)[number]): DiscoverSourceProduct => {
       const data = document.data();
       return {
         id: document.id,
@@ -169,7 +171,27 @@ export async function listPublicStores(
         contentVersion: typeof data.contentVersion === "number" ? data.contentVersion : null,
         flashEndsAt: typeof data.flashEndsAt === "string" ? data.flashEndsAt : null,
       };
-    });
+    };
+    const candidates: DiscoverSourceProduct[] = productSnapshot.docs.map(candidateFromDocument);
+
+    const reservedBrands = new Set<string>();
+    for (const store of activeStores) {
+      const brand = featuredPriorityBrand(store);
+      if (!brand || reservedBrands.has(brand)) continue;
+      reservedBrands.add(brand);
+      if (candidates.some((candidate) => candidate.storeId === store.id && isEligibleForDiscover(candidate))) continue;
+      // One targeted query only if that brand was absent from the common
+      // 300-item snapshot: avoids silently losing Ke-Rollos as catalog grows.
+      const fallback = await observePublicQuery("products",
+        db.collection("products").where("storeId", "==", store.id).limit(40).get());
+      for (const doc of fallback.docs) {
+        if (doc.data().visibility !== "published") continue;
+        const candidate = candidateFromDocument(doc);
+        if (isEligibleForDiscover(candidate) && !candidates.some((item) => item.id === candidate.id)) {
+          candidates.push(candidate);
+        }
+      }
+    }
     onDiscoverProducts(buildDiscoverFeed(candidates, activeStores));
   }
 
