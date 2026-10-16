@@ -15,6 +15,7 @@ vi.mock("./categoryRepository", () => ({
 }));
 vi.mock("./marketplaceContentRepository", () => ({ getMarketplaceContent: vi.fn() }));
 vi.mock("./publicMarketplaceRepository", () => ({ listPublicStores: vi.fn() }));
+vi.mock("../descubre/listings", () => ({ listApprovedListings: vi.fn(async () => []) }));
 
 afterEach(() => {
   vi.useRealTimers();
