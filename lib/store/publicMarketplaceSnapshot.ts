@@ -2,6 +2,7 @@ import { FirestoreRestError, Timestamp, getAdminDb } from "../firestoreRest";
 import { DEMO_MARKETPLACE_STORES } from "./demoMarketplace";
 import { getMarketplaceContent } from "./marketplaceContentRepository";
 import { listPublicStores } from "./publicMarketplaceRepository";
+import type { DiscoverProduct } from "./discoverFeed";
 import { listActiveCategories, serializeCategory } from "./categoryRepository";
 
 // Public data may be slightly delayed; privileged data and authorization
@@ -29,8 +30,9 @@ async function readSnapshot() {
     }
   };
   const categoriesRequest = observe("categories", listActiveCategories());
+  const discoverProducts: DiscoverProduct[] = [];
   const [liveStores, content, categories] = await Promise.all([
-    listPublicStores(categoriesRequest),
+    listPublicStores(categoriesRequest, (products) => discoverProducts.push(...products)),
     observe("site_config", getMarketplaceContent()),
     categoriesRequest,
   ]);
@@ -49,6 +51,7 @@ async function readSnapshot() {
     stores,
     content,
     categories: categories.map(serializeCategory),
+    discoverProducts,
     temporaryExamplesEnabled: true,
     realStoreCount: liveStores.length,
     exampleStoreCount: temporaryExamples.length,
@@ -64,8 +67,8 @@ type Snapshot = Awaited<ReturnType<typeof readSnapshot>>;
 // updates made directly in Firebase outside of Mercadito's APIs.
 const SNAPSHOT_COLLECTION = "public_marketplace_cache";
 // Version 2 forces a fresh read of stores already approved before this repair.
-const SNAPSHOT_ID = "catalog-v2";
-const PREVIOUS_SNAPSHOT_ID = "catalog-v1";
+const SNAPSHOT_ID = "catalog-v3";
+const PREVIOUS_SNAPSHOT_ID = "catalog-v2";
 const SAFETY_REFRESH_MS = 24 * 60 * 60 * 1000;
 const MAX_STALE_ON_OUTAGE_MS = 48 * 60 * 60 * 1000;
 const MAX_DOCUMENT_BYTES = 700_000;
@@ -80,6 +83,7 @@ function isPublicSnapshot(value: unknown): value is Snapshot {
   return (
     Array.isArray(record.stores) &&
     Array.isArray(record.categories) &&
+    Array.isArray(record.discoverProducts) &&
     record.content !== null &&
     typeof record.content === "object" &&
     typeof record.totalStoreCount === "number"
