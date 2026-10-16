@@ -113,11 +113,18 @@ async function readMaterialized(): Promise<SavedSnapshot | null> {
 }
 
 async function readPreviousSnapshot(): Promise<SavedSnapshot | null> {
-  const doc = await getAdminDb()
-    .collection(SNAPSHOT_COLLECTION)
-    .doc(PREVIOUS_SNAPSHOT_ID)
-    .get();
-  return doc.exists ? savedSnapshotData(doc.data()) : null;
+  // Preserve the original legacy fallback while migrating from v2 to v3.
+  for (const id of [PREVIOUS_SNAPSHOT_ID, "catalog-v1"]) {
+    const doc = await getAdminDb()
+      .collection(SNAPSHOT_COLLECTION)
+      .doc(id)
+      .get();
+    if (doc.exists) {
+      const data = savedSnapshotData(doc.data());
+      if (data) return data;
+    }
+  }
+  return null;
 }
 
 /**
