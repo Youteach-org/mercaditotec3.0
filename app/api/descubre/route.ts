@@ -1,29 +1,28 @@
 import { NextResponse } from "next/server";
+import { requireFirebaseUser, ApiAuthError } from "@/lib/store/auth";
 import { getPublicMarketplaceSnapshot } from "@/lib/store/publicMarketplaceSnapshot";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// Data contains only storefront items already published publicly before
-// Descubre was introduced, or future individually screened items. The
-// materialized catalog is shared; no per-card or per-user Firestore reads.
-const CACHE_HEADERS = {
-  "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
-  "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=120",
-};
-
-export async function GET() {
+// Data is a shared materialized snapshot, but the endpoint itself is private:
+// never put identity-gated product data into a shared CDN response cache.
+export async function GET(request: Request) {
   try {
+    await requireFirebaseUser(request);
     const snapshot = await getPublicMarketplaceSnapshot();
     return NextResponse.json(
       {
         products: Array.isArray(snapshot.discoverProducts) ? snapshot.discoverProducts : [],
         categories: snapshot.categories,
       },
-      { headers: CACHE_HEADERS },
+      { headers: { "Cache-Control": "private, no-store" } },
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
+    }
     return NextResponse.json(
       { error: "No se pudieron cargar los productos. Intenta de nuevo." },
       { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "60" } },
