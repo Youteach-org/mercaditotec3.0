@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/useSession";
-import "../descubre.css";
+import "../../descubre.css";
 
 interface Listing {
   id: string;
