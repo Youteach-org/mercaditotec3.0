@@ -29,7 +29,6 @@ function initialRating(store: PublicStoreSummary): RatingView {
   };
 }
 
- 
 export function StoreRatingBadge({ store }: { store: PublicStoreSummary }) {
   const display = (store.ratingCount ?? 0) > 0 ? compactStoreRating(store.ratingAverage) : null;
   return (
