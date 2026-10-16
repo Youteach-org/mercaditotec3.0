@@ -1,4 +1,5 @@
 import { FirestoreRestError, getAdminDb } from "../firestoreRest";
+import { buildDiscoverFeed, type DiscoverProduct, type DiscoverSourceProduct } from "./discoverFeed";
 import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
 import { readStoreRatingStats } from "./storeRating";
@@ -92,7 +93,10 @@ function productSource(id: string, data: Record<string, unknown>): PublicProduct
   };
 }
 
-export async function listPublicStores(activeCategoriesRequest?: ReturnType<typeof listActiveCategories>): Promise<PublicStoreSummary[]> {
+export async function listPublicStores(
+  activeCategoriesRequest?: ReturnType<typeof listActiveCategories>,
+  onDiscoverProducts?: (products: DiscoverProduct[]) => void,
+): Promise<PublicStoreSummary[]> {
   const db = getAdminDb();
   const [storeSnapshot, productSnapshot, activeCategories] = await Promise.all([
     observePublicQuery("stores", db.collection("stores")
@@ -124,6 +128,49 @@ export async function listPublicStores(activeCategoriesRequest?: ReturnType<type
     const categories = categoriesByStore.get(storeId) ?? new Set<string>();
     categories.add(categoryId);
     categoriesByStore.set(storeId, categories);
+  }
+
+  // Reuse the same bounded products query used for storefront categories.
+  // No additional Firestore queries are added for the Descubre feed.
+  const activeStores = storeSnapshot.docs
+    .filter((document) => document.data().status === "active")
+    .map((document) => ({
+      id: document.id,
+      name: String(document.data().name ?? ""),
+      slug: String(document.data().slug ?? ""),
+      logoUrl: typeof document.data().logoUrl === "string" ? document.data().logoUrl as string : null,
+      deliveryLocation: String(document.data().deliveryLocation ?? ""),
+    }));
+  if (onDiscoverProducts) {
+    const toMs = (value: unknown): number => {
+      if (value && typeof value === "object" && "toMillis" in value) {
+        const read = (value as { toMillis?: () => number }).toMillis;
+        if (typeof read === "function") return read.call(value);
+      }
+      return 0;
+    };
+    const candidates: DiscoverSourceProduct[] = productSnapshot.docs.map((document) => {
+      const data = document.data();
+      return {
+        id: document.id,
+        storeId: String(data.storeId ?? ""),
+        title: String(data.title ?? ""),
+        description: String(data.description ?? ""),
+        imageUrls: Array.isArray(data.imageUrls)
+          ? data.imageUrls.filter((url: unknown): url is string => typeof url === "string")
+          : [],
+        categoryId: String(data.categoryId ?? ""),
+        priceType: data.priceType === "ask" || data.priceType === "negotiable" ? data.priceType : "fixed",
+        priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
+        createdAt: toMs(data.createdAt),
+        updatedAt: toMs(data.updatedAt),
+        reviewStatus: typeof data.reviewStatus === "string" ? data.reviewStatus : "legacy",
+        approvedVersion: typeof data.approvedVersion === "number" ? data.approvedVersion : null,
+        contentVersion: typeof data.contentVersion === "number" ? data.contentVersion : null,
+        flashEndsAt: typeof data.flashEndsAt === "string" ? data.flashEndsAt : null,
+      };
+    });
+    onDiscoverProducts(buildDiscoverFeed(candidates, activeStores));
   }
 
   return storeSnapshot.docs
