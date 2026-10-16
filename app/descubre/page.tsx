@@ -85,7 +85,12 @@ export default function DescubrePage() {
   useEffect(() => {
     if (sessionLoading || !firebaseUser) return;
     const controller = new AbortController();
-    void fetch("/api/descubre", { signal: controller.signal })
+    void firebaseUser.getIdToken()
+      .then((token) => fetch("/api/descubre", {
+        signal: controller.signal,
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      }))
       .then(async (response) => {
         if (!response.ok) throw new Error("No se pudieron cargar los productos.");
         return response.json();
