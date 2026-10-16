@@ -1,6 +1,7 @@
 // security-hardened production wrapper
 import openNextWorker from "./.open-next/worker.js";
 import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.mjs";
+import { screenListing } from "./lib/descubre/automaticReview.mjs";
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
 import { enforceHttps } from "./lib/security/enforceHttps.mjs";
@@ -71,7 +72,8 @@ export default {
     if (
       url.pathname === "/api/internal/firebase-rules-sync" ||
       url.pathname === "/api/internal/marketplace-catalog-refresh" ||
-      url.pathname === "/api/internal/chat-retention"
+      url.pathname === "/api/internal/chat-retention" ||
+      url.pathname === "/api/internal/descubre-moderation"
     ) {
       return new Response("Not Found", {
         status: 404,
@@ -143,7 +145,13 @@ export default {
       const limited = await enforceEdgeBudget(request, env);
       if (limited) return limited;
       const bounded = await boundApiRequest(request);
-      const response = await serveCachedPublicShell(
+      // For a seller-created item, the normal API writes only a private
+      // screening draft. Only THIS trusted edge layer runs the image+text
+      // classifier and finalizes its decision through an edge-only endpoint.
+      const listingPost = bounded.method === "POST" &&
+        url.pathname === "/api/descubre/anuncios";
+      const screeningInput = listingPost ? bounded.clone() : null;
+      let response = await serveCachedPublicShell(
         bounded,
         env,
         ctx,
@@ -153,6 +161,50 @@ export default {
           () => getHandler().fetch(bounded, env, ctx),
         ),
       );
+
+      if (listingPost && response.status === 201 && screeningInput) {
+        const body = await screeningInput.json().catch(() => null);
+        const draft = await response.clone().json().catch(() => null);
+        if (!draft?.id || !body) {
+          return json({ error: "No se pudo verificar el anuncio." }, { status: 503 });
+        }
+        const review = await screenListing(body, env.AI);
+        const internalUrl = new URL("/api/internal/descubre-moderation", bounded.url);
+        const approved = await getHandler().fetch(new Request(internalUrl, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-mercadito-internal-runtime": "discover-automatic-screen-v1",
+          },
+          body: JSON.stringify({
+            id: draft.id, decision: review.decision, reason: review.reason,
+          }),
+        }), env, ctx);
+        if (!approved.ok) {
+          // Never return an approval when the server has not recorded it.
+          return json({ id: draft.id, status: "screening",
+            error: "El anuncio permanece oculto porque no pudo completarse la revisión." }, { status: 503 });
+        }
+        if (review.decision === "approved") {
+          // Materialize once after a successful mutation instead of running a
+          // Firebase query per home-page visitor or published-item card.
+          try {
+            const refreshUrl = new URL("/api/internal/marketplace-catalog-refresh", bounded.url);
+            await getHandler().fetch(new Request(refreshUrl, {
+              method: "POST",
+              headers: { "x-mercadito-internal-runtime": "materialized-marketplace-refresh-v1" },
+            }), env, ctx);
+          } catch (error) {
+            console.warn("DISCOVER_MATERIALIZATION_DELAYED",
+              error instanceof Error ? error.name : "Unknown");
+          }
+        }
+        response = json({
+          id: draft.id,
+          status: review.decision,
+          ...(review.reason ? { message: review.reason } : {}),
+        }, { status: review.decision === "approved" ? 201 : 422 });
+      }
 
       // Wall time includes upstream I/O and is not a CPU metric. Log only a
       // small sample of very slow responses, never URL IDs, tokens or bodies.

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
-import type { DiscoverProduct } from "@/lib/store/discoverFeed";
+import type { DiscoverFeedItem } from "@/lib/descubre/feed";
 import { useSession } from "@/lib/useSession";
 import "./descubre.css";
 
@@ -17,7 +17,7 @@ interface DiscoverCategory {
 
 const BATCH_SIZE = 12;
 
-function priceLabel(product: DiscoverProduct): string {
+function priceLabel(product: DiscoverFeedItem): string {
   if (product.priceType === "ask" || product.priceAmount === null) return "Pregunta precio";
   const formatted = new Intl.NumberFormat("es-MX", {
     style: "currency",
@@ -27,7 +27,7 @@ function priceLabel(product: DiscoverProduct): string {
   return product.priceType === "negotiable" ? formatted + " · negociable" : formatted;
 }
 
-function hasActiveOffer(product: DiscoverProduct): boolean {
+function hasActiveOffer(product: DiscoverFeedItem): boolean {
   return Boolean(product.flashEndsAt && Date.parse(product.flashEndsAt) > Date.now());
 }
 
@@ -35,13 +35,14 @@ function SearchMark() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>;
 }
 
-function ProductCard({ product, index }: { product: DiscoverProduct; index: number }) {
-  const href = "/marketplace/stores/" + encodeURIComponent(product.storeSlug)
-    + "#producto-" + encodeURIComponent(product.id);
+function ProductCard({ product, index }: { product: DiscoverFeedItem; index: number }) {
+  const href = "personal" in product && product.personal
+    ? "/descubre/anuncios/" + encodeURIComponent(product.id)
+    : "/marketplace/stores/" + encodeURIComponent(product.storeSlug) + "#producto-" + encodeURIComponent(product.id);
   return (
     <article className={"discover-product discover-product-" + (index % 8)}>
       <div className="discover-product-tape" aria-hidden="true" />
-      <Link href={href} prefetch={false} className="discover-product-link" aria-label={"Ver " + product.title + " en " + product.storeName}>
+      <Link href={href} prefetch={false} className="discover-product-link" aria-label={"Ver " + product.title + " de " + product.storeName}>
         <div className="discover-product-photo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={product.imageUrl} alt={product.title} loading={index > 3 ? "lazy" : "eager"} />
@@ -69,14 +70,13 @@ function ProductCard({ product, index }: { product: DiscoverProduct; index: numb
 export default function DescubrePage() {
   const router = useRouter();
   const { firebaseUser, loading: sessionLoading } = useSession();
-  const [products, setProducts] = useState<DiscoverProduct[]>([]);
+  const [products, setProducts] = useState<DiscoverFeedItem[]>([]);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(BATCH_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [publishModal, setPublishModal] = useState(false);
 
   useEffect(() => {
     if (!sessionLoading && !firebaseUser) router.replace("/login");
@@ -151,9 +151,9 @@ export default function DescubrePage() {
               onChange={(event) => { setSearch(event.target.value); setLimit(BATCH_SIZE); }}
             />
           </form>
-          <button type="button" className="discover-publish" onClick={() => setPublishModal(true)}>
+          <Link href="/descubre/publicar" className="discover-publish">
             <span aria-hidden="true">＋</span> Publicar
-          </button>
+          </Link>
         </section>
 
         <section className="discover-category-section" aria-label="Explora por categoría">
@@ -216,17 +216,7 @@ export default function DescubrePage() {
         </div>
       </div>
 
-      {publishModal && (
-        <div className="discover-dialog-backdrop" role="presentation" onMouseDown={() => setPublishModal(false)}>
-          <section className="discover-dialog" role="dialog" aria-modal="true" aria-labelledby="discover-dialog-title" onMouseDown={(event) => event.stopPropagation()}>
-            <button type="button" aria-label="Cerrar" className="discover-dialog-close" onClick={() => setPublishModal(false)}>×</button>
-            <span className="discover-dialog-illustration" aria-hidden="true">✦</span>
-            <h2 id="discover-dialog-title">Publicaciones seguras</h2>
-            <p>Estamos habilitando la revisión automática de fotografías y descripciones. Los anuncios nuevos no se mostrarán sin pasar ese control.</p>
-            <button type="button" onClick={() => setPublishModal(false)}>Entendido</button>
-          </section>
-        </div>
-      )}
+
     </main>
   );
 }

@@ -99,6 +99,10 @@
 }
 .discover-search input::placeholder { color: #8690a2; }
 .discover-publish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   position: relative;
   z-index: 2;
   border: 0;

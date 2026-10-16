@@ -3,6 +3,7 @@ import { DEMO_MARKETPLACE_STORES } from "./demoMarketplace";
 import { getMarketplaceContent } from "./marketplaceContentRepository";
 import { listPublicStores } from "./publicMarketplaceRepository";
 import type { DiscoverProduct } from "./discoverFeed";
+import { listApprovedListings } from "../descubre/listings";
 import { listActiveCategories, serializeCategory } from "./categoryRepository";
 
 // Public data may be slightly delayed; privileged data and authorization
@@ -31,10 +32,11 @@ async function readSnapshot() {
   };
   const categoriesRequest = observe("categories", listActiveCategories());
   const discoverProducts: DiscoverProduct[] = [];
-  const [liveStores, content, categories] = await Promise.all([
+  const [liveStores, content, categories, discoverListings] = await Promise.all([
     listPublicStores(categoriesRequest, (products) => discoverProducts.push(...products)),
     observe("site_config", getMarketplaceContent()),
     categoriesRequest,
+    listApprovedListings(48),
   ]);
   console.info("PUBLIC_MARKETPLACE_SNAPSHOT_REFRESHED", {
     durationMs: Date.now() - startedAt,
@@ -52,6 +54,7 @@ async function readSnapshot() {
     content,
     categories: categories.map(serializeCategory),
     discoverProducts,
+    discoverListings,
     temporaryExamplesEnabled: true,
     realStoreCount: liveStores.length,
     exampleStoreCount: temporaryExamples.length,
@@ -103,7 +106,9 @@ function savedSnapshotData(data: Record<string, unknown> | undefined): SavedSnap
     ageMs: Math.max(0, Date.now() - stamp.toMillis()),
     // v2 materializations remain valid for outage fallback, but must rebuild
     // once to add the new, bounded Descubre listings.
-    invalidated: revision !== processedRevision || !Array.isArray((snapshot as { discoverProducts?: unknown }).discoverProducts),
+    invalidated: revision !== processedRevision ||
+      !Array.isArray((snapshot as { discoverProducts?: unknown }).discoverProducts) ||
+      !Array.isArray((snapshot as { discoverListings?: unknown }).discoverListings),
   };
 }
 

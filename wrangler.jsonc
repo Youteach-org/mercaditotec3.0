@@ -30,6 +30,7 @@
       "simple": { "limit": 20000, "period": 60 }
     }
   ],
+  "ai": { "binding": "AI" },
   "observability": {
     "enabled": true
   },
