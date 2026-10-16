@@ -13,7 +13,9 @@ const PUBLIC_CACHE_HEADERS = {
 export async function GET() {
   try {
     const data = await getPublicMarketplaceSnapshot();
-    return NextResponse.json(data, { headers: PUBLIC_CACHE_HEADERS });
+    const { discoverProducts: _privateProducts, discoverListings: _privateListings, ...publicStoreCatalogue } = data;
+    void _privateProducts; void _privateListings;
+    return NextResponse.json(publicStoreCatalogue, { headers: PUBLIC_CACHE_HEADERS });
   } catch (error) {
     if (error instanceof FirestoreRestError && error.status === 429) {
       console.error("PUBLIC_MARKETPLACE_RUNTIME_THROTTLED", 429);
