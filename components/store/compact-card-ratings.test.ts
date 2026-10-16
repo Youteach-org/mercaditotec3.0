@@ -39,6 +39,16 @@ describe("compact emoji ratings on Marketplace cards", () => {
     expect(rating).not.toContain("useEffect(() => {\n    void user.getIdToken()");
   });
 
+  it("displays only the emoji and rounded integer without /5, decimals or voter counts", () => {
+    expect(rating).toContain("const label = display ? `${display.emoji} ${display.score}`");
+    expect(rating).toContain("compactStoreRating(store.ratingAverage)");
+    expect(rating).toContain("compactStoreRating(rating.ratingAverage)");
+    expect(rating).not.toContain(".toFixed(1)");
+    expect(rating).not.toContain("/5 ·");
+    expect(rating).not.toContain("${count} valoraciones");
+    expect(rating).not.toContain("ratingCount} votos");
+  });
+
   it("replaces the bulky store-page dashboard with just a compact summary", () => {
     expect(details).toContain("<StoreRatingBadge store={store} />");
     expect(details).not.toContain("<StoreEmojiRating ");

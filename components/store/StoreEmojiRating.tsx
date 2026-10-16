@@ -6,7 +6,7 @@ import type { User } from "firebase/auth";
 
 import type { PublicStoreSummary } from "@/lib/store/publicMarketplace";
 import {
-  dominantStoreRating,
+  compactStoreRating,
   STORE_RATING_CHOICES,
   type StoreRatingValue,
 } from "@/lib/store/storeRating";
@@ -29,23 +29,13 @@ function initialRating(store: PublicStoreSummary): RatingView {
   };
 }
 
-function ratingEmoji(rating: Pick<RatingView, "ratingCount" | "ratingDistribution">): string {
-  const dominant = dominantStoreRating(rating);
-  return dominant === null ? "💬" : STORE_RATING_CHOICES[dominant - 1].emoji;
-}
-
 export function StoreRatingBadge({ store }: { store: PublicStoreSummary }) {
-  const count = store.ratingCount ?? 0;
-  const emoji = ratingEmoji({
-    ratingCount: count,
-    ratingDistribution: store.ratingDistribution ?? [0, 0, 0, 0, 0],
-  });
+  const display = (store.ratingCount ?? 0) > 0 ? compactStoreRating(store.ratingAverage) : null;
   return (
-    <span className="mkt-store-rating-summary" aria-label={count
-      ? `Valoración ${store.ratingAverage?.toFixed(1) ?? "—"} de 5, ${count} opiniones`
+    <span className="mkt-store-rating-summary" aria-label={display
+      ? `Calificación ${display.score}`
       : "Esta tienda aún no tiene valoraciones"}>
-      <span aria-hidden="true">{emoji}</span>
-      {count ? `${store.ratingAverage?.toFixed(1) ?? "—"}/5 · ${count} ${count === 1 ? "valoración" : "valoraciones"}` : "Sin valoraciones"}
+      {display ? <><span aria-hidden="true">{display.emoji}</span> {display.score}</> : "Sin valoraciones"}
     </span>
   );
 }
@@ -135,17 +125,15 @@ export function StoreEmojiRatingCard({ user, store }: { user: User; store: Publi
     }
   }
 
-  const count = rating.ratingCount;
-  const label = count
-    ? `${ratingEmoji(rating)} ${rating.ratingAverage?.toFixed(1) ?? "—"}/5 · ${count}`
-    : "💬 Calificar";
+  const display = rating.ratingCount > 0 ? compactStoreRating(rating.ratingAverage) : null;
+  const label = display ? `${display.emoji} ${display.score}` : "💬 Calificar";
   return (
     <>
       <button
         ref={triggerRef}
         type="button"
         className="mkt-card-emoji-rating"
-        aria-label={`${store.name}: ${count ? `${rating.ratingAverage?.toFixed(1)} de 5, ${count} valoraciones. Cambiar o añadir valoración` : "Calificar tienda"}`}
+        aria-label={`${store.name}: ${display ? `calificación ${display.score}. Cambiar o añadir valoración` : "Calificar tienda"}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => void openPicker()}

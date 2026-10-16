@@ -87,3 +87,13 @@ export function dominantStoreRating(stats: { ratingDistribution: number[]; ratin
   }
   return dominant as StoreRatingValue;
 }
+
+
+/** Compact public display: one emoji and one whole number, never fractions or vote totals.
+ * Keep original aggregates unchanged for calculating the rating correctly.
+ */
+export function compactStoreRating(average: number | null | undefined): { emoji: string; score: StoreRatingValue } | null {
+  if (typeof average !== "number" || !Number.isFinite(average)) return null;
+  const score = Math.max(1, Math.min(5, Math.round(average))) as StoreRatingValue;
+  return { emoji: STORE_RATING_CHOICES[score - 1].emoji, score };
+}
