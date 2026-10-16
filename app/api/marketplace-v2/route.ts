@@ -16,8 +16,12 @@ const HEADERS = {
 export async function GET() {
   try {
     const data = await getPublicMarketplaceSnapshot();
+    // Guest Marketplace must expose shops only. The materialized snapshot also
+    // includes the signed-in Descubre feed, which is private to /api/descubre.
+    const { discoverProducts: _privateDiscoverProducts, ...publicStoreCatalogue } = data;
+    void _privateDiscoverProducts;
     return NextResponse.json(
-      { ...data, revision: "marketplace-demo-v2" },
+      { ...publicStoreCatalogue, revision: "marketplace-demo-v2" },
       { headers: HEADERS },
     );
   } catch (error) {
