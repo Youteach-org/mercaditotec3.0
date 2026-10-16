@@ -18,8 +18,8 @@ export async function GET() {
     const data = await getPublicMarketplaceSnapshot();
     // Guest Marketplace must expose shops only. The materialized snapshot also
     // includes the signed-in Descubre feed, which is private to /api/descubre.
-    const { discoverProducts: _privateDiscoverProducts, ...publicStoreCatalogue } = data;
-    void _privateDiscoverProducts;
+    const { discoverProducts: _privateDiscoverProducts, discoverListings: _privateDiscoverListings, ...publicStoreCatalogue } = data;
+    void _privateDiscoverProducts; void _privateDiscoverListings;
     return NextResponse.json(
       { ...publicStoreCatalogue, revision: "marketplace-demo-v2" },
       { headers: HEADERS },
