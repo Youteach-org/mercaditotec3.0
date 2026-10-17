@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { prohibitedTextReason, safeImageUrl, screenListing } from "./automaticReview.mjs";
+import { prohibitedTextReason, safeImageUrl, screenListing, classifyAutomaticReviewError } from "./automaticReview.mjs";
 
 const photo = "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/discover-listings/owneruid/6014afbe-fe4c-4b78-b178-27f96bc8be7a.jpg";
 const input = { title: "Televisión de 43 pulgadas", description: "Usada, funciona bien", imageUrl: photo };
@@ -41,6 +41,10 @@ describe("automatic prepublication product screening", () => {
     expect((await screenListing(input, ai, fetchPhoto)).decision).toBe("approved");
     expect(ai.run.mock.calls[0][0]).toBe("@cf/google/gemma-4-26b-a4b-it");
     expect(JSON.stringify(ai.run.mock.calls[0][1])).toContain("image_url");
+    expect(ai.run.mock.calls[0][1]).toMatchObject({
+      chat_template_kwargs: { enable_thinking: false },
+      max_tokens: 240,
+    });
   });
 
   it("fails closed on uncertainty, missing AI, bad output and model outages", async () => {
@@ -60,7 +64,25 @@ describe("automatic prepublication product screening", () => {
       .toBe("needs_changes");
   });
 
-  it("never approves non-image data", async () => {
+  it("distinguishes exhausted free quota, overloaded AI and inaccessible image downloads", () => {
+    const quota = classifyAutomaticReviewError(new Error("3036: You have used up your daily free allocation of 10,000 neurons"));
+    expect(quota.category).toBe("daily-quota");
+    expect(quota.message).toContain("cuota gratuita");
+    expect(classifyAutomaticReviewError(new Error("3040: Capacity temporarily exceeded")).category).toBe("capacity");
+    expect(classifyAutomaticReviewError({ status: 429, message: "unknown throttle" }).category).toBe("rate-limit");
+    expect(classifyAutomaticReviewError(new Error("fetch failed"), "photo").category).toBe("photo-fetch");
+    expect(classifyAutomaticReviewError({ status: 403, message: "model unauthorized" }).category).toBe("model-access");
+    expect(classifyAutomaticReviewError({ name: "TimeoutError" }).category).toBe("timeout");
+  });
+
+  it("never approves a listing after an AI quota failure", async () => {
+    const ai = { run: vi.fn(async () => { throw new Error("3036: free allocation"); }) };
+    const result = await screenListing(input, ai, fetchPhoto);
+    expect(result.decision).toBe("needs_changes");
+    expect(result.reason).toContain("cuota gratuita");
+  });
+
+    it("never approves non-image data", async () => {
     const badFetch = async () => new Response(new TextEncoder().encode("not a jpeg image"));
     const result = await screenListing(input, { run: vi.fn() }, badFetch);
     expect(result.decision).toBe("needs_changes");
