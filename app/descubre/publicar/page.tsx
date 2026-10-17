@@ -11,6 +11,7 @@ import CategoryIcon from "@/components/store/CategoryIcon";
 import DiscoverProductCard from "@/components/descubre/DiscoverProductCard";
 import { DEFAULT_LISTING_HOURS, LISTING_DURATIONS_HOURS, listingDurationLabel, listingExpiryMs } from "@/lib/descubre/lifecycle";
 import type { PersonalDiscoverProduct } from "@/lib/descubre/feed";
+import { normalizeWhatsappNumber } from "@/lib/security/whatsapp";
 import type { StoreApiRecord } from "@/lib/store/client";
 import "../descubre.css";
 import "./publicar.css";
@@ -46,6 +47,7 @@ export default function PublicarDescubre() {
   const [priceType, setPriceType] = useState<"fixed" | "negotiable" | "ask">("fixed");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [duration, setDuration] = useState(DEFAULT_LISTING_HOURS);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
@@ -89,6 +91,8 @@ export default function PublicarDescubre() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  const registeredWhatsapp = appUser?.whatsappNumber?.trim() ?? "";
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!firebaseUser || busy) return;
@@ -96,9 +100,25 @@ export default function PublicarDescubre() {
       setMessage("Agrega fotografía, categoría, título, descripción y lugar de entrega.");
       return;
     }
+    if (!registeredWhatsapp && !whatsappNumber.trim()) {
+      setMessage("Agrega tu número de WhatsApp para que puedan contactarte.");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
+      if (!registeredWhatsapp) {
+        const normalized = normalizeWhatsappNumber(whatsappNumber);
+        setStep("Guardando WhatsApp de contacto…");
+        const profileResponse = await requestWithUser(firebaseUser, "/api/profile", {
+          method: "PATCH",
+          body: JSON.stringify({ whatsappNumber: normalized }),
+        });
+        const profileData = await profileResponse.json().catch(() => ({}));
+        if (!profileResponse.ok) {
+          throw new Error(profileData.error ?? "No se pudo guardar tu WhatsApp.");
+        }
+      }
       setStep("Optimizando la fotografía…");
       const prepared = await prepareImageForUpload(file, file.name);
       const ext = EXT[prepared.type];
@@ -168,7 +188,7 @@ export default function PublicarDescubre() {
       <div className="discover-inner">
         <header className="publish-header">
           <Link href="/descubre" className="publish-back">← Volver a Descubre</Link>
-          <h1>¡Publica tu hallazgo! <span aria-hidden="true">✳</span></h1>
+          <h1>PON TUS IDEAS A LA VENTA <span aria-hidden="true">✳</span></h1>
           <p>Vende algo a la comunidad, con o sin tienda.</p>
         </header>
         <div className="publish-layout">
@@ -256,6 +276,30 @@ export default function PublicarDescubre() {
               <Link className="publish-create-store" href="/mystore">
                 {stores.length ? "Administrar mis tiendas ↗" : "＋ Crear mi tienda ↗"}
               </Link>
+            </fieldset>
+            <fieldset className="publish-field publish-whatsapp">
+              <legend>9. Contacto por WhatsApp</legend>
+              {registeredWhatsapp ? (
+                <>
+                  <p>Los interesados podrán contactarte por WhatsApp al número registrado: <strong>{registeredWhatsapp}</strong></p>
+                  <Link href="/profile" className="publish-whatsapp-edit">Cambiar número en mi perfil ↗</Link>
+                </>
+              ) : (
+                <label className="publish-whatsapp-input">
+                  <span>Tu número de WhatsApp</span>
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="443 123 4567"
+                    maxLength={24}
+                    required
+                    value={whatsappNumber}
+                    onChange={(event) => setWhatsappNumber(event.target.value)}
+                  />
+                  <small>Se guardará en tu perfil. Solo los usuarios que hayan iniciado sesión podrán contactarte desde tu anuncio.</small>
+                </label>
+              )}
             </fieldset>
             <p className="publish-policy">No se permite anunciar alcohol, drogas ni vapeadores. Todas las publicaciones pasan por revisión automática de fotografía y texto.</p>
             {message && <p role="alert" className="publish-error">{message}</p>}
