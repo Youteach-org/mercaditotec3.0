@@ -1,10 +1,12 @@
 import { featuredPriorityBrand } from "../store/featuredMarketplace";
 import type { DiscoverProduct } from "../store/discoverFeed";
-import type { ListingRecord } from "./listings";
+import { listingExpiryMs, type ListingRecord } from "./listings";
 
 export interface PersonalDiscoverProduct extends DiscoverProduct {
   personal: true;
   sellerUid: string;
+  expiresAt: number;
+  linkedStoreId: string | null;
 }
 export type DiscoverFeedItem = DiscoverProduct | PersonalDiscoverProduct;
 
@@ -14,13 +16,13 @@ export function mergeDiscoverListings(
   now = Date.now(),
 ): DiscoverFeedItem[] {
   const personal: PersonalDiscoverProduct[] = listings
-    .filter((item) => item.status === "approved" && (item.expiresAt === null || item.expiresAt > now))
+    .filter((item) => item.status === "approved" && listingExpiryMs(item) > now)
     .map((item) => ({
       id: item.id,
-      storeId: "",
-      storeName: item.sellerName,
-      storeSlug: "",
-      storeLogoUrl: null,
+      storeId: item.linkedStoreId ?? "",
+      storeName: item.linkedStoreName ?? item.sellerName,
+      storeSlug: item.linkedStoreSlug ?? "",
+      storeLogoUrl: item.linkedStoreLogoUrl ?? null,
       deliveryLocation: item.location,
       title: item.title,
       description: item.description,
@@ -29,7 +31,9 @@ export function mergeDiscoverListings(
       priceType: item.priceType,
       priceAmount: item.priceAmount,
       createdAt: new Date(item.createdAt).toISOString(),
-      flashEndsAt: item.expiresAt ? new Date(item.expiresAt).toISOString() : null,
+      flashEndsAt: item.durationHours <= 48 ? new Date(listingExpiryMs(item)).toISOString() : null,
+      expiresAt: listingExpiryMs(item),
+      linkedStoreId: item.linkedStoreId,
       sellerUid: item.ownerUid,
       personal: true,
     }));
