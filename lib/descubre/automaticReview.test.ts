@@ -95,8 +95,8 @@ describe("automatic prepublication product screening", () => {
       item: "video game controller", confidence: 0.99,
     }) })) };
     const fetcher = vi.fn(async (_url: RequestInfo | URL, opts?: RequestInit) => {
-      expect(opts.redirect).toBe("follow");
-      expect(new Headers(opts.headers).has("authorization")).toBe(false);
+      expect(opts?.redirect).toBe("follow");
+      expect(new Headers(opts?.headers).has("authorization")).toBe(false);
       return new Response(jpeg, { status: 200, headers: { "content-type": "image/jpeg" } });
     });
     expect((await screenListing(input, ai, fetcher)).decision).toBe("approved");
