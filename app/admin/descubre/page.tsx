@@ -91,7 +91,7 @@ export default function AdminDescubreManualPage() {
       <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
         <h1 className="text-3xl font-black">Revisión manual de productos</h1>
         <p className="mt-2 text-base leading-relaxed">
-          Aquí aparecen únicamente los anuncios que no pudieron analizarse por falta de cuota de IA.
+          Aquí aparecen los anuncios cuyo análisis automático no pudo completarse por falta de cuota o un fallo temporal al descargar la fotografía.
           No se muestran al público hasta tu aprobación.
         </p>
         <button type="button" onClick={() => void refresh()} disabled={loadingItems}
@@ -119,7 +119,7 @@ export default function AdminDescubreManualPage() {
               <p><strong>Precio: </strong>{item.priceAmount == null ? "Preguntar precio" : item.priceAmount.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</p>
               <p><strong>Entrega: </strong>{item.location}</p>
               <p><strong>Duración después de aprobar: </strong>{item.durationHours} horas</p>
-              <p><strong>Motivo de revisión: </strong>{item.screeningReason ?? "Se agotó la cuota de IA."}</p>
+              <p><strong>Motivo de revisión: </strong>{item.screeningReason ?? "No pudo completarse la revisión automática."}</p>
               <label className="block font-bold" htmlFor={"review-reason-" + item.id}>Motivo del rechazo</label>
               <textarea id={"review-reason-" + item.id} rows={3} maxLength={180}
                 placeholder="Obligatorio solo si rechazas el anuncio"
