@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       await notifySuperadminsSafely({
         type: "discover_manual_review",
         title: "Producto pendiente de revisión",
-        message: "Se agotó la cuota de IA. Hay un producto para revisión manual.",
+        message: "Hay un producto pendiente porque la revisión automática no pudo completarse.",
         href: "/admin/descubre",
         dedupeKey: `discover:review:${id}`,
       });
