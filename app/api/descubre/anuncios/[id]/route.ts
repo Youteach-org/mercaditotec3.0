@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { ApiAuthError, requireUnblockedUser } from "@/lib/store/auth";
-import { getListing, markListingSold, ListingError } from "@/lib/descubre/listings";
+import { getListing, markListingSold, ListingError, isVisibleListing } from "@/lib/descubre/listings";
+import { publisherWhatsappUrl } from "@/lib/descubre/contact";
+import { getAdminDb } from "@/lib/firestoreRest";
 
 export const runtime = "nodejs";
 
@@ -8,7 +10,21 @@ export async function GET(request: Request, context: RouteContext<"/api/descubre
   try {
     const actor = await requireUnblockedUser(request);
     const { id } = await context.params;
-    return NextResponse.json({ listing: await getListing(id, actor.uid) }, { headers: { "Cache-Control": "private, no-store" } });
+    const listing = await getListing(id, actor.uid);
+    let contactWhatsappUrl: string | null = null;
+    // Read the current owner's number only for an authenticated visitor
+    // viewing an approved, unexpired listing. No phone is stored in the
+    // public marketplace snapshot or requested by the Descubre feed.
+    if (listing.ownerUid !== actor.uid && isVisibleListing(listing)) {
+      const ownerProfile = await getAdminDb().collection("users").doc(listing.ownerUid).get();
+      if (ownerProfile.exists && ownerProfile.data()?.isActive !== false) {
+        contactWhatsappUrl = publisherWhatsappUrl(ownerProfile.data());
+      }
+    }
+    return NextResponse.json(
+      { listing: { ...listing, contactWhatsappUrl } },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch (error) {
     if (error instanceof ApiAuthError || error instanceof ListingError) return NextResponse.json({ error: error.message }, { status: error.status });
     return NextResponse.json({ error: "Anuncio no disponible." }, { status: 503 });

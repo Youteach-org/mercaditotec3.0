@@ -2,6 +2,7 @@ import { getAdminDb } from "../firestoreRest";
 import { requireActiveCategory } from "../store/categoryRepository";
 import { getStoreForOwner, StoreRepositoryError } from "../store/repository";
 import { DEFAULT_LISTING_HOURS, LISTING_DURATIONS_HOURS, listingExpiryMs } from "./lifecycle";
+import { publisherWhatsappUrl } from "./contact";
 
 export class ListingError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -105,6 +106,7 @@ export function isVisibleListing(record: ListingRecord, now = Date.now()): boole
 
 export async function createListingForScreening(uid: string, profile: Record<string, unknown> | undefined, raw: unknown) {
   const input = parseListingInput(raw, uid);
+  if (!publisherWhatsappUrl(profile)) throw new ListingError(400, "Registra tu WhatsApp en tu perfil para poder publicar.");
   await requireActiveCategory(input.categoryId);
   let linkedStore: { id: string; name: string; slug: string; logoUrl: string | null } | null = null;
   if (input.linkedStoreId) {

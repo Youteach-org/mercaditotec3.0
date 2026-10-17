@@ -23,6 +23,7 @@ interface Listing {
   linkedStoreName: string | null;
   linkedStoreSlug: string | null;
   screeningReason: string | null;
+  contactWhatsappUrl: string | null;
 }
 
 export default function DescubreListingPage() {
@@ -109,10 +110,12 @@ export default function DescubreListingPage() {
                   <button type="button" onClick={markSold} disabled={saving} style={{ cursor: "pointer", background: "#f15b32", color: "#fff", padding: 14, border: 0, fontWeight: 900, fontSize: 17 }}>
                     {saving ? "Guardando…" : "✓ Marcar como vendido"}
                   </button>
+                ) : listing.contactWhatsappUrl ? (
+                  <a href={listing.contactWhatsappUrl} target="_blank" rel="noopener noreferrer" style={{ display: "block", textAlign: "center", background: "#f15b32", color: "white", padding: 14, fontWeight: 900, fontSize: 17 }}>
+                    Contactar por WhatsApp ↗
+                  </a>
                 ) : (
-                  <Link href={"/chat/personal/" + encodeURIComponent(listing.ownerUid)} style={{ display: "block", textAlign: "center", background: "#f15b32", color: "white", padding: 14, fontWeight: 900, fontSize: 17 }}>
-                    Contactar al vendedor →
-                  </Link>
+                  <p role="status"><strong>Este publicador no tiene WhatsApp disponible.</strong></p>
                 ))}
                 {owner && <Link href="/descubre/publicar" style={{ color: "#123d82", fontWeight: 900 }}>Mis anuncios y publicar otro →</Link>}
               </div>
