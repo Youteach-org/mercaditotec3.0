@@ -106,7 +106,7 @@ export default function DescubreListingPage() {
                 {listing.status === "blocked" && <p>Publicación no permitida: {listing.screeningReason}</p>}
                 {listing.status === "needs_changes" && <p>Esta publicación requiere cambios: {listing.screeningReason}</p>}
                 {listing.status === "screening" && <p>En revisión automática; todavía no es visible.</p>}
-                {listing.status === "manual_review" && <p role="status"><strong>Pendiente de revisión manual.</strong> No hay cuota disponible para la IA. Tu anuncio permanecerá oculto hasta que administración lo revise; el plazo empezará cuando lo aprueben.</p>}
+                {listing.status === "manual_review" && <p role="status"><strong>Pendiente de revisión manual.</strong> {listing.screeningReason ?? "No se pudo completar la revisión automática."} Tu anuncio permanecerá oculto hasta que administración lo revise; el plazo empezará cuando lo aprueben.</p>}
                 {listing.status === "approved" && !expired && (owner ? (
                   <button type="button" onClick={markSold} disabled={saving} style={{ cursor: "pointer", background: "#f15b32", color: "#fff", padding: 14, border: 0, fontWeight: 900, fontSize: 17 }}>
                     {saving ? "Guardando…" : "✓ Marcar como vendido"}
