@@ -20,6 +20,7 @@ export function shouldAcknowledgeDestination(pathname: string): boolean {
     path === "/mystore/orders" ||
     path === "/admin/stores" ||
     path === "/admin/descubre" ||
+    /^\/descubre\/anuncios\/[^/]+$/.test(path) ||
     path === "/admin/users" ||
     /^\/admin\/stores\/[^/]+$/.test(path) ||
     /^\/mystore\/[^/]+$/.test(path) ||
@@ -43,7 +44,11 @@ export function notificationMatchesDestination(
     return /^\/chat\/personal\/[^/]+$/.test(destination) && href === destination;
   }
 
-  if (notification.type === "discover_manual_review") {
+  if (notification.type === "discover_manual_approved" || notification.type === "discover_manual_rejected") {
+    return /^\/descubre\/anuncios\/[^/]+$/.test(destination) && href === destination;
+  }
+
+    if (notification.type === "discover_manual_review") {
     return destination === "/admin/descubre" && href === destination;
   }
 
