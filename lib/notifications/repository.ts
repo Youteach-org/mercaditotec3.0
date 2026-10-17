@@ -346,3 +346,29 @@ export async function acknowledgeNotificationsAtDestination(
   await syncUnreadNotificationCount(recipientUid);
   return { updatedCount: matching.length, notificationIds: matching.map((doc) => doc.id) };
 }
+
+/**
+ * Quota-fallback reviews are superadmin-only. Query indexed admin roles,
+ * never list the first N users (which silently misses admins on 5,000 accounts).
+ */
+export async function notifySuperadminsSafely(event: Omit<NotificationDraft, "recipientUid">): Promise<void> {
+  try {
+    const db = getAdminDb();
+    const results = await Promise.all(
+      ["superadmin", "admin", "administrator"].map(role =>
+        db.collection("users").where("role", "==", role).limit(30).get(),
+      ),
+    );
+    const recipients = new Set<string>();
+    for (const result of results) {
+      for (const doc of result.docs) {
+        if (doc.data().isActive !== false && isSuperadminRole(doc.data())) recipients.add(doc.id);
+      }
+    }
+    await Promise.all([...recipients].map((recipientUid) =>
+      createNotificationSafely({ ...event, recipientUid, dedupeKey: `${event.dedupeKey}:admin:${recipientUid}` }),
+    ));
+  } catch (error) {
+    console.warn("SUPERADMIN_REVIEW_NOTIFICATION_UNAVAILABLE", error instanceof Error ? error.name : "Unknown");
+  }
+}
