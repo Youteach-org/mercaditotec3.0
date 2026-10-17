@@ -12,7 +12,10 @@ export type NotificationType =
   | "store_reactivated"
   | "student_pending"
   | "direct_message"
-  | "contact_attempt";
+  | "contact_attempt"
+  | "discover_manual_review"
+  | "discover_manual_approved"
+  | "discover_manual_rejected";
 
 export type OrderNotificationEvent =
   | "created"

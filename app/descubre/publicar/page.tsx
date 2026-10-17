@@ -142,7 +142,7 @@ export default function PublicarDescubre() {
         }),
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.status !== "approved") {
+      if (!response.ok || !["approved", "manual_review"].includes(result.status)) {
         throw new Error(result.message || result.error || "El anuncio no superó la revisión automática. Corrígelo e inténtalo de nuevo.");
       }
       router.push("/descubre/anuncios/" + encodeURIComponent(result.id));
@@ -321,7 +321,7 @@ export default function PublicarDescubre() {
               {mine.length === 0 ? <p>Todavía no tienes anuncios.</p> : mine.map((item) => (
                 <Link key={item.id} href={"/descubre/anuncios/" + encodeURIComponent(item.id)}>
                   <strong>{item.title}</strong>
-                  <small>{item.status === "approved" && listingExpiryMs(item) <= Date.now() ? "Vencido" : item.status === "approved" ? "Publicado" : item.status === "sold" ? "Vendido" : item.status === "blocked" ? "No permitido" : item.status === "screening" ? "En revisión" : "Requiere cambios"}</small>
+                  <small>{item.status === "approved" && listingExpiryMs(item) <= Date.now() ? "Vencido" : item.status === "approved" ? "Publicado" : item.status === "sold" ? "Vendido" : item.status === "blocked" ? "No permitido" : item.status === "screening" ? "En revisión automática" : item.status === "manual_review" ? "En revisión manual" : "Requiere cambios"}</small>
                 </Link>
               ))}
             </section>

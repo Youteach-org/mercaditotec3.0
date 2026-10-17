@@ -36,6 +36,12 @@ const cards: Array<{
     icon: "🗂️",
   },
   {
+    title: "Revisión de productos",
+    description: "Aprueba o rechaza los anuncios pendientes cuando se agota la cuota de IA.",
+    href: "/admin/descubre",
+    icon: "🔎",
+  },
+  {
     title: "Portada Mercadito",
     description: "Edita post-its, letreros, buscador y etiquetas visibles en la portada.",
     href: "/admin/marketplace",
@@ -121,7 +127,7 @@ export default function AdminHomePage() {
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.filter((card) => superadmin || (card.href !== "/admin/users" && card.href !== "/admin/users#administradores")).map((card) => {
+          {cards.filter((card) => superadmin || (card.href !== "/admin/users" && card.href !== "/admin/users#administradores" && card.href !== "/admin/descubre")).map((card) => {
             const body = (
               <>
                 <div className="flex items-start justify-between gap-3">

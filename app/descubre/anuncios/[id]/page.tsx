@@ -75,7 +75,7 @@ export default function DescubreListingPage() {
   const price = amount === null || amount === undefined ? "Preguntar precio" :
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
   const owner = listing?.ownerUid === firebaseUser?.uid;
-  const expired = listing ? listingExpiryMs(listing) <= Date.now() : false;
+  const expired = listing?.status === "approved" ? listingExpiryMs(listing) <= Date.now() : false;
   return (
     <main className="discover-page">
       <div className="discover-paper-top" aria-hidden="true" />
@@ -106,6 +106,7 @@ export default function DescubreListingPage() {
                 {listing.status === "blocked" && <p>Publicación no permitida: {listing.screeningReason}</p>}
                 {listing.status === "needs_changes" && <p>Esta publicación requiere cambios: {listing.screeningReason}</p>}
                 {listing.status === "screening" && <p>En revisión automática; todavía no es visible.</p>}
+                {listing.status === "manual_review" && <p role="status"><strong>Pendiente de revisión manual.</strong> No hay cuota disponible para la IA. Tu anuncio permanecerá oculto hasta que administración lo revise; el plazo empezará cuando lo aprueben.</p>}
                 {listing.status === "approved" && !expired && (owner ? (
                   <button type="button" onClick={markSold} disabled={saving} style={{ cursor: "pointer", background: "#f15b32", color: "#fff", padding: 14, border: 0, fontWeight: 900, fontSize: 17 }}>
                     {saving ? "Guardando…" : "✓ Marcar como vendido"}

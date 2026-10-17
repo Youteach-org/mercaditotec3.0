@@ -7,7 +7,7 @@ export interface AuditEntryInput {
   actorUid: string;
   actorRole: AdminRole;
   action: string;
-  targetType: "user" | "store" | "message" | "report" | "category" | "admin";
+  targetType: "user" | "store" | "listing" | "message" | "report" | "category" | "admin";
   targetId: string;
   metadata?: Record<string, unknown>;
 }
