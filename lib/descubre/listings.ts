@@ -1,10 +1,14 @@
 import { getAdminDb } from "../firestoreRest";
 import { requireActiveCategory } from "../store/categoryRepository";
+import { getStoreForOwner, StoreRepositoryError } from "../store/repository";
 
 export class ListingError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export type ListingStatus = "screening" | "approved" | "blocked" | "needs_changes" | "sold";
+export const LISTING_DURATIONS_HOURS = [6, 12, 24, 48, 72, 168] as const;
+export const DEFAULT_LISTING_HOURS = 48;
+const HOUR_MS = 60 * 60 * 1000;
 export interface ListingInput {
   title: string;
   description: string;
@@ -13,7 +17,8 @@ export interface ListingInput {
   priceType: "fixed" | "negotiable" | "ask";
   priceAmount: number | null;
   location: string;
-  durationHours: 0 | 6 | 12 | 24 | 48;
+  durationHours: (typeof LISTING_DURATIONS_HOURS)[number];
+  linkedStoreId: string | null;
 }
 export interface ListingRecord extends ListingInput {
   id: string;
@@ -24,6 +29,9 @@ export interface ListingRecord extends ListingInput {
   expiresAt: number | null;
   screenedAt: number | null;
   screeningReason: string | null;
+  linkedStoreName: string | null;
+  linkedStoreSlug: string | null;
+  linkedStoreLogoUrl: string | null;
 }
 const SOURCE_ORIGIN = "https://wfmokinfcypfpdisussw.supabase.co";
 const IMAGE_PATH = "/storage/v1/object/public/chat-images/";
@@ -48,7 +56,9 @@ export function parseListingInput(raw: unknown, ownerUid: string): ListingInput 
     throw new ListingError(400, "El precio debe ser mayor que cero y menor que un millón.");
   }
   const durationHours = data.durationHours;
-  if (![0, 6, 12, 24, 48].includes(Number(durationHours))) throw new ListingError(400, "Duración inválida.");
+  if (!LISTING_DURATIONS_HOURS.includes(durationHours as ListingInput["durationHours"])) throw new ListingError(400, "El anuncio debe tener una duración entre 6 horas y 7 días.");
+  const linkedStoreId = data.linkedStoreId === null || data.linkedStoreId === undefined || data.linkedStoreId === "" ? null : data.linkedStoreId;
+  if (linkedStoreId !== null && (typeof linkedStoreId !== "string" || !/^[A-Za-z0-9_-]{8,160}$/.test(linkedStoreId))) throw new ListingError(400, "Selecciona una tienda válida.");
   try {
     const url = new URL(imageUrl);
     if (url.origin !== SOURCE_ORIGIN || url.search || url.hash || !url.pathname.startsWith(IMAGE_PATH)) throw new Error("origin");
@@ -59,7 +69,7 @@ export function parseListingInput(raw: unknown, ownerUid: string): ListingInput 
   } catch {
     throw new ListingError(400, "La fotografía debe pertenecer a tu publicación.");
   }
-  return { title, description, categoryId, location, imageUrl, priceType, priceAmount: priceType === "ask" ? null : Math.round((amount as number) * 100) / 100, durationHours: Number(durationHours) as ListingInput["durationHours"] };
+  return { title, description, categoryId, location, imageUrl, priceType, priceAmount: priceType === "ask" ? null : Math.round((amount as number) * 100) / 100, durationHours: durationHours as ListingInput["durationHours"], linkedStoreId: linkedStoreId as string | null };
 }
 
 function toRecord(id: string, data: Record<string, unknown>): ListingRecord {
@@ -74,31 +84,58 @@ function toRecord(id: string, data: Record<string, unknown>): ListingRecord {
     priceType: data.priceType === "ask" || data.priceType === "negotiable" ? data.priceType : "fixed",
     priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
     location: String(data.location ?? ""),
-    durationHours: [0,6,12,24,48].includes(Number(data.durationHours)) ? Number(data.durationHours) as ListingInput["durationHours"] : 0,
+    durationHours: LISTING_DURATIONS_HOURS.includes(data.durationHours as ListingInput["durationHours"])
+      ? data.durationHours as ListingInput["durationHours"] : DEFAULT_LISTING_HOURS,
+    linkedStoreId: typeof data.linkedStoreId === "string" ? data.linkedStoreId : null,
     status: ["screening","approved","blocked","needs_changes","sold"].includes(String(data.status)) ? data.status as ListingStatus : "blocked",
     createdAt: Number(data.createdAt ?? 0),
     expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null,
     screenedAt: typeof data.screenedAt === "number" ? data.screenedAt : null,
     screeningReason: typeof data.screeningReason === "string" ? data.screeningReason : null,
+    linkedStoreName: typeof data.linkedStoreName === "string" ? data.linkedStoreName : null,
+    linkedStoreSlug: typeof data.linkedStoreSlug === "string" ? data.linkedStoreSlug : null,
+    linkedStoreLogoUrl: typeof data.linkedStoreLogoUrl === "string" ? data.linkedStoreLogoUrl : null,
   };
+}
+
+export function listingExpiryMs(record: Pick<ListingRecord, "createdAt" | "expiresAt">): number {
+  // Existing open-ended listings are also retired automatically after 48h;
+  // no legacy item can remain permanently in Descubre.
+  return typeof record.expiresAt === "number" && Number.isFinite(record.expiresAt) && record.expiresAt > 0
+    ? record.expiresAt
+    : record.createdAt + DEFAULT_LISTING_HOURS * HOUR_MS;
 }
 
 export function isVisibleListing(record: ListingRecord, now = Date.now()): boolean {
   return record.status === "approved"
-    && (record.expiresAt === null || record.expiresAt > now)
+    && listingExpiryMs(record) > now
     && Boolean(record.imageUrl) && Boolean(record.ownerUid);
 }
 
 export async function createListingForScreening(uid: string, profile: Record<string, unknown> | undefined, raw: unknown) {
   const input = parseListingInput(raw, uid);
   await requireActiveCategory(input.categoryId);
+  let linkedStore: { id: string; name: string; slug: string; logoUrl: string | null } | null = null;
+  if (input.linkedStoreId) {
+    try {
+      const store = await getStoreForOwner(uid, input.linkedStoreId);
+      if (store.status !== "active" || !store.slug) throw new ListingError(409, "Tu tienda debe estar aprobada y activa para vincularla.");
+      linkedStore = { id: store.id, name: store.name, slug: store.slug, logoUrl: store.logoUrl };
+    } catch (error) {
+      if (error instanceof StoreRepositoryError) throw new ListingError(404, "La tienda seleccionada no te pertenece.");
+      throw error;
+    }
+  }
   const db = getAdminDb();
   // One user's items are bounded; no global scan and no composite index.
   const existing = await db.collection("discover_listings").where("ownerUid", "==", uid).limit(30).get();
   const active = existing.docs.filter((doc) => {
     const data = doc.data();
-    return ["approved", "screening"].includes(String(data.status)) &&
-      (typeof data.expiresAt !== "number" || data.expiresAt > Date.now());
+    const expiresAt = listingExpiryMs({
+      createdAt: Number(data.createdAt ?? 0),
+      expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null,
+    });
+    return ["approved", "screening"].includes(String(data.status)) && expiresAt > Date.now();
   });
   if (active.length >= 3) throw new ListingError(409, "Puedes tener como máximo tres anuncios activos o en revisión.");
   const now = Date.now();
@@ -107,8 +144,11 @@ export async function createListingForScreening(uid: string, profile: Record<str
   const record: ListingRecord = {
     ...input, id: reference.id, ownerUid: uid, sellerName: nickname,
     status: "screening", createdAt: now,
-    expiresAt: input.durationHours ? now + input.durationHours * 60 * 60 * 1000 : null,
+    expiresAt: now + input.durationHours * HOUR_MS,
     screenedAt: null, screeningReason: null,
+    linkedStoreName: linkedStore?.name ?? null,
+    linkedStoreSlug: linkedStore?.slug ?? null,
+    linkedStoreLogoUrl: linkedStore?.logoUrl ?? null,
   };
   const { id: _id, ...saved } = record;
   await reference.set(saved);
