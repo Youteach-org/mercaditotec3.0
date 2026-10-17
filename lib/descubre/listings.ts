@@ -7,7 +7,7 @@ import { publisherWhatsappUrl } from "./contact";
 export class ListingError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
-export type ListingStatus = "screening" | "approved" | "blocked" | "needs_changes" | "sold";
+export type ListingStatus = "screening" | "manual_review" | "approved" | "blocked" | "needs_changes" | "sold";
 
 export interface ListingInput {
   title: string;
@@ -87,7 +87,7 @@ function toRecord(id: string, data: Record<string, unknown>): ListingRecord {
     durationHours: LISTING_DURATIONS_HOURS.includes(data.durationHours as ListingInput["durationHours"])
       ? data.durationHours as ListingInput["durationHours"] : DEFAULT_LISTING_HOURS,
     linkedStoreId: typeof data.linkedStoreId === "string" ? data.linkedStoreId : null,
-    status: ["screening","approved","blocked","needs_changes","sold"].includes(String(data.status)) ? data.status as ListingStatus : "blocked",
+    status: ["screening","manual_review","approved","blocked","needs_changes","sold"].includes(String(data.status)) ? data.status as ListingStatus : "blocked",
     createdAt: Number(data.createdAt ?? 0),
     expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null,
     screenedAt: typeof data.screenedAt === "number" ? data.screenedAt : null,
@@ -128,7 +128,7 @@ export async function createListingForScreening(uid: string, profile: Record<str
       createdAt: Number(data.createdAt ?? 0),
       expiresAt: typeof data.expiresAt === "number" ? data.expiresAt : null,
     });
-    return ["approved", "screening"].includes(String(data.status)) && expiresAt > Date.now();
+    return String(data.status) === "manual_review" || (["approved", "screening"].includes(String(data.status)) && expiresAt > Date.now());
   });
   if (active.length >= 3) throw new ListingError(409, "Puedes tener como máximo tres anuncios activos o en revisión.");
   const now = Date.now();
@@ -148,12 +148,14 @@ export async function createListingForScreening(uid: string, profile: Record<str
   return record;
 }
 
-export async function finishAutomaticScreening(id: string, decision: "approved" | "blocked" | "needs_changes", reason: string) {
+export async function finishAutomaticScreening(id: string, decision: "approved" | "blocked" | "needs_changes" | "manual_review", reason: string) {
   const ref = getAdminDb().collection("discover_listings").doc(id);
   const existing = await ref.get();
   if (!existing.exists || existing.data()?.status !== "screening") throw new ListingError(409, "El anuncio ya no admite esta revisión.");
   await ref.update({
     status: decision,
+    // Manual-review listings have no active sales countdown until approved.
+    expiresAt: decision === "manual_review" ? null : existing.data()?.expiresAt ?? null,
     screenedAt: Date.now(),
     screeningReason: decision === "approved" ? null : reason.slice(0, 180),
     screeningModel: "@cf/google/gemma-4-26b-a4b-it",
