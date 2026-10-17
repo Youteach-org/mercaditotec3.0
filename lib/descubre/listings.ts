@@ -193,3 +193,50 @@ export async function markListingSold(uid: string, id: string): Promise<void> {
   if (record.status !== "approved") throw new ListingError(409, "Solo puedes marcar vendidos los anuncios visibles.");
   await getAdminDb().collection("discover_listings").doc(id).update({ status: "sold", updatedAt: Date.now() });
 }
+
+export async function listManualReviewListings(): Promise<ListingRecord[]> {
+  // A status-specific, bounded query; no listing scans or background polling.
+  const snapshot = await getAdminDb().collection("discover_listings")
+    .where("status", "==", "manual_review").limit(100).get();
+  return snapshot.docs.map(doc => toRecord(doc.id, doc.data()))
+    .sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export async function decideManualReview(
+  id: string,
+  decision: "approved" | "blocked",
+  reviewerUid: string,
+  reason: string,
+): Promise<ListingRecord> {
+  if (!/^[A-Za-z0-9_-]{8,160}$/.test(id)) throw new ListingError(400, "Anuncio inválido.");
+  const cleanReason = reason.trim().slice(0, 180);
+  if (decision === "blocked" && !cleanReason) throw new ListingError(400, "Indica por qué se rechazó el anuncio.");
+  const db = getAdminDb();
+  const ref = db.collection("discover_listings").doc(id);
+  const now = Date.now();
+  let updated: ListingRecord | null = null;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    if (!snap.exists) throw new ListingError(404, "Anuncio no encontrado.");
+    const previous = toRecord(snap.id, snap.data()!);
+    if (previous.status !== "manual_review") {
+      throw new ListingError(409, "Este anuncio ya fue revisado o no requiere revisión manual.");
+    }
+    const expiresAt = decision === "approved"
+      ? now + previous.durationHours * 60 * 60 * 1000
+      : null;
+    tx.update(ref, {
+      status: decision,
+      screenedAt: now,
+      expiresAt,
+      screeningReason: decision === "approved" ? null : cleanReason,
+      screeningMethod: "manual",
+      screenedBy: reviewerUid,
+      updatedAt: now,
+    });
+    updated = { ...previous, status: decision, screenedAt: now, expiresAt,
+      screeningReason: decision === "approved" ? null : cleanReason };
+  });
+  if (!updated) throw new ListingError(503, "No se pudo registrar la revisión.");
+  return updated;
+}
