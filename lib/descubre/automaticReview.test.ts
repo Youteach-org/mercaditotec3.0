@@ -94,7 +94,7 @@ describe("automatic prepublication product screening", () => {
       decision: "APPROVE", matchesText: true, containsProhibited: false,
       item: "video game controller", confidence: 0.99,
     }) })) };
-    const fetcher = vi.fn(async (_url: string, opts: RequestInit) => {
+    const fetcher = vi.fn(async (_url: RequestInfo | URL, opts?: RequestInit) => {
       expect(opts.redirect).toBe("follow");
       expect(new Headers(opts.headers).has("authorization")).toBe(false);
       return new Response(jpeg, { status: 200, headers: { "content-type": "image/jpeg" } });
