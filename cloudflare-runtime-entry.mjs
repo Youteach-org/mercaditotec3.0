@@ -203,7 +203,7 @@ export default {
           id: draft.id,
           status: review.decision,
           ...(review.reason ? { message: review.reason } : {}),
-        }, { status: review.decision === "approved" ? 201 : 422 });
+        }, { status: ["approved", "manual_review"].includes(review.decision) ? 201 : 422 });
       }
 
       // Wall time includes upstream I/O and is not a CPU metric. Log only a
