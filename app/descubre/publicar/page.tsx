@@ -8,11 +8,15 @@ import { useSession } from "@/lib/useSession";
 import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 import CategoryIcon from "@/components/store/CategoryIcon";
+import DiscoverProductCard from "@/components/descubre/DiscoverProductCard";
+import { DEFAULT_LISTING_HOURS, LISTING_DURATIONS_HOURS, listingDurationLabel, listingExpiryMs } from "@/lib/descubre/lifecycle";
+import type { PersonalDiscoverProduct } from "@/lib/descubre/feed";
+import type { StoreApiRecord } from "@/lib/store/client";
 import "../descubre.css";
 import "./publicar.css";
 
 interface Category { id: string; name: string; iconKey: CategoryIconKey }
-interface MyListing { id: string; title: string; status: string; screeningReason: string | null; createdAt: number }
+interface MyListing { id: string; title: string; status: string; screeningReason: string | null; createdAt: number; expiresAt: number | null }
 
 async function requestWithUser(user: User, path: string, init?: RequestInit): Promise<Response> {
   return fetch(path, {
@@ -31,16 +35,18 @@ const EXT: Record<string, string> = {
 
 export default function PublicarDescubre() {
   const router = useRouter();
-  const { firebaseUser, loading: sessionLoading } = useSession();
+  const { firebaseUser, appUser, loading: sessionLoading } = useSession();
   const [categories, setCategories] = useState<Category[]>([]);
   const [mine, setMine] = useState<MyListing[]>([]);
+  const [stores, setStores] = useState<StoreApiRecord[]>([]);
+  const [linkedStoreId, setLinkedStoreId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [priceType, setPriceType] = useState<"fixed" | "negotiable" | "ask">("fixed");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
-  const [duration, setDuration] = useState(0);
+  const [duration, setDuration] = useState(DEFAULT_LISTING_HOURS);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,10 +69,15 @@ export default function PublicarDescubre() {
         if (!response.ok) throw new Error("No se pudieron consultar tus anuncios.");
         return response.json();
       }),
-    ]).then(([cats, own]) => {
+      requestWithUser(firebaseUser, "/api/stores").then(async (response) => {
+        if (!response.ok) throw new Error("No se pudieron consultar tus tiendas.");
+        return response.json();
+      }),
+    ]).then(([cats, own, ownStores]) => {
       if (!active) return;
       setCategories(Array.isArray(cats.categories) ? cats.categories : []);
       setMine(Array.isArray(own.listings) ? own.listings : []);
+      setStores(Array.isArray(ownStores.stores) ? ownStores.stores : []);
     }).catch((error) => { if (active) setMessage(error instanceof Error ? error.message : "Error al cargar datos."); });
     return () => { active = false; };
   }, [firebaseUser]);
@@ -107,6 +118,7 @@ export default function PublicarDescubre() {
           categoryId, location: location.trim(), imageUrl, priceType,
           priceAmount: priceType === "ask" ? null : amount,
           durationHours: duration,
+          linkedStoreId: linkedStoreId || null,
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -122,6 +134,30 @@ export default function PublicarDescubre() {
     }
   }
 
+  const approvedStores = stores.filter((store) => store.status === "active" && store.slug);
+  const selectedStore = approvedStores.find((store) => store.id === linkedStoreId);
+  const previewAmount = Number(price);
+  const liveProduct: PersonalDiscoverProduct = {
+    id: "vista-previa",
+    personal: true,
+    sellerUid: firebaseUser?.uid ?? "",
+    expiresAt: Date.now() + duration * 60 * 60 * 1000,
+    linkedStoreId: selectedStore?.id ?? null,
+    storeId: selectedStore?.id ?? "",
+    storeSlug: selectedStore?.slug ?? "",
+    storeName: selectedStore?.name ?? appUser?.nickname ?? "Tu anuncio",
+    storeLogoUrl: selectedStore?.logoUrl ?? null,
+    deliveryLocation: location.trim(),
+    title: title.trim(),
+    description: description.trim(),
+    imageUrl: preview,
+    categoryId,
+    priceType,
+    priceAmount: priceType === "ask" ? null : Number.isFinite(previewAmount) && previewAmount > 0 ? previewAmount : null,
+    createdAt: new Date().toISOString(),
+    flashEndsAt: duration <= 48 ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString() : null,
+  };
+
   if (sessionLoading || !firebaseUser) {
     return <main className="discover-page discover-loading">Cargando…</main>;
   }
@@ -133,7 +169,7 @@ export default function PublicarDescubre() {
         <header className="publish-header">
           <Link href="/descubre" className="publish-back">← Volver a Descubre</Link>
           <h1>¡Publica tu hallazgo! <span aria-hidden="true">✳</span></h1>
-          <p>Vende algo a la comunidad sin crear una tienda.</p>
+          <p>Vende algo a la comunidad, con o sin tienda.</p>
         </header>
         <div className="publish-layout">
           <form className="publish-form" onSubmit={submit}>
@@ -191,14 +227,36 @@ export default function PublicarDescubre() {
               <label className="publish-field">
                 <strong>7. ¿Cuánto dura el anuncio?</strong>
                 <select value={duration} onChange={(event) => setDuration(Number(event.target.value))}>
-                  <option value={0}>Hasta que lo marques vendido</option>
-                  <option value={6}>Oferta flash · 6 horas</option>
-                  <option value={12}>Oferta flash · 12 horas</option>
-                  <option value={24}>Oferta flash · 24 horas</option>
-                  <option value={48}>Oferta flash · 48 horas</option>
+                  {LISTING_DURATIONS_HOURS.map((hours) => (
+                    <option key={hours} value={hours}>{hours <= 48 ? "Oferta flash · " : "Anuncio · "}{listingDurationLabel(hours)}</option>
+                  ))}
                 </select>
+                <small>Se retira automáticamente cuando termine el plazo, aunque no regreses.</small>
               </label>
             </div>
+            <fieldset className="publish-field publish-store-link">
+              <legend>8. ¿Quieres ligar el anuncio a tu tienda?</legend>
+              {approvedStores.length > 0 ? (
+                <>
+                  <label className="publish-store-option">
+                    <input type="radio" name="linked-store" checked={!linkedStoreId} onChange={() => setLinkedStoreId("")} />
+                    Publicar como usuario independiente
+                  </label>
+                  {approvedStores.map((store) => (
+                    <label key={store.id} className="publish-store-option">
+                      <input type="radio" name="linked-store" checked={linkedStoreId === store.id} onChange={() => setLinkedStoreId(store.id)} />
+                      Vincular a {store.name}
+                    </label>
+                  ))}
+                  <small>Solo puedes vincular tiendas tuyas aprobadas. La tarjeta mostrará el nombre y logo de tu tienda.</small>
+                </>
+              ) : (
+                <p className="publish-store-promo">¿Quieres vender más seguido? <strong>¡Abre tu tienda en Mercadito!</strong> Tu anuncio también puede publicarse sin tener una.</p>
+              )}
+              <Link className="publish-create-store" href="/mystore">
+                {stores.length ? "Administrar mis tiendas ↗" : "＋ Crear mi tienda ↗"}
+              </Link>
+            </fieldset>
             <p className="publish-policy">No se permite anunciar alcohol, drogas ni vapeadores. Todas las publicaciones pasan por revisión automática de fotografía y texto.</p>
             {message && <p role="alert" className="publish-error">{message}</p>}
             {step && <p role="status" className="publish-step">{step}</p>}
@@ -207,13 +265,19 @@ export default function PublicarDescubre() {
             </button>
           </form>
           <aside className="publish-side">
+            <section className="publish-preview-pane" aria-label="Vista previa de tu anuncio">
+              <h2>Así se verá tu anuncio ✳</h2>
+              <p>Los cambios aparecen aquí mientras escribes. Es la misma tarjeta de Descubre.</p>
+              <div className="publish-preview-card"><DiscoverProductCard product={liveProduct} preview /></div>
+              <small>Vista previa: todavía no está publicado.</small>
+            </section>
             <div className="publish-note">♡ <strong>¡Haz espacio para algo nuevo!</strong><p>Tu producto aparece en Descubre después de aprobar la revisión.</p></div>
             <section className="publish-mine">
               <h2>Mis anuncios</h2>
               {mine.length === 0 ? <p>Todavía no tienes anuncios.</p> : mine.map((item) => (
                 <Link key={item.id} href={"/descubre/anuncios/" + encodeURIComponent(item.id)}>
                   <strong>{item.title}</strong>
-                  <small>{item.status === "approved" ? "Publicado" : item.status === "sold" ? "Vendido" : item.status === "blocked" ? "No permitido" : item.status === "screening" ? "En revisión" : "Requiere cambios"}</small>
+                  <small>{item.status === "approved" && listingExpiryMs(item) <= Date.now() ? "Vencido" : item.status === "approved" ? "Publicado" : item.status === "sold" ? "Vendido" : item.status === "blocked" ? "No permitido" : item.status === "screening" ? "En revisión" : "Requiere cambios"}</small>
                 </Link>
               ))}
             </section>
