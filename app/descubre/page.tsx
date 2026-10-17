@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import DiscoverProductCard, { isFlash } from "@/components/descubre/DiscoverProductCard";
 import { useSession } from "@/lib/useSession";
 import "./descubre.css";
 
@@ -17,54 +18,8 @@ interface DiscoverCategory {
 
 const BATCH_SIZE = 12;
 
-function priceLabel(product: DiscoverFeedItem): string {
-  if (product.priceType === "ask" || product.priceAmount === null) return "Pregunta precio";
-  const formatted = new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    maximumFractionDigits: 2,
-  }).format(product.priceAmount);
-  return product.priceType === "negotiable" ? formatted + " · negociable" : formatted;
-}
-
-function hasActiveOffer(product: DiscoverFeedItem): boolean {
-  return Boolean(product.flashEndsAt && Date.parse(product.flashEndsAt) > Date.now());
-}
-
 function SearchMark() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>;
-}
-
-function ProductCard({ product, index }: { product: DiscoverFeedItem; index: number }) {
-  const href = "personal" in product && product.personal
-    ? "/descubre/anuncios/" + encodeURIComponent(product.id)
-    : "/marketplace/stores/" + encodeURIComponent(product.storeSlug) + "#producto-" + encodeURIComponent(product.id);
-  return (
-    <article className={"discover-product discover-product-" + (index % 8)}>
-      <div className="discover-product-tape" aria-hidden="true" />
-      <Link href={href} prefetch={false} className="discover-product-link" aria-label={"Ver " + product.title + " de " + product.storeName}>
-        <div className="discover-product-photo">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={product.imageUrl} alt={product.title} loading={index > 3 ? "lazy" : "eager"} />
-        </div>
-        {hasActiveOffer(product) && <span className="discover-product-flash">⚡ ¡Flash!</span>}
-        <div className="discover-product-copy">
-          <h2>{product.title}</h2>
-          {product.description && <p>{product.description}</p>}
-          <span className="discover-product-price">{priceLabel(product)}</span>
-        </div>
-      </Link>
-      <div className="discover-product-meta">
-        <span className="discover-seller">
-          {product.storeLogoUrl
-            ? /* eslint-disable-next-line @next/next/no-img-element */ <img src={product.storeLogoUrl} alt="" loading="lazy" />
-            : <span className="discover-seller-icon" aria-hidden="true">▣</span>}
-          <span>{product.storeName}</span>
-        </span>
-        {product.deliveryLocation && <span className="discover-location"><span aria-hidden="true">⌖</span>{product.deliveryLocation}</span>}
-      </div>
-    </article>
-  );
 }
 
 export default function DescubrePage() {
@@ -75,6 +30,7 @@ export default function DescubrePage() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const [limit, setLimit] = useState(BATCH_SIZE);
+  const [now, setNow] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -115,16 +71,23 @@ export default function DescubrePage() {
     () => categories.filter((cat) => cat.id && cat.name).slice(0, 24),
     [categories],
   );
+  // Time-limited products disappear without fetching from Firebase every minute.
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const matching = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("es-MX");
     return products.filter((product) => {
-      if (filter === "offers" && !hasActiveOffer(product)) return false;
+      if ("personal" in product && product.personal && product.expiresAt <= now) return false;
+      if (filter === "offers" && !isFlash(product, now)) return false;
       if (filter !== "all" && filter !== "offers" && product.categoryId !== filter) return false;
       if (!query) return true;
       return (product.title + " " + product.description + " " + product.storeName)
         .toLocaleLowerCase("es-MX").includes(query);
     });
-  }, [products, search, filter]);
+  }, [products, search, filter, now]);
   const shown = matching.slice(0, limit);
 
   if (sessionLoading || !firebaseUser) {
@@ -199,7 +162,7 @@ export default function DescubrePage() {
           <>
             <section className="discover-wall" aria-label="Productos de nuestra comunidad">
               {shown.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
+                <DiscoverProductCard key={product.id} product={product} index={index} />
               ))}
             </section>
             {matching.length > shown.length && (
