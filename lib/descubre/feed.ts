@@ -1,6 +1,7 @@
 import { featuredPriorityBrand } from "../store/featuredMarketplace";
 import type { DiscoverProduct } from "../store/discoverFeed";
-import { listingExpiryMs, type ListingRecord } from "./listings";
+import { type ListingRecord } from "./listings";
+import { listingExpiryMs } from "./lifecycle";
 
 export interface PersonalDiscoverProduct extends DiscoverProduct {
   personal: true;
