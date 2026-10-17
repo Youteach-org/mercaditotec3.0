@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSession } from "@/lib/useSession";
+import { listingExpiryMs } from "@/lib/descubre/lifecycle";
 import "../../descubre.css";
 
 interface Listing {
@@ -18,6 +19,9 @@ interface Listing {
   priceAmount: number | null;
   status: string;
   expiresAt: number | null;
+  createdAt: number;
+  linkedStoreName: string | null;
+  linkedStoreSlug: string | null;
   screeningReason: string | null;
 }
 
@@ -70,6 +74,7 @@ export default function DescubreListingPage() {
   const price = amount === null || amount === undefined ? "Preguntar precio" :
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(amount);
   const owner = listing?.ownerUid === firebaseUser?.uid;
+  const expired = listing ? listingExpiryMs(listing) <= Date.now() : false;
   return (
     <main className="discover-page">
       <div className="discover-paper-top" aria-hidden="true" />
@@ -89,11 +94,18 @@ export default function DescubreListingPage() {
                 <p style={{ whiteSpace: "pre-wrap", fontSize: 17, lineHeight: 1.5, overflowWrap: "anywhere" }}>{listing.description}</p>
                 <p><strong>Vende:</strong> {listing.sellerName}</p>
                 <p><strong>Entrega:</strong> {listing.location}</p>
+                {listing.linkedStoreSlug && listing.linkedStoreName && (
+                  <Link href={"/marketplace/stores/" + encodeURIComponent(listing.linkedStoreSlug)} style={{ color: "#123d82", fontWeight: 900, textDecoration: "underline" }}>
+                    🏬 Visitar {listing.linkedStoreName} ↗
+                  </Link>
+                )}
+                {expired && <p role="status"><strong>Anuncio vencido automáticamente.</strong> Ya no aparece en Descubre.</p>}
+                {!expired && listing.status === "approved" && <p><strong>Visible hasta:</strong> {new Date(listingExpiryMs(listing)).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}</p>}
                 {listing.status === "sold" && <p role="status"><strong>✓ Vendido</strong></p>}
                 {listing.status === "blocked" && <p>Publicación no permitida: {listing.screeningReason}</p>}
                 {listing.status === "needs_changes" && <p>Esta publicación requiere cambios: {listing.screeningReason}</p>}
                 {listing.status === "screening" && <p>En revisión automática; todavía no es visible.</p>}
-                {listing.status === "approved" && (owner ? (
+                {listing.status === "approved" && !expired && (owner ? (
                   <button type="button" onClick={markSold} disabled={saving} style={{ cursor: "pointer", background: "#f15b32", color: "#fff", padding: 14, border: 0, fontWeight: 900, fontSize: 17 }}>
                     {saving ? "Guardando…" : "✓ Marcar como vendido"}
                   </button>
