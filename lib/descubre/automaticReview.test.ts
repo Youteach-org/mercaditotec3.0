@@ -78,11 +78,18 @@ describe("automatic prepublication product screening", () => {
   it("never approves a listing after an AI quota failure", async () => {
     const ai = { run: vi.fn(async () => { throw new Error("3036: free allocation"); }) };
     const result = await screenListing(input, ai, fetchPhoto);
-    expect(result.decision).toBe("needs_changes");
-    expect(result.reason).toContain("cuota gratuita");
+    expect(result.decision).toBe("manual_review");
+    expect(result.reason).toContain("revisión manual");
   });
 
-    it("never approves non-image data", async () => {
+    it("never sends model outages or capacity errors to manual approval", async () => {
+    for (const error of [new Error("3040: Capacity temporarily exceeded"), new Error("unknown")]) {
+      const result = await screenListing(input, { run: async () => { throw error; } }, fetchPhoto);
+      expect(result.decision).toBe("needs_changes");
+    }
+  });
+
+  it("never approves non-image data", async () => {
     const badFetch = async () => new Response(new TextEncoder().encode("not a jpeg image"));
     const result = await screenListing(input, { run: vi.fn() }, badFetch);
     expect(result.decision).toBe("needs_changes");
