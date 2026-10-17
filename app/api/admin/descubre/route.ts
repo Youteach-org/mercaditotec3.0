@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         action: decision === "approved" ? "discover_manual_approve" : "discover_manual_reject",
         targetType: "listing",
         targetId: listing.id,
-        metadata: { sellerUid: listing.ownerUid, source: "ai_quota_exhausted" },
+        metadata: { sellerUid: listing.ownerUid, source: "automatic_review_unavailable" },
       });
     } catch (error) {
       console.warn("DISCOVER_MANUAL_AUDIT_UNAVAILABLE", error instanceof Error ? error.name : "Unknown");
