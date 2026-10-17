@@ -37,7 +37,7 @@ const cards: Array<{
   },
   {
     title: "Revisión de productos",
-    description: "Aprueba o rechaza los anuncios pendientes cuando se agota la cuota de IA.",
+    description: "Aprueba o rechaza anuncios pendientes por falta de cuota o fallos temporales de la revisión.",
     href: "/admin/descubre",
     icon: "🔎",
   },
