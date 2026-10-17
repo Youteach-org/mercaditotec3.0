@@ -89,6 +89,53 @@ describe("automatic prepublication product screening", () => {
     }
   });
 
+  it("accepts Supabase CDN redirects without passing bearer credentials", async () => {
+    const ai = { run: vi.fn(async () => ({ response: JSON.stringify({
+      decision: "APPROVE", matchesText: true, containsProhibited: false,
+      item: "video game controller", confidence: 0.99,
+    }) })) };
+    const fetcher = vi.fn(async (_url: RequestInfo | URL, opts?: RequestInit) => {
+      expect(opts?.redirect).toBe("follow");
+      expect(new Headers(opts?.headers).has("authorization")).toBe(false);
+      return new Response(jpeg, { status: 200, headers: { "content-type": "image/jpeg" } });
+    });
+    expect((await screenListing(input, ai, fetcher)).decision).toBe("approved");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries Supabase fetch once, without multiple AI invocations", async () => {
+    const ai = { run: vi.fn(async () => ({ response: JSON.stringify({
+      decision: "APPROVE", matchesText: true, containsProhibited: false,
+      item: "video game controller", confidence: 0.99,
+    }) })) };
+    const fetcher = vi.fn()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(new Response(jpeg));
+    expect((await screenListing(input, ai, fetcher)).decision).toBe("approved");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(ai.run).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends Supabase network outages to manual review, never to public feed", async () => {
+    const ai = { run: vi.fn() };
+    const fetcher = vi.fn(async () => { throw new TypeError("network unreachable"); });
+    const result = await screenListing(input, ai, fetcher);
+    expect(result.decision).toBe("manual_review");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(ai.run).not.toHaveBeenCalled();
+  });
+
+  it("keeps nonexistent photos and oversized files out of manual approval", async () => {
+    const ai = { run: vi.fn() };
+    const missing = async () => new Response(null, { status: 404 });
+    const oversized = async () => new Response("not a photo", {
+      status: 200, headers: { "content-length": "1048577" },
+    });
+    expect((await screenListing(input, ai, missing)).decision).toBe("needs_changes");
+    expect((await screenListing(input, ai, oversized)).decision).toBe("needs_changes");
+    expect(ai.run).not.toHaveBeenCalled();
+  });
+
   it("never approves non-image data", async () => {
     const badFetch = async () => new Response(new TextEncoder().encode("not a jpeg image"));
     const result = await screenListing(input, { run: vi.fn() }, badFetch);
