@@ -1,14 +1,13 @@
 import { getAdminDb } from "../firestoreRest";
 import { requireActiveCategory } from "../store/categoryRepository";
 import { getStoreForOwner, StoreRepositoryError } from "../store/repository";
+import { DEFAULT_LISTING_HOURS, LISTING_DURATIONS_HOURS, listingExpiryMs } from "./lifecycle";
 
 export class ListingError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export type ListingStatus = "screening" | "approved" | "blocked" | "needs_changes" | "sold";
-export const LISTING_DURATIONS_HOURS = [6, 12, 24, 48, 72, 168] as const;
-export const DEFAULT_LISTING_HOURS = 48;
-const HOUR_MS = 60 * 60 * 1000;
+
 export interface ListingInput {
   title: string;
   description: string;
@@ -98,14 +97,6 @@ function toRecord(id: string, data: Record<string, unknown>): ListingRecord {
   };
 }
 
-export function listingExpiryMs(record: Pick<ListingRecord, "createdAt" | "expiresAt">): number {
-  // Existing open-ended listings are also retired automatically after 48h;
-  // no legacy item can remain permanently in Descubre.
-  return typeof record.expiresAt === "number" && Number.isFinite(record.expiresAt) && record.expiresAt > 0
-    ? record.expiresAt
-    : record.createdAt + DEFAULT_LISTING_HOURS * HOUR_MS;
-}
-
 export function isVisibleListing(record: ListingRecord, now = Date.now()): boolean {
   return record.status === "approved"
     && listingExpiryMs(record) > now
@@ -144,7 +135,7 @@ export async function createListingForScreening(uid: string, profile: Record<str
   const record: ListingRecord = {
     ...input, id: reference.id, ownerUid: uid, sellerName: nickname,
     status: "screening", createdAt: now,
-    expiresAt: now + input.durationHours * HOUR_MS,
+    expiresAt: now + input.durationHours * 60 * 60 * 1000,
     screenedAt: null, screeningReason: null,
     linkedStoreName: linkedStore?.name ?? null,
     linkedStoreSlug: linkedStore?.slug ?? null,
