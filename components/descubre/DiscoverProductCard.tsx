@@ -8,6 +8,7 @@ interface Props {
   product: DiscoverFeedItem;
   index?: number;
   preview?: boolean;
+  requiresLogin?: boolean;
 }
 
 export function discoverPrice(product: DiscoverFeedItem): string {
@@ -22,9 +23,9 @@ export function isFlash(product: DiscoverFeedItem, now = Date.now()): boolean {
   return Boolean(product.flashEndsAt && Date.parse(product.flashEndsAt) > now);
 }
 
-export default function DiscoverProductCard({ product, index = 0, preview = false }: Props) {
+export default function DiscoverProductCard({ product, index = 0, preview = false, requiresLogin = false }: Props) {
   const personal = "personal" in product && product.personal;
-  const href = personal
+  const href = requiresLogin ? "/login" : personal
     ? "/descubre/anuncios/" + encodeURIComponent(product.id)
     : "/marketplace/stores/" + encodeURIComponent(product.storeSlug) + "#producto-" + encodeURIComponent(product.id);
 
@@ -55,7 +56,7 @@ export default function DiscoverProductCard({ product, index = 0, preview = fals
           {card}
         </div>
       ) : (
-        <Link href={href} prefetch={false} className="discover-product-link" aria-label={"Ver " + product.title + " de " + product.storeName}>
+        <Link href={href} prefetch={false} className="discover-product-link" aria-label={requiresLogin ? "Inicia sesión para consultar " + product.title : "Ver " + product.title + " de " + product.storeName}>
           {card}
         </Link>
       )}
