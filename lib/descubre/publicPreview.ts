@@ -15,23 +15,26 @@ export type PublicDiscoverPreview = Pick<DiscoverProduct,
 } & ({ personal: true; expiresAt: number } | { personal?: false });
 
 export function publicDiscoverPreview(items: readonly DiscoverFeedItem[]): PublicDiscoverPreview[] {
-  return items.map((product) => ({
-    id: product.id,
-    title: product.title,
-    imageUrl: product.imageUrl,
-    categoryId: product.categoryId,
-    priceType: product.priceType,
-    priceAmount: product.priceAmount,
-    createdAt: product.createdAt,
-    flashEndsAt: product.flashEndsAt,
-    description: "",
-    storeName: "",
-    storeId: "",
-    storeSlug: "",
-    storeLogoUrl: null,
-    deliveryLocation: "",
-    ...("personal" in product && product.personal
-      ? { personal: true as const, expiresAt: product.expiresAt }
-      : {}),
-  }));
+  return items.map((product): PublicDiscoverPreview => {
+    const base = {
+      id: product.id,
+      title: product.title,
+      imageUrl: product.imageUrl,
+      categoryId: product.categoryId,
+      priceType: product.priceType,
+      priceAmount: product.priceAmount,
+      createdAt: product.createdAt,
+      flashEndsAt: product.flashEndsAt,
+      description: "",
+      storeName: "",
+      storeId: "",
+      storeSlug: "",
+      storeLogoUrl: null,
+      deliveryLocation: "",
+    };
+    if ("personal" in product && product.personal) {
+      return { ...base, personal: true, expiresAt: product.expiresAt };
+    }
+    return base;
+  });
 }
