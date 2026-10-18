@@ -5,6 +5,7 @@
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
 import { StoreEmojiRatingCard } from "@/components/store/StoreEmojiRating";
@@ -324,7 +325,11 @@ function StoreCard({
 }
 
 export default function MarketplacePage() {
+  const router = useRouter();
   const { firebaseUser, loading: sessionLoading } = useSession();
+  useEffect(() => {
+    if (!sessionLoading && !firebaseUser) router.replace("/login");
+  }, [firebaseUser, sessionLoading, router]);
   const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
    const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -345,6 +350,7 @@ export default function MarketplacePage() {
   }, []);
 
   useEffect(() => {
+    if (sessionLoading || !firebaseUser) return;
     const visualPreview = shouldUseMarketplaceDemo(
       window.location.search,
       window.location.hostname,
@@ -358,7 +364,11 @@ export default function MarketplacePage() {
 
     let cancelled = false;
 
-    void fetch("/api/marketplace-v2", { cache: "no-store" })
+    void firebaseUser.getIdToken()
+      .then((token) => fetch("/api/marketplace-v2", {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      }))
       .then(async (response) => {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
@@ -378,7 +388,7 @@ export default function MarketplacePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [firebaseUser, sessionLoading]);
 
 
   const effectiveLoading = forceDemo ? false : loading;
@@ -481,6 +491,8 @@ export default function MarketplacePage() {
     setStorePage((current) => (current + 1) % pageCount);
     window.setTimeout(() => document.getElementById("more-stores")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
+
+  if (sessionLoading || !firebaseUser) return <main className="mkt-page" aria-busy="true">Verificando acceso a Tiendas…</main>;
 
   return (
     <main className="mkt-page">
