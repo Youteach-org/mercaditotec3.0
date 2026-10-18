@@ -21,7 +21,7 @@ describe("Descubre follows the original Marketplace's categories", () => {
     expect(styles).toContain("flex-wrap: nowrap");
     expect(styles).toContain("overflow-x: auto");
     expect(source).toContain('tabIndex={0}');
-    expect(source).toContain("Desliza para explorar categorías");
+    expect(source).toContain("Desliza ↔");
   });
 
   it("shows every real category from the catalogue instead of only categories with products", () => {
