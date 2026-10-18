@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ snapshot: vi.fn() }));
+vi.mock("@/lib/descubre/feed", () => ({
+  mergeDiscoverListings: (stores: unknown[]) => stores,
+}));
+vi.mock("@/lib/descubre/publicPreview", async () =>
+  import("../../../../lib/descubre/publicPreview")
+);
 vi.mock("@/lib/store/publicMarketplaceSnapshot", () => ({
   getPublicMarketplaceSnapshot: mocks.snapshot,
 }));
