@@ -29,6 +29,10 @@ describe("Community figures move from Tiendas to public Descubre", () => {
     expect(css).toContain("min-height: 31px");
     expect(css).toContain("flex-wrap: nowrap");
     expect(css).toContain("flex: 0 1 auto");
-    expect(css).not.toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    const counters = css.slice(
+      css.indexOf("/* Cifras compactas de Descubre"),
+      css.indexOf(".discover-visitor-notice"),
+    );
+    expect(counters).not.toContain("grid-template-columns");
   });
 });
