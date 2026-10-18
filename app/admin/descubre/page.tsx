@@ -91,7 +91,7 @@ export default function AdminDescubreManualPage() {
       <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
         <h1 className="text-3xl font-black">Revisión manual de productos</h1>
         <p className="mt-2 text-base leading-relaxed">
-          Aquí aparecen los anuncios cuyo análisis automático no pudo completarse por falta de cuota o un fallo temporal al descargar la fotografía.
+          Aquí aparecen anuncios cuya revisión automática no concluyó: falta de cuota, error de imagen o resultado de IA incierto.
           No se muestran al público hasta tu aprobación.
         </p>
         <button type="button" onClick={() => void refresh()} disabled={loadingItems}
