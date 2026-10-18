@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getAdminAccessToken, getFirebaseProjectId } from "@/lib/firebaseAdmin";
-import { ApiAuthError, requireFirebaseUser } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,16 +59,14 @@ async function getRegisteredUsersCount(): Promise<number> {
   return query;
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    // Never expose community counters to anonymous or ineligible visitors.
-    await requireFirebaseUser(request);
+    // Only an aggregate count is public: no user document, ID or contact data.
     const registeredUsers = await getRegisteredUsersCount();
-    return NextResponse.json({ registeredUsers }, { headers: { "Cache-Control": "private, no-store" } });
+    return NextResponse.json({ registeredUsers }, { headers: {
+      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=60",
+    } });
   } catch (error) {
-    if (error instanceof ApiAuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.status, headers: { "Cache-Control": "no-store" } });
-    }
     console.error("COMMUNITY_COUNTERS_UNAVAILABLE", error instanceof Error ? error.message : "Unknown");
     return NextResponse.json({ error: "Contador temporalmente no disponible." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
