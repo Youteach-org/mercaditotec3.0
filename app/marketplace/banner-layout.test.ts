@@ -9,12 +9,15 @@ const discover = readFileSync(join(root, "app/descubre/page.tsx"), "utf8");
 const css = readFileSync(join(root, "app/descubre/descubre.css"), "utf8");
 
 describe("Community figures move from Tiendas to public Descubre", () => {
-  it("shows Personas, Productos y Tiendas on the Descubre homepage", () => {
+  it("shows only icons and figures, with accessible labels for screen readers", () => {
     expect(discover).toContain('className="discover-community-stats"');
-    expect(discover).toContain("<span>Personas</span>");
-    expect(discover).toContain("<span>Productos</span>");
-    expect(discover).toContain("<span>Tiendas</span>");
+    expect(discover).not.toContain("<span>Personas</span>");
+    expect(discover).not.toContain("<span>Productos</span>");
+    expect(discover).not.toContain("<span>Tiendas</span>");
     expect(discover).toContain("realStoreCount");
+    expect(discover).toContain("aria-label={`Personas registradas:");
+    expect(discover).toContain("aria-label={`Productos disponibles:");
+    expect(discover).toContain("aria-label={`Tiendas registradas:");
     expect(marketplace).not.toContain('className="mkt-community-counts"');
     expect(marketplace).toContain('className="mkt-title-paper"');
   });
