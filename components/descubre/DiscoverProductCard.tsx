@@ -3,15 +3,17 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import type { PublicDiscoverPreview } from "@/lib/descubre/publicPreview";
+type CardItem = DiscoverFeedItem | PublicDiscoverPreview;
 
 interface Props {
-  product: DiscoverFeedItem;
+  product: CardItem;
   index?: number;
   preview?: boolean;
   requiresLogin?: boolean;
 }
 
-export function discoverPrice(product: DiscoverFeedItem): string {
+export function discoverPrice(product: CardItem): string {
   if (product.priceType === "ask" || product.priceAmount === null) return "Pregunta precio";
   const formatted = new Intl.NumberFormat("es-MX", {
     style: "currency", currency: "MXN", maximumFractionDigits: 2,
@@ -19,7 +21,7 @@ export function discoverPrice(product: DiscoverFeedItem): string {
   return product.priceType === "negotiable" ? formatted + " · negociable" : formatted;
 }
 
-export function isFlash(product: DiscoverFeedItem, now = Date.now()): boolean {
+export function isFlash(product: CardItem, now = Date.now()): boolean {
   return Boolean(product.flashEndsAt && Date.parse(product.flashEndsAt) > now);
 }
 
@@ -60,7 +62,7 @@ export default function DiscoverProductCard({ product, index = 0, preview = fals
           {card}
         </Link>
       )}
-      <div className="discover-product-meta">
+      {!(requiresLogin && !preview) && <div className="discover-product-meta">
         <span className="discover-seller">
           {product.storeLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -69,7 +71,7 @@ export default function DiscoverProductCard({ product, index = 0, preview = fals
           <span>{product.storeName || "Tu nombre"}</span>
         </span>
         {product.deliveryLocation && <span className="discover-location"><span aria-hidden="true">⌖</span>{product.deliveryLocation}</span>}
-      </div>
+      </div>}
     </article>
   );
 }
