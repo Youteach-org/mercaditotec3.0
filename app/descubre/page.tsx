@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import type { PublicDiscoverPreview } from "@/lib/descubre/publicPreview";
 import { countDiscoverProducts } from "@/lib/descubre/homeStats";
 import DiscoverProductCard, { isFlash } from "@/components/descubre/DiscoverProductCard";
 import { useSession } from "@/lib/useSession";
@@ -24,9 +24,8 @@ function SearchMark() {
 }
 
 export default function DescubrePage() {
-  const router = useRouter();
   const { firebaseUser, loading: sessionLoading } = useSession();
-  const [products, setProducts] = useState<DiscoverFeedItem[]>([]);
+  const [products, setProducts] = useState<(DiscoverFeedItem | PublicDiscoverPreview)[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
   const [search, setSearch] = useState("");
@@ -37,18 +36,18 @@ export default function DescubrePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!sessionLoading && !firebaseUser) router.replace("/login");
-  }, [sessionLoading, firebaseUser, router]);
-
-  useEffect(() => {
-    if (sessionLoading || !firebaseUser) return;
+    if (sessionLoading) return;
     const controller = new AbortController();
-    void firebaseUser.getIdToken()
-      .then((token) => fetch("/api/descubre", {
+    setLoading(true);
+    setError("");
+    void (async () => {
+      const token = firebaseUser ? await firebaseUser.getIdToken() : null;
+      return fetch(token ? "/api/descubre" : "/api/descubre/preview", {
         signal: controller.signal,
         cache: "no-store",
-        headers: { Authorization: `Bearer ${token}` },
-      }))
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    })()
       .then(async (response) => {
         if (!response.ok) throw new Error("No se pudieron cargar los productos.");
         return response.json();
@@ -67,20 +66,15 @@ export default function DescubrePage() {
     return () => controller.abort();
   }, [sessionLoading, firebaseUser]);
 
-  // Reuse the same five-minute cached community counter formerly requested
-  // by the Tiendas page. Never query individual profiles from the browser.
+  // Reuse the same cached aggregate community count on the public homepage.
+  // The endpoint returns only one number, never user profiles.
   useEffect(() => {
-    if (sessionLoading || !firebaseUser) {
-      setRegisteredUsers(null);
-      return;
-    }
+    if (sessionLoading) return;
     const controller = new AbortController();
-    void firebaseUser.getIdToken()
-      .then((token) => fetch("/api/community-stats", {
+    void fetch("/api/community-stats", {
         signal: controller.signal,
         cache: "no-store",
-        headers: { Authorization: `Bearer ${token}` },
-      }))
+      })
       .then(async (response) => {
         if (!response.ok) throw new Error("Contador no disponible");
         return response.json();
@@ -97,7 +91,7 @@ export default function DescubrePage() {
         if (!controller.signal.aborted) setRegisteredUsers(null);
       });
     return () => controller.abort();
-  }, [sessionLoading, firebaseUser]);
+  }, [sessionLoading]);
 
   // Show ALL active real categories, even before the first product arrives.
   // The Marketplace category strip is the visual reference; no generic pills.
@@ -129,7 +123,7 @@ export default function DescubrePage() {
   // Personal listings count down locally when their expiry is reached.
   const discoverProductCount = useMemo(() => countDiscoverProducts(products, now), [products, now]);
 
-  if (sessionLoading || !firebaseUser) {
+  if (sessionLoading) {
     return <main className="discover-page discover-loading" aria-busy="true">Cargando Mercadito…</main>;
   }
 
@@ -153,7 +147,7 @@ export default function DescubrePage() {
               onChange={(event) => { setSearch(event.target.value); setLimit(BATCH_SIZE); }}
             />
           </form>
-          <Link href="/descubre/publicar" className="discover-publish">
+          <Link href={firebaseUser ? "/descubre/publicar" : "/login"} className="discover-publish">
             <span aria-hidden="true">＋</span> Publicar
           </Link>
         </section>
@@ -208,7 +202,7 @@ export default function DescubrePage() {
 
         <div className="discover-intro">
           <p>Descubre productos<br />de la comunidad <span aria-hidden="true">♡</span></p>
-          <Link href="/marketplace" prefetch={false}>Ver tiendas <span aria-hidden="true">↗</span></Link>
+          <Link href={firebaseUser ? "/marketplace" : "/login"} prefetch={false}>Ver tiendas <span aria-hidden="true">↗</span></Link>
         </div>
 
         {loading ? (
@@ -219,13 +213,13 @@ export default function DescubrePage() {
           <div className="discover-empty">
             <h2>{search || filter !== "all" ? "No encontramos coincidencias" : "Pronto descubrirás más productos"}</h2>
             <p>{search || filter !== "all" ? "Prueba otra búsqueda o explora todas las categorías." : "Las publicaciones nuevas aparecerán aquí después de superar la revisión de seguridad."}</p>
-            <Link href="/marketplace">Mientras tanto, conoce las tiendas →</Link>
+            <Link href={firebaseUser ? "/marketplace" : "/login"}>Mientras tanto, conoce las tiendas →</Link>
           </div>
         ) : (
           <>
             <section className="discover-wall" aria-label="Productos de nuestra comunidad">
               {shown.map((product, index) => (
-                <DiscoverProductCard key={product.id} product={product} index={index} />
+                <DiscoverProductCard key={product.id} product={product} index={index} requiresLogin={!firebaseUser} />
               ))}
             </section>
             {matching.length > shown.length && (
@@ -234,6 +228,12 @@ export default function DescubrePage() {
               </button>
             )}
           </>
+        )}
+
+        {!firebaseUser && (
+          <p className="discover-visitor-notice" role="note">
+            Puedes explorar los productos. Para consultar detalles, contactar o comprar, <Link href="/login">inicia sesión</Link> o <Link href="/register">crea tu cuenta</Link>.
+          </p>
         )}
 
         <div className="discover-end-doodle" aria-hidden="true">
