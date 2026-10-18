@@ -11,7 +11,19 @@ type QrShareButtonProps = {
   iconOnly?: boolean;
 };
 
-function createQrCard(qr: qrcodegen.QrCode, title: string, url: string): HTMLCanvasElement {
+// El mismo icono oficial del sitio (/app/icon.svg), sin reconstruirlo ni modificarlo.
+const QR_LOGO_FRACTION = 0.22;
+
+function loadMercaditoLogo(): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const logo = new Image();
+    logo.onload = () => resolve(logo);
+    logo.onerror = () => reject(new Error("No se pudo cargar el logotipo de Mercadito."));
+    logo.src = "/icon.svg";
+  });
+}
+
+async function createQrCard(qr: qrcodegen.QrCode, title: string, url: string): Promise<HTMLCanvasElement> {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1350;
@@ -50,6 +62,17 @@ function createQrCard(qr: qrcodegen.QrCode, title: string, url: string): HTMLCan
     }
   }
 
+  // Fondo blanco estrecho e icono central: preserva los patrones de referencia
+  // y aprovecha la corrección de errores QUARTILE del QR.
+  const logo = await loadMercaditoLogo();
+  const logoSide = qr.size * QR_LOGO_FRACTION * pixelsPerModule;
+  const logoLeft = qrLeft + qrSide / 2 - logoSide / 2;
+  const logoTop = qrTop + qrSide / 2 - logoSide / 2;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(logoLeft - pixelsPerModule, logoTop - pixelsPerModule,
+    logoSide + 2 * pixelsPerModule, logoSide + 2 * pixelsPerModule);
+  ctx.drawImage(logo, logoLeft, logoTop, logoSide, logoSide);
+
   ctx.textAlign = "center";
   ctx.fillStyle = "#123d82";
   ctx.font = "900 47px Arial, sans-serif";
@@ -66,7 +89,7 @@ function qrFileName(title: string): string {
 }
 
 async function cardBlob(qr: qrcodegen.QrCode, title: string, url: string): Promise<Blob> {
-  const canvas = createQrCard(qr, title, url);
+  const canvas = await createQrCard(qr, title, url);
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
@@ -86,6 +109,8 @@ export default function QrShareButton({
   const [notice, setNotice] = useState("");
 
   const qr = useMemo(() => qrcodegen.QrCode.encodeText(url, qrcodegen.QrCode.Ecc.QUARTILE), [url]);
+  const logoSide = qr.size * QR_LOGO_FRACTION;
+  const logoLeft = 4 + (qr.size - logoSide) / 2;
   const path = useMemo(() => {
     const squares: string[] = [];
     for (let y = 0; y < qr.size; y += 1) {
@@ -215,6 +240,8 @@ export default function QrShareButton({
               <svg viewBox={"0 0 " + (qr.size + 8) + " " + (qr.size + 8)} role="img" aria-label={"Código QR para " + title} className="block w-full" shapeRendering="crispEdges">
                 <rect width={qr.size + 8} height={qr.size + 8} fill="#ffffff" />
                 <path fill="#10131a" d={path} />
+                <rect x={logoLeft - 1} y={logoLeft - 1} width={logoSide + 2} height={logoSide + 2} fill="#fff" />
+                <image href="/icon.svg" x={logoLeft} y={logoLeft} width={logoSide} height={logoSide} preserveAspectRatio="xMidYMid meet" />
               </svg>
             </div>
             <p className="mt-3 break-all text-center text-xs font-semibold">{url}</p>
