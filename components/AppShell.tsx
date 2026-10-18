@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import QrShareButton from "@/components/share/QrShareButton";
 import { loadUnreadNotificationCount } from "@/lib/notifications/client";
 import { isAdminRole } from "@/lib/security/domain";
 import { useSession } from "@/lib/useSession";
@@ -187,6 +188,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </>
                 )}
               </nav>
+
+              {marketplaceHome && (
+                <QrShareButton title="Mercadito Tec" url="https://mercaditotec.store/" label="Compartir QR de Mercadito" iconOnly />
+              )}
 
               {!marketplaceHome && (
                 <Link
