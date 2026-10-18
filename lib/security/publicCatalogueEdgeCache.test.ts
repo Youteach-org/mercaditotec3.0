@@ -154,7 +154,7 @@ describe("Cloudflare public catalogue cache", () => {
     );
     expect(deleted).toEqual(["/api/descubre/preview"]);
     const previewKey = fakeCache.delete.mock.calls.find(([key]) => new URL(key.url).pathname === "/api/descubre/preview")?.[0];
-    expect(new URL(previewKey!.url).searchParams.get("catalogue")).toBe("v2");
+    expect(new URL(previewKey!.url).searchParams.get("preview")).toBe("v1");
   });
 
 });
