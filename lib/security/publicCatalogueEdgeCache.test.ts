@@ -28,20 +28,20 @@ describe("Cloudflare public catalogue cache", () => {
     const context = { waitUntil: (p: Promise<unknown>) => { waits.push(p); } };
     const handle = vi.fn(async () => catalogue());
     const first = await serveCachedPublicCatalogue(
-      new Request("https://mercaditotec.store/api/marketplace-v2?foo=1"), context, handle, cache,
+      new Request("https://mercaditotec.store/api/descubre/preview?foo=1"), context, handle, cache,
     );
     expect(first.status).toBe(200);
     await Promise.all(waits);
     const second = await serveCachedPublicCatalogue(
-      new Request("https://mercaditotec.store/api/marketplace-v2?foo=2"), context, handle, cache,
+      new Request("https://mercaditotec.store/api/descubre/preview?foo=2"), context, handle, cache,
     );
     expect((await second.json()).stores[0].id).toBe("public-demo");
     expect(handle).toHaveBeenCalledTimes(1);
     expect(cache.match).toHaveBeenCalledTimes(2);
     expect(cache.put).toHaveBeenCalledTimes(1);
-    // The v2 versioned key bypasses entries saved by a previous Worker
+    // The preview versioned key bypasses entries saved by a previous Worker
     // while still normalizing arbitrary query parameters.
-    expect(cache.match.mock.calls[0][0].url).toContain("catalogue=v2");
+    expect(cache.match.mock.calls[0][0].url).toContain("preview=v1");
     expect(cache.match.mock.calls[1][0].url).toBe(cache.match.mock.calls[0][0].url);
   });
 
@@ -53,7 +53,7 @@ describe("Cloudflare public catalogue cache", () => {
     const waits: Promise<unknown>[] = [];
     const ctx = { waitUntil: (promise: Promise<unknown>) => { waits.push(promise); } };
     const requests = Array.from({ length: 12 }, () => serveCachedPublicCatalogue(
-      new Request("https://mercaditotec.store/api/marketplace?visitor=random"), ctx, handle, cache,
+      new Request("https://mercaditotec.store/api/descubre/preview?visitor=random"), ctx, handle, cache,
     ));
     await Promise.resolve();
     await Promise.resolve();
@@ -72,10 +72,10 @@ describe("Cloudflare public catalogue cache", () => {
       .mockRejectedValueOnce(new Error("temporary"))
       .mockResolvedValue(catalogue());
     await expect(serveCachedPublicCatalogue(
-      new Request("https://mercaditotec.store/api/marketplace"), {}, handle, cache,
+      new Request("https://mercaditotec.store/api/descubre/preview"), {}, handle, cache,
     )).rejects.toThrow("temporary");
     const response = await serveCachedPublicCatalogue(
-      new Request("https://mercaditotec.store/api/marketplace"), {}, handle, cache,
+      new Request("https://mercaditotec.store/api/descubre/preview"), {}, handle, cache,
     );
     expect(response.status).toBe(200);
     expect(handle).toHaveBeenCalledTimes(2);
@@ -88,7 +88,7 @@ describe("Cloudflare public catalogue cache", () => {
     }));
     for (let i = 0; i < 2; i++) {
       const result = await serveCachedPublicCatalogue(
-        new Request("https://mercaditotec.store/api/marketplace-v2"), {}, handle, cache,
+        new Request("https://mercaditotec.store/api/descubre/preview"), {}, handle, cache,
       );
       expect(result.status).toBe(503);
     }
@@ -102,9 +102,9 @@ describe("Cloudflare public catalogue cache", () => {
     const paths = [
       new Request("https://mercaditotec.store/api/account/session"),
       new Request("https://mercaditotec.store/api/admin/users"),
-      new Request("https://mercaditotec.store/api/marketplace-v2", { headers: { Authorization: "Bearer a" } }),
-      new Request("https://mercaditotec.store/api/marketplace-v2", { headers: { Cookie: "session=x" } }),
-      new Request("https://mercaditotec.store/api/marketplace-v2", { method: "POST" }),
+      new Request("https://mercaditotec.store/api/descubre/preview", { headers: { Authorization: "Bearer a" } }),
+      new Request("https://mercaditotec.store/api/descubre/preview", { headers: { Cookie: "session=x" } }),
+      new Request("https://mercaditotec.store/api/descubre/preview", { method: "POST" }),
     ];
     for (const request of paths) {
       const response = await serveCachedPublicCatalogue(request, {}, handle, cache);
@@ -112,6 +112,10 @@ describe("Cloudflare public catalogue cache", () => {
     }
     expect(handle).toHaveBeenCalledTimes(paths.length);
     expect(cache.match).not.toHaveBeenCalled();
+    expect(cache.put).not.toHaveBeenCalled();
+    await serveCachedPublicCatalogue(
+      new Request("https://mercaditotec.store/api/marketplace-v2"), {}, handle, cache,
+    );
     expect(cache.put).not.toHaveBeenCalled();
   });
   it("detects only authorized successful catalogue-changing mutations", () => {
@@ -138,19 +142,19 @@ describe("Cloudflare public catalogue cache", () => {
       expect(affectsPublicCatalogue(request, rejected)).toBe(false);
     }
     expect(affectsPublicCatalogue(new Request("https://mercaditotec.store/api/orders", { method: "POST" }), created)).toBe(false);
-    expect(affectsPublicCatalogue(new Request("https://mercaditotec.store/api/marketplace-v2"), successful)).toBe(false);
+    expect(affectsPublicCatalogue(new Request("https://mercaditotec.store/api/descubre/preview"), successful)).toBe(false);
   });
 
-  it("evicts both public paths and no private endpoints after refresh", async () => {
+  it("evicts only the public preview after refresh", async () => {
     const deleted: string[] = [];
     const fakeCache = { delete: vi.fn(async (key: Request) => { deleted.push(new URL(key.url).pathname); return true; }) };
     await evictPublicCatalogueCache(
       new Request("https://mercaditotec.store/api/admin/categories", { method: "POST" }),
       fakeCache,
     );
-    expect(deleted.sort()).toEqual(["/api/marketplace", "/api/marketplace-v2"].sort());
-    const v2Key = fakeCache.delete.mock.calls.find(([key]) => new URL(key.url).pathname === "/api/marketplace-v2")?.[0];
-    expect(new URL(v2Key!.url).searchParams.get("catalogue")).toBe("v2");
+    expect(deleted).toEqual(["/api/descubre/preview"]);
+    const previewKey = fakeCache.delete.mock.calls.find(([key]) => new URL(key.url).pathname === "/api/descubre/preview")?.[0];
+    expect(new URL(previewKey!.url).searchParams.get("catalogue")).toBe("v2");
   });
 
 });
