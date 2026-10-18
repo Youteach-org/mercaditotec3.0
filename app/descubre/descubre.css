@@ -247,6 +247,12 @@
   min-height: 82px;
   margin: 0 0 13px;
 }
+.discover-intro .discover-intro-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.discover-intro .discover-intro-actions a { margin: 0; }
+@media (max-width: 420px) {
+  .discover-intro p { font-size: 15px; }
+  .discover-intro-actions a { padding: 9px 12px; font-size: 14px; }
+}
 .discover-intro p {
   position: relative;
   margin: 0 0 0 18px;

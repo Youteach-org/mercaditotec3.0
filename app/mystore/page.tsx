@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import QrShareButton from "@/components/share/QrShareButton";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -187,6 +188,9 @@ export default function MyStoresPage() {
                     <Link href={`/marketplace/stores/${store.slug}`} className="inline-flex rounded-xl border border-emerald-200 px-4 py-2.5 font-semibold text-emerald-700 hover:bg-emerald-50">
                       Ver tienda pública
                     </Link>
+                  )}
+                  {store.status === "active" && store.slug && (
+                    <QrShareButton title={store.name || "Mi tienda"} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} label="Mi QR" />
                   )}
                   {store.status === "draft" && (
                     <button
