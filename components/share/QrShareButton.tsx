@@ -117,6 +117,8 @@ export default function QrShareButton({
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState("");
+  const [shareFile, setShareFile] = useState<File | null>(null);
+  const [shareImageStatus, setShareImageStatus] = useState<"preparing" | "ready" | "failed">("preparing");
   // WhatsApp abre un enlace compartible sin depender del menú nativo de Android.
   // Para enviar la imagen PNG, se adjunta el archivo descargado.
   const whatsappText = title === "Mercadito Tec"
@@ -136,6 +138,32 @@ export default function QrShareButton({
     }
     return squares.join("");
   }, [qr]);
+
+  // Preparar el PNG ANTES de tocar «Compartir QR». La API de compartir
+  // exige una activación directa del usuario; esperar a crear la imagen
+  // dentro del clic puede hacer que Android pierda dicha activación.
+  useEffect(() => {
+    if (!open) {
+      setShareFile(null);
+      setShareImageStatus("preparing");
+      return;
+    }
+    let cancelled = false;
+    setShareFile(null);
+    setShareImageStatus("preparing");
+    void cardBlob(qr, title, url, logoUrl)
+      .then((blob) => {
+        if (cancelled) return;
+        setShareFile(new File([blob], qrFileName(title), { type: "image/png" }));
+        setShareImageStatus("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setShareImageStatus("failed");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, qr, title, url, logoUrl]);
 
   useEffect(() => {
     if (!open) return;
@@ -172,7 +200,7 @@ export default function QrShareButton({
     setWorking(true);
     setNotice("");
     try {
-      const image = await cardBlob(qr, title, url, logoUrl);
+      const image = shareFile ?? await cardBlob(qr, title, url, logoUrl);
       const objectUrl = URL.createObjectURL(image);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -191,24 +219,26 @@ export default function QrShareButton({
 
   async function shareQr() {
     if (working) return;
-    setWorking(true);
     setNotice("");
+    if (!shareFile || shareImageStatus !== "ready") {
+      setNotice("La imagen del QR aún no está lista. Usa Descargar PNG si continúa el problema.");
+      return;
+    }
+    if (typeof navigator.share !== "function" || !navigator.canShare?.({ files: [shareFile] })) {
+      setNotice("Este navegador no permite compartir imágenes. Descarga el PNG y adjúntalo en WhatsApp.");
+      return;
+    }
+
+    setWorking(true);
     try {
-      if (typeof navigator.share === "function") {
-        const image = await cardBlob(qr, title, url, logoUrl);
-        const file = new File([image], qrFileName(title), { type: "image/png" });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], title, text: "Visita " + title + " en Mercadito Tec: " + url });
-        } else {
-          await navigator.share({ title, text: "Visita " + title + " en Mercadito Tec", url });
-        }
-        setNotice("Compartido.");
-      } else {
-        await copyLink();
-      }
+      // CRÍTICO: compartir el PNG ya preparado, sin esperas previas ni mezclar
+      // texto o enlaces. Así Android muestra destinos para imágenes, no solo
+      // apps que aceptan mensajes de texto.
+      await navigator.share({ files: [shareFile] });
+      setNotice("Imagen del QR compartida.");
     } catch (error) {
       if (error instanceof Error && error.name !== "AbortError") {
-        setNotice("No se pudo compartir desde este navegador. Descarga el QR o copia el enlace.");
+        setNotice("Android no pudo compartir la imagen. Descarga el PNG y adjúntalo desde WhatsApp.");
       }
     } finally {
       setWorking(false);
@@ -265,8 +295,8 @@ export default function QrShareButton({
               <button type="button" disabled={working} onClick={() => void downloadQr()} className="rounded-xl bg-[#123d82] px-3 py-3 text-sm font-black text-white disabled:opacity-50">
                 Descargar PNG
               </button>
-              <button type="button" disabled={working} onClick={() => void shareQr()} className="rounded-xl bg-[#f15b32] px-3 py-3 text-sm font-black text-white disabled:opacity-50">
-                Compartir QR
+              <button type="button" disabled={working || shareImageStatus !== "ready"} onClick={() => void shareQr()} className="rounded-xl bg-[#f15b32] px-3 py-3 text-sm font-black text-white disabled:opacity-50">
+                {shareImageStatus === "preparing" ? "Preparando QR…" : "Compartir QR"}
               </button>
               <a
                 href={whatsappUrl}
@@ -275,15 +305,20 @@ export default function QrShareButton({
                 className="flex items-center justify-center rounded-xl bg-[#128c4a] px-3 py-2.5 text-center text-sm font-black text-white"
                 aria-label={"Enviar enlace de " + title + " por WhatsApp"}
               >
-                WhatsApp
+                WhatsApp (enlace)
               </a>
               <button type="button" onClick={() => void copyLink()} className="rounded-xl border-2 border-[#123d82] bg-white px-3 py-2.5 text-sm font-black">
                 Copiar enlace
               </button>
             </div>
             <p className="mt-2 text-center text-xs font-semibold leading-relaxed text-[#123d82]">
-              WhatsApp envía el enlace. Para mandar la imagen del QR, usa Compartir QR o adjunta el PNG descargado.
+              Compartir QR envía la imagen a las aplicaciones disponibles. WhatsApp (enlace) solo envía la dirección de la tienda o de Mercadito.
             </p>
+            {shareImageStatus === "failed" && (
+              <p role="alert" className="mt-2 text-center text-xs font-bold">
+                No se pudo preparar la imagen. Prueba Descargar PNG.
+              </p>
+            )}
             {notice && <p role="status" className="mt-3 text-center text-sm font-bold">{notice}</p>}
           </section>
         </div>
