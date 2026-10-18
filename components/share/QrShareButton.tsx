@@ -117,6 +117,12 @@ export default function QrShareButton({
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState("");
+  // WhatsApp abre un enlace compartible sin depender del menú nativo de Android.
+  // Para enviar la imagen PNG, se adjunta el archivo descargado.
+  const whatsappText = title === "Mercadito Tec"
+    ? `¡Conoce Mercadito Tec! 🛍️\n${url}`
+    : `¡Mira esta tienda en Mercadito Tec! 🛍️\n${title}\n${url}`;
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
 
   const qr = useMemo(() => qrcodegen.QrCode.encodeText(url, qrcodegen.QrCode.Ecc.QUARTILE), [url]);
   const logoSide = qr.size * QR_LOGO_FRACTION;
@@ -262,10 +268,22 @@ export default function QrShareButton({
               <button type="button" disabled={working} onClick={() => void shareQr()} className="rounded-xl bg-[#f15b32] px-3 py-3 text-sm font-black text-white disabled:opacity-50">
                 Compartir QR
               </button>
-              <button type="button" onClick={() => void copyLink()} className="col-span-2 rounded-xl border-2 border-[#123d82] bg-white px-3 py-2.5 text-sm font-black">
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center rounded-xl bg-[#128c4a] px-3 py-2.5 text-center text-sm font-black text-white"
+                aria-label={"Enviar enlace de " + title + " por WhatsApp"}
+              >
+                WhatsApp
+              </a>
+              <button type="button" onClick={() => void copyLink()} className="rounded-xl border-2 border-[#123d82] bg-white px-3 py-2.5 text-sm font-black">
                 Copiar enlace
               </button>
             </div>
+            <p className="mt-2 text-center text-xs font-semibold leading-relaxed text-[#123d82]">
+              WhatsApp envía el enlace. Para mandar la imagen del QR, usa Compartir QR o adjunta el PNG descargado.
+            </p>
             {notice && <p role="status" className="mt-3 text-center text-sm font-bold">{notice}</p>}
           </section>
         </div>
