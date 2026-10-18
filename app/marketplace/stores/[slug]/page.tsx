@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import QrShareButton from "@/components/share/QrShareButton";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -120,9 +121,12 @@ export default function PublicStorePage() {
           <Link href="/marketplace" className="inline-flex text-sm font-black text-emerald-700 hover:underline">
             ← Volver al Mercadito
           </Link>
-          <Link href="/orders" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm hover:bg-slate-50">
-            Mis pedidos
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <QrShareButton title={store.name} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} label="Compartir QR" />
+            <Link href="/orders" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm hover:bg-slate-50">
+              Mis pedidos
+            </Link>
+          </div>
         </div>
 
         <header className="overflow-hidden rounded-3xl bg-white shadow-lg">
