@@ -26,6 +26,7 @@ export default function DescubrePage() {
   const router = useRouter();
   const { firebaseUser, loading: sessionLoading } = useSession();
   const [products, setProducts] = useState<DiscoverFeedItem[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -65,6 +66,38 @@ export default function DescubrePage() {
     return () => controller.abort();
   }, [sessionLoading, firebaseUser]);
 
+  // Reuse the same five-minute cached community counter formerly requested
+  // by the Tiendas page. Never query individual profiles from the browser.
+  useEffect(() => {
+    if (sessionLoading || !firebaseUser) {
+      setRegisteredUsers(null);
+      return;
+    }
+    const controller = new AbortController();
+    void firebaseUser.getIdToken()
+      .then((token) => fetch("/api/community-stats", {
+        signal: controller.signal,
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${token}` },
+      }))
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Contador no disponible");
+        return response.json();
+      })
+      .then((data: { registeredUsers?: unknown }) => {
+        if (controller.signal.aborted) return;
+        setRegisteredUsers(
+          typeof data.registeredUsers === "number" &&
+          Number.isSafeInteger(data.registeredUsers) && data.registeredUsers >= 0
+            ? data.registeredUsers : null,
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setRegisteredUsers(null);
+      });
+    return () => controller.abort();
+  }, [sessionLoading, firebaseUser]);
+
   // Show ALL active real categories, even before the first product arrives.
   // The Marketplace category strip is the visual reference; no generic pills.
   const visibleCategories = useMemo(
@@ -89,6 +122,13 @@ export default function DescubrePage() {
     });
   }, [products, search, filter, now]);
   const shown = matching.slice(0, limit);
+  // The count covers products actually available in the current Descubre wall:
+  // storefront products plus approved unexpired individual listings, not shops.
+  // It comes from the feed already loaded, with zero additional DB queries.
+  // Personal listings count down locally when their expiry is reached.
+  const discoverProductCount = useMemo(() => products.filter((item) =>
+    !("personal" in item && item.personal) || item.expiresAt > now,
+  ).length, [products, now]);
 
   if (sessionLoading || !firebaseUser) {
     return <main className="discover-page discover-loading" aria-busy="true">Cargando Mercadito…</main>;
@@ -118,6 +158,30 @@ export default function DescubrePage() {
             <span aria-hidden="true">＋</span> Publicar
           </Link>
         </section>
+
+        {!loading && !error && (
+          <section className="discover-community-stats" aria-label="Cifras de la comunidad">
+            {registeredUsers !== null && (
+              <div className="discover-community-stat discover-community-stat-people">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="9" cy="8" r="3" />
+                  <path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M19 14a5 5 0 0 1 2 4v2" />
+                </svg>
+                <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
+                <span>Personas</span>
+              </div>
+            )}
+            <div className="discover-community-stat discover-community-stat-products">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 6h16v14H4zM4 10h16M9 6v14M8 4h8M15 13l2 2-2 2" />
+              </svg>
+              <strong>{discoverProductCount.toLocaleString("es-MX")}</strong>
+              <span>Productos</span>
+            </div>
+          </section>
+        )}
 
         <section className="discover-category-section" aria-label="Explora por categoría">
           <div className="discover-category-heading">
