@@ -5,8 +5,8 @@ const home = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const edge = readFileSync(new URL("../cloudflare-runtime-entry.mjs", import.meta.url), "utf8");
 
 describe("Mercadito homepage", () => {
-  it("sends authenticated users to Descubre and guests to the approved public Marketplace", () => {
-    expect(home).toContain('router.replace(firebaseUser ? "/descubre" : "/marketplace")');
+  it("makes Descubre the entrypoint for everyone", () => {
+    expect(home).toContain('router.replace("/descubre")');
   });
 
   it("does not force every visitor into stores from the Cloudflare entrypoint", () => {
