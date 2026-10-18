@@ -190,7 +190,7 @@ export default function MyStoresPage() {
                     </Link>
                   )}
                   {store.status === "active" && store.slug && (
-                    <QrShareButton title={store.name || "Mi tienda"} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} label="Mi QR" />
+                    <QrShareButton title={store.name || "Mi tienda"} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} logoUrl={store.logoUrl} label="Mi QR" />
                   )}
                   {store.status === "draft" && (
                     <button

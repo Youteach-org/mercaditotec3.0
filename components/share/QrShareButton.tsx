@@ -9,21 +9,23 @@ type QrShareButtonProps = {
   url: string;
   label?: string;
   iconOnly?: boolean;
+  logoUrl?: string | null;
 };
 
 // El mismo icono oficial del sitio (/app/icon.svg), sin reconstruirlo ni modificarlo.
 const QR_LOGO_FRACTION = 0.22;
 
-function loadMercaditoLogo(): Promise<HTMLImageElement> {
+function loadLogo(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const logo = new Image();
+    logo.crossOrigin = "anonymous";
     logo.onload = () => resolve(logo);
-    logo.onerror = () => reject(new Error("No se pudo cargar el logotipo de Mercadito."));
-    logo.src = "/icon.svg";
+    logo.onerror = () => reject(new Error("No se pudo cargar el logotipo."));
+    logo.src = src;
   });
 }
 
-async function createQrCard(qr: qrcodegen.QrCode, title: string, url: string): Promise<HTMLCanvasElement> {
+async function createQrCard(qr: qrcodegen.QrCode, title: string, url: string, logoUrl?: string | null): Promise<HTMLCanvasElement> {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1350;
@@ -64,7 +66,14 @@ async function createQrCard(qr: qrcodegen.QrCode, title: string, url: string): P
 
   // Fondo blanco estrecho e icono central: preserva los patrones de referencia
   // y aprovecha la corrección de errores QUARTILE del QR.
-  const logo = await loadMercaditoLogo();
+  // Cada tienda usa su propio logo. Si falta o no admite CORS, recurrimos
+  // al icono de Mercadito para conservar la descarga gratuita.
+  let logo: HTMLImageElement;
+  try {
+    logo = await loadLogo(logoUrl || "/icon.svg");
+  } catch {
+    logo = await loadLogo("/icon.svg");
+  }
   const logoSide = qr.size * QR_LOGO_FRACTION * pixelsPerModule;
   const logoLeft = qrLeft + qrSide / 2 - logoSide / 2;
   const logoTop = qrTop + qrSide / 2 - logoSide / 2;
@@ -88,8 +97,8 @@ function qrFileName(title: string): string {
   return "mercadito-" + (safeTitle || "qr") + "-qr.png";
 }
 
-async function cardBlob(qr: qrcodegen.QrCode, title: string, url: string): Promise<Blob> {
-  const canvas = await createQrCard(qr, title, url);
+async function cardBlob(qr: qrcodegen.QrCode, title: string, url: string, logoUrl?: string | null): Promise<Blob> {
+  const canvas = await createQrCard(qr, title, url, logoUrl);
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
@@ -103,6 +112,7 @@ export default function QrShareButton({
   url,
   label = "Generar QR",
   iconOnly = false,
+  logoUrl,
 }: QrShareButtonProps) {
   const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
@@ -156,7 +166,7 @@ export default function QrShareButton({
     setWorking(true);
     setNotice("");
     try {
-      const image = await cardBlob(qr, title, url);
+      const image = await cardBlob(qr, title, url, logoUrl);
       const objectUrl = URL.createObjectURL(image);
       const anchor = document.createElement("a");
       anchor.href = objectUrl;
@@ -179,7 +189,7 @@ export default function QrShareButton({
     setNotice("");
     try {
       if (typeof navigator.share === "function") {
-        const image = await cardBlob(qr, title, url);
+        const image = await cardBlob(qr, title, url, logoUrl);
         const file = new File([image], qrFileName(title), { type: "image/png" });
         if (navigator.canShare?.({ files: [file] })) {
           await navigator.share({ files: [file], title, text: "Visita " + title + " en Mercadito Tec: " + url });
@@ -241,7 +251,7 @@ export default function QrShareButton({
                 <rect width={qr.size + 8} height={qr.size + 8} fill="#ffffff" />
                 <path fill="#10131a" d={path} />
                 <rect x={logoLeft - 1} y={logoLeft - 1} width={logoSide + 2} height={logoSide + 2} fill="#fff" />
-                <image href="/icon.svg" x={logoLeft} y={logoLeft} width={logoSide} height={logoSide} preserveAspectRatio="xMidYMid meet" />
+                <image href={logoUrl || "/icon.svg"} x={logoLeft} y={logoLeft} width={logoSide} height={logoSide} preserveAspectRatio="xMidYMid meet" />
               </svg>
             </div>
             <p className="mt-3 break-all text-center text-xs font-semibold">{url}</p>
