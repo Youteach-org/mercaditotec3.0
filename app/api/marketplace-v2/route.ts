@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPublicMarketplaceSnapshot } from "@/lib/store/publicMarketplaceSnapshot";
 import { FirestoreRestError } from "@/lib/firestoreRest";
+import { ApiAuthError, requireFirebaseUser } from "@/lib/store/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,13 +9,11 @@ export const revalidate = 0;
 
 // The public storefront is eventually consistent. A short shared response
 // cache prevents repeat visitors from consuming Firestore's read quota.
-const HEADERS = {
-  "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=120",
-  "CDN-Cache-Control": "public, max-age=60, stale-while-revalidate=120",
-};
+const HEADERS = { "Cache-Control": "private, no-store" };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireFirebaseUser(request);
     const data = await getPublicMarketplaceSnapshot();
     // Guest Marketplace must expose shops only. The materialized snapshot also
     // includes the signed-in Descubre feed, which is private to /api/descubre.
@@ -25,6 +24,7 @@ export async function GET() {
       { headers: HEADERS },
     );
   } catch (error) {
+    if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status, headers: HEADERS });
     if (error instanceof FirestoreRestError && error.status === 429) {
       console.error("PUBLIC_MARKETPLACE_V2_DATA_THROTTLED", error.status);
       return NextResponse.json(
