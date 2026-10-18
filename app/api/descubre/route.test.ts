@@ -23,6 +23,7 @@ beforeEach(() => {
   mocks.catalogue.mockResolvedValue({
     discoverProducts: [{ id: "p1", title: "Televisión" }],
     categories: [{ id: "tech", name: "Electrónica" }],
+    realStoreCount: 7,
   });
 });
 
@@ -43,6 +44,7 @@ describe("Descubre API", () => {
     expect(await response.json()).toEqual({
       products: [{ id: "p1", title: "Televisión" }],
       categories: [{ id: "tech", name: "Electrónica" }],
+      realStoreCount: 7,
     });
   });
 

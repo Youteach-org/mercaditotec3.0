@@ -34,6 +34,7 @@ beforeEach(() => {
     }],
     discoverListings: [],
     categories: [{ id: "electronica", name: "Electrónica", iconKey: "electronics" }],
+    realStoreCount: 3,
   });
 });
 
@@ -44,6 +45,7 @@ describe("Public Descubre preview", () => {
     const data = await response.json();
     expect(data.products[0].title).toBe("Control de videojuegos");
     expect(data.products[0].priceAmount).toBe(300);
+    expect(data.realStoreCount).toBe(3);
     expect(data.products[0].storeName).toBe("");
     expect(data.products[0].description).toBe("");
     expect(JSON.stringify(data)).not.toContain("Tienda privada");

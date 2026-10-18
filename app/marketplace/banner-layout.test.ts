@@ -9,10 +9,12 @@ const discover = readFileSync(join(root, "app/descubre/page.tsx"), "utf8");
 const css = readFileSync(join(root, "app/descubre/descubre.css"), "utf8");
 
 describe("Community figures move from Tiendas to public Descubre", () => {
-  it("shows Persons and Products in Descubre without a Tiendas counter", () => {
+  it("shows Personas, Productos y Tiendas on the Descubre homepage", () => {
     expect(discover).toContain('className="discover-community-stats"');
     expect(discover).toContain("<span>Personas</span>");
     expect(discover).toContain("<span>Productos</span>");
+    expect(discover).toContain("<span>Tiendas</span>");
+    expect(discover).toContain("realStoreCount");
     expect(marketplace).not.toContain('className="mkt-community-counts"');
     expect(marketplace).toContain('className="mkt-title-paper"');
   });
@@ -21,5 +23,6 @@ describe("Community figures move from Tiendas to public Descubre", () => {
     expect(css).toContain(".discover-community-stat");
     expect(css).toContain("@media (max-width: 740px)");
     expect(css).toContain(".discover-community-stat strong");
+    expect(css).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
   });
 });
