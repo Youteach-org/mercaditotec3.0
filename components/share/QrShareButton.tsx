@@ -284,7 +284,7 @@ export default function QrShareButton({
             <p className="mt-2 text-center text-xs font-semibold leading-relaxed text-[#123d82]">
               WhatsApp envía el enlace. Para mandar la imagen del QR, usa Compartir QR o adjunta el PNG descargado.
             </p>
-            {notice && <p role="status" className="mt-3 text-center text-sm font-bold">{notice}</p>
+            {notice && <p role="status" className="mt-3 text-center text-sm font-bold">{notice}</p>}
           </section>
         </div>
       )}
