@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import QrShareButton from "@/components/share/QrShareButton";
 import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
@@ -214,7 +215,10 @@ export default function DescubrePage() {
 
         <div className="discover-intro">
           <p>Productos de la comunidad <span aria-hidden="true">♡</span></p>
+          <div className="discover-intro-actions">
+            <QrShareButton title="Mercadito Tec" url="https://mercaditotec.store/" label="Compartir Mercadito con QR" iconOnly />
           <Link href={firebaseUser ? "/marketplace" : "/login"} prefetch={false}>Ver tiendas <span aria-hidden="true">↗</span></Link>
+          </div>
         </div>
 
         {loading ? (
