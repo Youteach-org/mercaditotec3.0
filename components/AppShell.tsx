@@ -327,10 +327,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const showAdmin = serverAdminVerified && !syncDeferred && Boolean(firebaseUser) && pathname !== "/login" && pathname !== "/register";
-  const marketplaceHome = pathname === "/marketplace";
+  const discoverHome = pathname === "/descubre";
   const adminSurface = pathname.startsWith("/admin");
   const scrapbookShell = true;
-  const showShell = !loading && (marketplaceHome || Boolean(firebaseUser) || visualPreview);
+  const showShell = !loading && (discoverHome || Boolean(firebaseUser) || visualPreview);
 
   return (
     <div className={scrapbookShell ? `mercadito-app-shell ${adminSurface ? "mercadito-admin-shell" : ""} min-h-screen flex flex-col` : "min-h-screen flex flex-col"} data-mercadito-skin={scrapbookShell ? "true" : "false"} data-admin-surface={adminSurface ? "true" : "false"}>
@@ -341,7 +341,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }>
           <div className={scrapbookShell ? "mkt-shell-header-inner mx-auto w-full max-w-[1448px] px-5 sm:px-10 lg:px-[60px]" : "mx-auto w-full max-w-7xl px-3 sm:px-6"}>
             <div className={scrapbookShell ? "flex min-h-[70px] items-center gap-3" : "flex min-h-14 items-center justify-between gap-3"}>
-              <Link prefetch={false} href={firebaseUser ? "/descubre" : "/marketplace"} className={scrapbookShell
+              <Link prefetch={false} href="/descubre" className={scrapbookShell
                 ? "w-auto max-w-[270px] shrink-0 leading-none sm:w-[300px]"
                 : "shrink-0 font-black tracking-tight text-slate-950"
               }>
@@ -514,7 +514,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </>
                 ) : (
                   <>
-                    <Link prefetch={false} href="/marketplace" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
+                    <Link prefetch={false} href="/descubre" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
                       <NavIcon icon="home" /><span>Mercadito</span>
                     </Link>
                     <Link prefetch={false} href="/login" onClick={() => setMobileMenuOpen(false)} className="mkt-mobile-dropdown-link">
