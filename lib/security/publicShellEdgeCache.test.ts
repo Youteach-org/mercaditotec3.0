@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { isCacheablePublicShell, serveCachedPublicShell } from "./publicShellEdgeCache.mjs";
 
-const htmlRequest = (headers = {}) => new Request("https://mercaditotec.store/marketplace",
+const htmlRequest = (headers = {}) => new Request("https://mercaditotec.store/descubre",
   { headers: { accept: "text/html", ...headers } });
 const html = () => new Response("<html>Mercadito</html>", {
   headers: { "content-type": "text/html;charset=utf-8" },
@@ -13,7 +13,7 @@ function cache() {
     put: vi.fn(async (key: Request, response: Response) => { values.set(key.url, response.clone()); }),
   };
 }
-describe("public Marketplace HTML edge caching", () => {
+describe("public Descubre HTML edge caching", () => {
   it("caches the public HTML and skips a second expensive server render", async () => {
     const source = vi.fn(async () => html());
     const memory = cache();

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import type { PublicDiscoverPreview } from "@/lib/descubre/publicPreview";
+import { countDiscoverProducts } from "@/lib/descubre/homeStats";
 import DiscoverProductCard, { isFlash } from "@/components/descubre/DiscoverProductCard";
 import { useSession } from "@/lib/useSession";
 import "./descubre.css";
@@ -23,9 +24,9 @@ function SearchMark() {
 }
 
 export default function DescubrePage() {
-  const router = useRouter();
   const { firebaseUser, loading: sessionLoading } = useSession();
-  const [products, setProducts] = useState<DiscoverFeedItem[]>([]);
+  const [products, setProducts] = useState<(DiscoverFeedItem | PublicDiscoverPreview)[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -35,18 +36,18 @@ export default function DescubrePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!sessionLoading && !firebaseUser) router.replace("/login");
-  }, [sessionLoading, firebaseUser, router]);
-
-  useEffect(() => {
-    if (sessionLoading || !firebaseUser) return;
+    if (sessionLoading) return;
     const controller = new AbortController();
-    void firebaseUser.getIdToken()
-      .then((token) => fetch("/api/descubre", {
+    setLoading(true);
+    setError("");
+    void (async () => {
+      const token = firebaseUser ? await firebaseUser.getIdToken() : null;
+      return fetch(token ? "/api/descubre" : "/api/descubre/preview", {
         signal: controller.signal,
         cache: "no-store",
-        headers: { Authorization: `Bearer ${token}` },
-      }))
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    })()
       .then(async (response) => {
         if (!response.ok) throw new Error("No se pudieron cargar los productos.");
         return response.json();
@@ -64,6 +65,33 @@ export default function DescubrePage() {
       });
     return () => controller.abort();
   }, [sessionLoading, firebaseUser]);
+
+  // Reuse the same cached aggregate community count on the public homepage.
+  // The endpoint returns only one number, never user profiles.
+  useEffect(() => {
+    if (sessionLoading) return;
+    const controller = new AbortController();
+    void fetch("/api/community-stats", {
+        signal: controller.signal,
+        cache: "no-store",
+      })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Contador no disponible");
+        return response.json();
+      })
+      .then((data: { registeredUsers?: unknown }) => {
+        if (controller.signal.aborted) return;
+        setRegisteredUsers(
+          typeof data.registeredUsers === "number" &&
+          Number.isSafeInteger(data.registeredUsers) && data.registeredUsers >= 0
+            ? data.registeredUsers : null,
+        );
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setRegisteredUsers(null);
+      });
+    return () => controller.abort();
+  }, [sessionLoading]);
 
   // Show ALL active real categories, even before the first product arrives.
   // The Marketplace category strip is the visual reference; no generic pills.
@@ -89,8 +117,13 @@ export default function DescubrePage() {
     });
   }, [products, search, filter, now]);
   const shown = matching.slice(0, limit);
+  // The count covers products actually available in the current Descubre wall:
+  // storefront products plus approved unexpired individual listings, not shops.
+  // It comes from the feed already loaded, with zero additional DB queries.
+  // Personal listings count down locally when their expiry is reached.
+  const discoverProductCount = useMemo(() => countDiscoverProducts(products, now), [products, now]);
 
-  if (sessionLoading || !firebaseUser) {
+  if (sessionLoading) {
     return <main className="discover-page discover-loading" aria-busy="true">Cargando Mercadito…</main>;
   }
 
@@ -114,10 +147,34 @@ export default function DescubrePage() {
               onChange={(event) => { setSearch(event.target.value); setLimit(BATCH_SIZE); }}
             />
           </form>
-          <Link href="/descubre/publicar" className="discover-publish">
+          <Link href={firebaseUser ? "/descubre/publicar" : "/login"} className="discover-publish">
             <span aria-hidden="true">＋</span> Publicar
           </Link>
         </section>
+
+        {!loading && !error && (
+          <section className="discover-community-stats" aria-label="Cifras de la comunidad">
+            {registeredUsers !== null && (
+              <div className="discover-community-stat discover-community-stat-people">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="9" cy="8" r="3" />
+                  <path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M19 14a5 5 0 0 1 2 4v2" />
+                </svg>
+                <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
+                <span>Personas</span>
+              </div>
+            )}
+            <div className="discover-community-stat discover-community-stat-products">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 6h16v14H4zM4 10h16M9 6v14M8 4h8M15 13l2 2-2 2" />
+              </svg>
+              <strong>{discoverProductCount.toLocaleString("es-MX")}</strong>
+              <span>Productos</span>
+            </div>
+          </section>
+        )}
 
         <section className="discover-category-section" aria-label="Explora por categoría">
           <div className="discover-category-heading">
@@ -145,7 +202,7 @@ export default function DescubrePage() {
 
         <div className="discover-intro">
           <p>Descubre productos<br />de la comunidad <span aria-hidden="true">♡</span></p>
-          <Link href="/marketplace" prefetch={false}>Ver tiendas <span aria-hidden="true">↗</span></Link>
+          <Link href={firebaseUser ? "/marketplace" : "/login"} prefetch={false}>Ver tiendas <span aria-hidden="true">↗</span></Link>
         </div>
 
         {loading ? (
@@ -156,13 +213,13 @@ export default function DescubrePage() {
           <div className="discover-empty">
             <h2>{search || filter !== "all" ? "No encontramos coincidencias" : "Pronto descubrirás más productos"}</h2>
             <p>{search || filter !== "all" ? "Prueba otra búsqueda o explora todas las categorías." : "Las publicaciones nuevas aparecerán aquí después de superar la revisión de seguridad."}</p>
-            <Link href="/marketplace">Mientras tanto, conoce las tiendas →</Link>
+            <Link href={firebaseUser ? "/marketplace" : "/login"}>Mientras tanto, conoce las tiendas →</Link>
           </div>
         ) : (
           <>
             <section className="discover-wall" aria-label="Productos de nuestra comunidad">
               {shown.map((product, index) => (
-                <DiscoverProductCard key={product.id} product={product} index={index} />
+                <DiscoverProductCard key={product.id} product={product} index={index} requiresLogin={!firebaseUser} />
               ))}
             </section>
             {matching.length > shown.length && (
@@ -171,6 +228,12 @@ export default function DescubrePage() {
               </button>
             )}
           </>
+        )}
+
+        {!firebaseUser && (
+          <p className="discover-visitor-notice" role="note">
+            Puedes explorar los productos. Para consultar detalles, contactar o comprar, <Link href="/login">inicia sesión</Link> o <Link href="/register">crea tu cuenta</Link>.
+          </p>
         )}
 
         <div className="discover-end-doodle" aria-hidden="true">

@@ -18,7 +18,7 @@ function isAccountSetupPage(path: string): boolean {
 function isProtectedPage(path: string): boolean {
   return [
     "/admin", "/chat", "/cosas-perdidas", "/mystore", "/mystores", "/notifications",
-    "/orders", "/profile", "/sell", "/verify-student",
+    "/orders", "/profile", "/sell", "/verify-student", "/marketplace",
   ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
