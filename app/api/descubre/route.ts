@@ -20,6 +20,7 @@ export async function GET(request: Request) {
           Array.isArray(snapshot.discoverListings) ? snapshot.discoverListings : [],
         ),
         categories: snapshot.categories,
+        realStoreCount: snapshot.realStoreCount,
       },
       { headers: { "Cache-Control": "private, no-store" } },
     );
