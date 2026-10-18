@@ -47,6 +47,59 @@ describe("automatic prepublication product screening", () => {
     });
   });
 
+  it("parses the actual Gemma 4 native choices response", async () => {
+    const payload = { decision: "APPROVE", matchesText: true, containsProhibited: false,
+      item: "video game controller", confidence: 0.96 };
+    const result = await screenListing(
+      { ...input, title: "Control de videojuegos" },
+      { run: async () => ({
+        id: "completion", choices: [{
+          finish_reason: "stop",
+          message: { role: "assistant", content: JSON.stringify(payload) },
+        }],
+      }) },
+      fetchPhoto,
+    );
+    expect(result.decision).toBe("approved");
+  });
+
+  it("supports a complete fenced JSON response and parsed JSON responses", async () => {
+    const payload = { decision: "APPROVE", matchesText: true, containsProhibited: false,
+      item: "video game controller", confidence: 0.97 };
+    for (const response of [
+      { choices: [{ message: { content: "```json\n" + JSON.stringify(payload) + "\n```" }, finish_reason: "stop" }] },
+      { response: payload },
+      { choices: [{ message: { parsed: payload }, finish_reason: "stop" }] },
+      { choices: [{ message: { content: [{ type: "text", text: JSON.stringify(payload) }] }, finish_reason: "stop" }] },
+    ]) {
+      expect((await screenListing(input, { run: async () => response }, fetchPhoto)).decision).toBe("approved");
+    }
+  });
+
+  it("keeps ambiguous, truncated, or invalid AI responses private for human review", async () => {
+    for (const response of [
+      { choices: [{ message: { content: "I think this is a video game controller" }, finish_reason: "stop" }] },
+      { choices: [{ message: { content: '{"decision":"UNCERTAIN"}' }, finish_reason: "stop" }] },
+      { choices: [{ message: { content: '{"decision":"APPROVE"}' }, finish_reason: "length" }] },
+      { response: JSON.stringify({ decision: "APPROVE", matchesText: true, containsProhibited: false,
+        item: "controller", confidence: 0.80 }) },
+      { response: 'Valid product: {"decision":"APPROVE","matchesText":true,"containsProhibited":false,"item":"controller","confidence":0.99}' },
+    ]) {
+      const result = await screenListing(input, { run: async () => response }, fetchPhoto);
+      expect(result.decision).toBe("manual_review");
+      expect(result.reason).toContain("revisión manual");
+    }
+  });
+
+  it("blocks only explicit forbidden visual detections", async () => {
+    const blocked = { decision: "BLOCK", containsProhibited: true, matchesText: false,
+      item: "vapeador", confidence: 0.98 };
+    expect((await screenListing(input, { run: async () => ({ response: JSON.stringify(blocked) }) }, fetchPhoto)).decision)
+      .toBe("blocked");
+    expect((await screenListing(input, { run: async () => ({ response: JSON.stringify({ ...blocked, containsProhibited: false }) }) }, fetchPhoto)).decision)
+      .toBe("manual_review");
+  });
+
   it("fails closed on uncertainty, missing AI, bad output and model outages", async () => {
     expect((await screenListing(input, null, fetchPhoto)).decision).toBe("needs_changes");
     for (const response of [
