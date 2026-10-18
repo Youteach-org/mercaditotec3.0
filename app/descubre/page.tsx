@@ -160,32 +160,29 @@ export default function DescubrePage() {
         {!loading && !error && (
           <section className="discover-community-stats" aria-label="Cifras de la comunidad">
             {registeredUsers !== null && (
-              <div className="discover-community-stat discover-community-stat-people">
+              <div className="discover-community-stat discover-community-stat-people" role="group" aria-label={`Personas registradas: ${registeredUsers.toLocaleString("es-MX")}`}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <circle cx="9" cy="8" r="3" />
                   <path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M19 14a5 5 0 0 1 2 4v2" />
                 </svg>
                 <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
-                <span>Personas</span>
               </div>
             )}
-            <div className="discover-community-stat discover-community-stat-products">
+            <div className="discover-community-stat discover-community-stat-products" role="group" aria-label={`Productos disponibles: ${discoverProductCount.toLocaleString("es-MX")}`}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 6h16v14H4zM4 10h16M9 6v14M8 4h8M15 13l2 2-2 2" />
               </svg>
               <strong>{discoverProductCount.toLocaleString("es-MX")}</strong>
-              <span>Productos</span>
             </div>
             {realStoreCount !== null && (
-              <div className="discover-community-stat discover-community-stat-stores">
+              <div className="discover-community-stat discover-community-stat-stores" role="group" aria-label={`Tiendas registradas: ${realStoreCount.toLocaleString("es-MX")}`}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                   strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-7h6v7M2 10c0 2 2 3 4 1 2 2 4 2 6 0 2 2 4 2 6 0 2 2 4 1 4-1" />
                 </svg>
                 <strong>{realStoreCount.toLocaleString("es-MX")}</strong>
-                <span>Tiendas</span>
               </div>
             )}
           </section>
