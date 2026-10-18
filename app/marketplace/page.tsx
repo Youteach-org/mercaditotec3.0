@@ -326,9 +326,7 @@ function StoreCard({
 export default function MarketplacePage() {
   const { firebaseUser, loading: sessionLoading } = useSession();
   const [liveStores, setLiveStores] = useState<PublicStoreSummary[]>([]);
-  const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
-  const [activeStores, setActiveStores] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [storePage, setStorePage] = useState(0);
@@ -366,7 +364,6 @@ export default function MarketplacePage() {
         if (!response.ok) throw new Error(data.error ?? "No se pudo cargar el Mercadito.");
         if (!cancelled) {
           setLiveStores(Array.isArray(data.stores) ? data.stores : []);
-          setActiveStores(typeof data.realStoreCount === "number" ? data.realStoreCount : null);
           setApprovedCategories(Array.isArray(data.categories) ? data.categories : []);
           if (data.content) setMarketplaceContent(data.content as MarketplaceContent);
         }
@@ -383,35 +380,6 @@ export default function MarketplacePage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (sessionLoading || !firebaseUser || forceDemo) {
-      setRegisteredUsers(null);
-      return;
-    }
-    let cancelled = false;
-    void firebaseUser.getIdToken()
-      .then((token) => fetch("/api/community-stats", {
-        headers: { authorization: `Bearer ${token}` },
-        cache: "no-store",
-      }))
-      .then(async (response) => {
-        if (!response.ok) throw new Error("No se pudo consultar el contador");
-        return response.json();
-      })
-      .then((data: { registeredUsers?: unknown }) => {
-        if (!cancelled) {
-          setRegisteredUsers(
-            typeof data.registeredUsers === "number" && data.registeredUsers >= 0
-              ? data.registeredUsers
-              : null,
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRegisteredUsers(null);
-      });
-    return () => { cancelled = true; };
-  }, [firebaseUser, sessionLoading, forceDemo]);
 
   const effectiveLoading = forceDemo ? false : loading;
   const effectiveError = forceDemo ? "" : error;
@@ -531,32 +499,7 @@ export default function MarketplacePage() {
             <strong>{marketplaceContent.heroEmphasis}</strong>
           </h1>
           <p className="mkt-hero-subtitle">{marketplaceContent.heroSubtitle.replace(/\s+/g, " ").trim()}</p>
-        {!sessionLoading && firebaseUser && !forceDemo && (registeredUsers !== null || activeStores !== null) && (
-            <div className="mkt-community-counts" aria-label="Cifras de la comunidad">
-              {registeredUsers !== null && (
-                <div className="mkt-community-count">
-                  <div className="mkt-community-figure">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M19 14a5 5 0 0 1 2 4v2"/>
-                    </svg>
-                    <strong>{registeredUsers.toLocaleString("es-MX")}</strong>
-                  </div>
 
-                </div>
-              )}
-              {activeStores !== null && (
-                <div className="mkt-community-count">
-                  <div className="mkt-community-figure">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M3 9 5 3h14l2 6v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0V9ZM5 14v7h14v-7M9 21v-7h6v7"/>
-                    </svg>
-                    <strong>{activeStores.toLocaleString("es-MX")}</strong>
-                  </div>
-
-                </div>
-              )}
-            </div>
-          )}
 
         </div>
 
