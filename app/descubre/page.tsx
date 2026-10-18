@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
 import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import { countDiscoverProducts } from "@/lib/descubre/homeStats";
 import DiscoverProductCard, { isFlash } from "@/components/descubre/DiscoverProductCard";
 import { useSession } from "@/lib/useSession";
 import "./descubre.css";
@@ -126,9 +127,7 @@ export default function DescubrePage() {
   // storefront products plus approved unexpired individual listings, not shops.
   // It comes from the feed already loaded, with zero additional DB queries.
   // Personal listings count down locally when their expiry is reached.
-  const discoverProductCount = useMemo(() => products.filter((item) =>
-    !("personal" in item && item.personal) || item.expiresAt > now,
-  ).length, [products, now]);
+  const discoverProductCount = useMemo(() => countDiscoverProducts(products, now), [products, now]);
 
   if (sessionLoading || !firebaseUser) {
     return <main className="discover-page discover-loading" aria-busy="true">Cargando Mercadito…</main>;
