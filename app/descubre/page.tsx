@@ -27,6 +27,7 @@ export default function DescubrePage() {
   const { firebaseUser, loading: sessionLoading } = useSession();
   const [products, setProducts] = useState<(DiscoverFeedItem | PublicDiscoverPreview)[]>([]);
   const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
+  const [realStoreCount, setRealStoreCount] = useState<number | null>(null);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -56,6 +57,10 @@ export default function DescubrePage() {
         if (controller.signal.aborted) return;
         setProducts(Array.isArray(data.products) ? data.products : []);
         setCategories(Array.isArray(data.categories) ? data.categories : []);
+        setRealStoreCount(
+          typeof data.realStoreCount === "number" && Number.isSafeInteger(data.realStoreCount) && data.realStoreCount >= 0
+            ? data.realStoreCount : null,
+        );
         setLoading(false);
       })
       .catch(() => {
@@ -173,6 +178,16 @@ export default function DescubrePage() {
               <strong>{discoverProductCount.toLocaleString("es-MX")}</strong>
               <span>Productos</span>
             </div>
+            {realStoreCount !== null && (
+              <div className="discover-community-stat discover-community-stat-stores">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 10h18l-2-6H5l-2 6ZM4 10v10h16V10M9 20v-7h6v7M2 10c0 2 2 3 4 1 2 2 4 2 6 0 2 2 4 2 6 0 2 2 4 1 4-1" />
+                </svg>
+                <strong>{realStoreCount.toLocaleString("es-MX")}</strong>
+                <span>Tiendas</span>
+              </div>
+            )}
           </section>
         )}
 
@@ -182,7 +197,8 @@ export default function DescubrePage() {
             <h2>Explora</h2>
             <span className="discover-category-spark" aria-hidden="true">✳</span>
           </div>
-          <nav className="discover-filters" aria-label="Filtrar productos">
+          <p className="discover-category-swipe-hint" aria-hidden="true">Desliza para explorar categorías ↔</p>
+          <nav className="discover-filters" aria-label="Filtrar productos" tabIndex={0}>
             <button type="button" aria-pressed={filter === "all"} className={filter === "all" ? "discover-category-button is-active" : "discover-category-button"} onClick={() => { setFilter("all"); setLimit(BATCH_SIZE); }}>
               <span className="discover-category-icon"><CategoryIcon id="all" /></span>
               <span className="discover-category-label">Todas</span>
