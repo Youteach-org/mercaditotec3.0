@@ -478,3 +478,47 @@
 @media (prefers-reduced-motion: reduce) {
   .discover-product { transition: none; }
 }
+
+/* Cifras de la comunidad: notas pequeñas del mismo collage, no tarjetas de tienda.
+   Los productos proceden de /api/descubre ya cargado; ninguna consulta nueva. */
+.discover-community-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 17px;
+  margin: 0 0 13px;
+  padding: 0 4px;
+}
+.discover-community-stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, .85vw, 12px);
+  min-height: 56px;
+  min-width: 180px;
+  padding: 8px 17px;
+  color: #123d82;
+  background: #ffdf67;
+  clip-path: polygon(1% 8%, 18% 1%, 41% 5%, 62% 0, 84% 5%, 99% 2%, 99% 96%, 82% 100%, 61% 95%, 40% 100%, 21% 94%, 0 99%);
+  transform: rotate(-1deg);
+}
+.discover-community-stat-products {
+  background: #ffbb9f;
+  transform: rotate(1deg);
+}
+.discover-community-stat svg { width: 24px; height: 24px; flex: 0 0 24px; }
+.discover-community-stat strong {
+  color: #123d82;
+  font: 1000 clamp(21px, 2.1vw, 31px)/1 var(--font-market-hand), "Segoe Print", cursive;
+}
+.discover-community-stat span {
+  color: #123d82;
+  font: 900 clamp(13px, 1.15vw, 17px)/1.1 var(--font-market-hand), "Segoe Print", cursive;
+}
+@media (max-width: 740px) {
+  .discover-community-stats { gap: 8px; margin: 3px 0 9px; }
+  .discover-community-stat { flex: 1 1 135px; min-width: 0; min-height: 49px; padding: 7px 10px; gap: 7px; }
+  .discover-community-stat svg { width: 21px; height: 21px; flex-basis: 21px; }
+  .discover-community-stat strong { font-size: clamp(22px, 5.8vw, 28px); }
+  .discover-community-stat span { font-size: clamp(13px, 3.6vw, 17px); }
+}
