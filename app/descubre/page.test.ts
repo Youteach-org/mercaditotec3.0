@@ -11,7 +11,17 @@ describe("Descubre follows the original Marketplace's categories", () => {
     expect(source).toContain("<CategoryIcon id={category.iconKey} />");
     expect(source).toContain("aria-pressed={filter === category.id}");
     expect(styles).toContain("flex-direction: column");
-    expect(styles).toContain("grid-template-columns: repeat(9, minmax(0, 1fr))");
+    expect(styles).toContain("display: flex;");
+    expect(styles).toContain("scroll-snap-type: x proximity");
+    expect(styles).toContain(".discover-filters .discover-category-button");
+    expect(styles).toContain("flex: 0 0 68px");
+  });
+
+  it("keeps categories on one horizontal row on desktop and mobile", () => {
+    expect(styles).toContain("flex-wrap: nowrap");
+    expect(styles).toContain("overflow-x: auto");
+    expect(source).toContain('tabIndex={0}');
+    expect(source).toContain("Desliza para explorar categorías");
   });
 
   it("shows every real category from the catalogue instead of only categories with products", () => {
