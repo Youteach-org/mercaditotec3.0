@@ -149,7 +149,7 @@ export default function PublicStorePage() {
             ← Volver al Mercadito
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <QrShareButton title={store.name} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} label="Compartir QR" />
+            <QrShareButton title={store.name} url={"https://mercaditotec.store/marketplace/stores/" + encodeURIComponent(store.slug)} logoUrl={store.logoUrl} label="Compartir QR" />
             <Link href="/orders" className="rounded-xl bg-white px-4 py-2 text-sm font-black text-slate-800 shadow-sm hover:bg-slate-50">
               Mis pedidos
             </Link>
