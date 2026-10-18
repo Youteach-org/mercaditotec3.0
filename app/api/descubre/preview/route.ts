@@ -24,6 +24,7 @@ export async function GET() {
     return NextResponse.json({
       products: publicDiscoverPreview(products),
       categories: catalogue.categories,
+      realStoreCount: catalogue.realStoreCount,
     }, { headers: PUBLIC_HEADERS });
   } catch {
     return NextResponse.json({ error: "No se pudo cargar Descubre." }, {
