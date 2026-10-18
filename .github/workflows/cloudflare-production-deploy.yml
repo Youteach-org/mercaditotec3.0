@@ -68,7 +68,7 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "$BASE" >> "$GITHUB_STEP_SUMMARY"
 
-          for path in "/" "/marketplace" "/admin/users" "/icon.svg"; do
+          for path in "/" "/descubre" "/admin/users" "/icon.svg"; do
             status="$(curl -L -sS --connect-timeout 15 --max-time 45 -o /tmp/prod-body -w '%{http_code}' "$BASE$path")"
             echo "$path -> HTTP $status"
             case "$status" in
@@ -96,13 +96,29 @@ jobs:
             exit 1
           fi
 
-          MARKETPLACE_JSON="$(curl -fsS -H 'Cache-Control: no-cache' "$BASE/api/marketplace?verify=$(date +%s)")"
-          STORE_COUNT="$(printf '%s' "$MARKETPLACE_JSON" | jq '.stores | length')"
-          echo "Public marketplace active stores: $STORE_COUNT"
-          echo "Public store names:"
-          printf '%s' "$MARKETPLACE_JSON" | jq -r '.stores[]? | " - \(.name) [\(.slug)]"'
-          echo "Real stores in published snapshot:"
-          printf '%s' "$MARKETPLACE_JSON" | jq -r '.realStoreCount'
+          # Descubre is the only public product catalogue. Check the
+          # intentionally reduced preview, without authentication.
+          PREVIEW_JSON="$(curl -fsS -H 'Cache-Control: no-cache' "$BASE/api/descubre/preview?verify=$(date +%s)")"
+          printf '%s' "$PREVIEW_JSON" | jq -e '
+            (.products | type == "array") and
+            (.categories | type == "array") and
+            ([.products[]? | has("sellerUid") or has("ownerUid") or has("contactWhatsappUrl") or has("whatsappNumber")] | any | not)
+          ' >/dev/null || {
+            echo "::error::Public Descubre preview is unavailable or includes private seller data"
+            exit 1
+          }
+          echo "Public Descubre products: $(printf '%s' "$PREVIEW_JSON" | jq '.products | length')"
+
+          # Tiendas and the full Descubre catalogue must be private.
+          for endpoint in "/api/marketplace" "/api/marketplace-v2" "/api/descubre"; do
+            PRIVATE_STATUS="$(curl -sS --connect-timeout 15 --max-time 45 -o /tmp/private-api -w '%{http_code}' "$BASE$endpoint")"
+            echo "$endpoint (without auth) -> HTTP $PRIVATE_STATUS"
+            if [ "$PRIVATE_STATUS" != "401" ]; then
+              echo "::error::$endpoint must reject anonymous requests; got HTTP $PRIVATE_STATUS"
+              head -c 1000 /tmp/private-api || true
+              exit 1
+            fi
+          done
 
           # HTTPS regression: the official domain previously returned HTTP 200
           # for /chat instead of redirecting. Browsers therefore showed "No es seguro"
