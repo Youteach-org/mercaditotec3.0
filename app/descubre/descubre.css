@@ -266,8 +266,8 @@
   position: relative;
   margin: 0 15px 0 0;
   padding: 9px 22px;
-  background: var(--discover-yellow);
-  color: var(--discover-blue);
+  background: var(--discover-blue);
+  color: #ffffff;
   clip-path: polygon(1% 7%, 20% 0, 49% 5%, 77% 0, 99% 8%, 98% 91%, 73% 96%, 43% 92%, 19% 100%, 0 94%);
   font: 1000 clamp(14px, 1.15vw, 18px) var(--font-market-hand), "Segoe Print", cursive;
   transform: rotate(-3deg);
@@ -349,8 +349,8 @@
   z-index: 2;
   max-width: 95%;
   padding: 7px 10px;
-  color: #14234d;
-  background: var(--discover-yellow);
+  color: #ffffff;
+  background: var(--discover-orange);
   font: 1000 clamp(15px, 1.6vw, 25px)/1 var(--font-market-hand), "Segoe Print", cursive;
   transform: rotate(-5deg);
   clip-path: polygon(0 6%, 21% 0, 40% 5%, 61% 0, 78% 4%, 100% 0, 98% 90%, 81% 97%, 59% 93%, 38% 100%, 15% 94%, 1% 99%);
