@@ -118,6 +118,7 @@ export default function QrShareButton({
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const [working, setWorking] = useState(false);
   const [notice, setNotice] = useState("");
   const [shareFile, setShareFile] = useState<File | null>(null);
@@ -185,7 +186,25 @@ export default function QrShareButton({
   useEffect(() => {
     if (!open) return;
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const elements = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!elements?.length) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
@@ -286,6 +305,7 @@ export default function QrShareButton({
           onMouseDown={(event) => { if (event.target === event.currentTarget) setOpen(false); }}
         >
           <section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="mercadito-qr-heading"
