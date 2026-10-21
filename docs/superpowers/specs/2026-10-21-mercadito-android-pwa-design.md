@@ -1,7 +1,7 @@
 # Mercadito Android PWA Design
 
 **Date:** 2026-10-21  
-**Status:** Awaiting Luis's review
+**Status:** Awaiting review
 
 ## Goal
 
@@ -9,7 +9,7 @@ Make the existing MercaditoTec site installable on Android as an app, using the 
 
 ## User intent and constraints
 
-- Luis approved starting with an installable PWA, then preparing Google Play distribution.
+- The user approved starting with an installable PWA, then preparing Google Play distribution.
 - Keep the current website and accounts as the source of truth; do not rebuild the marketplace as a separate Android client.
 - Preserve Mercadito's existing visual identity and use its current icon as the starting asset.
 - Keep marketplace data, account/session data, store management, and other private or changing responses online-only.
@@ -49,7 +49,7 @@ Make the existing MercaditoTec site installable on Android as an app, using the 
 - Make Chrome on Android offer installation from the browser menu; do not add an intrusive install prompt.
 - Validate the production domain over HTTPS, manifest fields and icon responses, service worker scope, install and launch, navigation, sign-in, store browsing, and create/edit flows on Android.
 - Check that requests to API and Firebase are never served from the service worker cache.
-- Keep all PWA work in a reviewable GitHub branch and do not deploy until Luis reviews the result.
+- Keep all PWA work in a reviewable GitHub branch and do not deploy until the user reviews the result.
 
 ## Second milestone: Google Play package
 
