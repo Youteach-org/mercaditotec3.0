@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - feature/android-native-kotlin
+      - feature/mercadito-full-mobile-android-ios
     paths:
       - "android/**"
       - ".github/workflows/android-native-build.yml"
