@@ -1,8 +1,7 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono, Kalam, Permanent_Marker } from "next/font/google";
 
 import ClientAppShell from "@/components/ClientAppShell";
-import PwaRegistration from "@/components/PwaRegistration";
 import "./globals.css";
 import "./mercadito-theme.css";
 
@@ -30,26 +29,11 @@ const marketMarker = Permanent_Marker({
 
 export const metadata: Metadata = {
   title: "MercaditoTec",
-  description: "Compra, vende y descubre tiendas en MercaditoTec.",
-  applicationName: "MercaditoTec",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    title: "MercaditoTec",
-    statusBarStyle: "default",
-  },
+  description: "MercaditoTec",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     shortcut: "/icon.svg",
-    apple: [{ url: "/icons/mercaditotec-192.png", sizes: "192x192", type: "image/png" }],
   },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#123b83",
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -63,7 +47,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${marketHand.variable} ${marketMarker.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <PwaRegistration />
         <ClientAppShell>{children}</ClientAppShell>
       </body>
     </html>
