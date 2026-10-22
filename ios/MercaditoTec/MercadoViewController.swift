@@ -200,7 +200,7 @@ final class MercadoViewController: UIViewController, WKNavigationDelegate, WKUID
            let encoded = dataUrl.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false).last,
            let data = Data(base64Encoded: String(encoded), options: .ignoreUnknownCharacters),
            data.count <= 8 * 1024 * 1024 {
-            let raw = (file["filename"] as? String ?? "mercaditotec-qr.png" as NSString).lastPathComponent
+            let raw = ((file["filename"] as? String) ?? "mercaditotec-qr.png" as String).components(separatedBy: "/").last ?? "mercaditotec-qr.png"
             let safe = String(raw.prefix(100).map { character in
                 (character.isLetter || character.isNumber || character == "." || character == "-" || character == "_")
                     ? character : "_"
