@@ -6,6 +6,7 @@
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:label="@string/app_name"
+        android:icon="@drawable/mercaditotec_icon"
         android:theme="@style/Theme.MercaditoTec"
         android:supportsRtl="true">
         <activity
