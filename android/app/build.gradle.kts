@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.mercaditotec.android"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.mercaditotec.android"
