@@ -389,6 +389,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         </Link>
                       );
                     })}
+                    <Link prefetch={false}
+                      href="/configuracion"
+                      onClick={() => setMobileMenuOpen(false)}
+                      aria-current={pathname === "/configuracion" ? "page" : undefined}
+                      className={`mkt-mobile-dropdown-link ${pathname === "/configuracion" ? "mkt-mobile-dropdown-link-active" : ""}`}
+                    >
+                      <span aria-hidden="true">⚙️</span><span>Configuración</span>
+                    </Link>
                     {showAdmin && (
                       <Link prefetch={false}
                         href="/admin"
@@ -457,6 +465,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </button>
 
               {firebaseUser && (
+                <>
+                <Link prefetch={false}
+                  href="/configuracion"
+                  aria-label="Configuración de MercaditoTec"
+                  title="Configuración"
+                  className={scrapbookShell ? "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#174db4] bg-white text-[#123d82] shadow-sm" : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"}
+                >
+                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 3.3v2.1M12 18.6v2.1M3.3 12h2.1M18.6 12h2.1M5.85 5.85l1.5 1.5M16.65 16.65l1.5 1.5M18.15 5.85l-1.5 1.5M7.35 16.65l-1.5 1.5" />
+                    <circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.8" />
+                  </svg>
+                </Link>
                 <Link prefetch={false}
                   href="/notifications"
                   aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : "Notificaciones"}
@@ -469,6 +489,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </span>
                   )}
                 </Link>
+                </>
               )}
             </div>
 
