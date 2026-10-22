@@ -12,7 +12,7 @@ import android.provider.MediaStore
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.SslErrorHandler
-import android.webkit.SslError
+import android.net.http.SslError
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -35,7 +35,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import java.io.File
-import java.net.URI
 
 /**
  * Hosts the COMPLETE, production MercaditoTec web application.
@@ -162,17 +161,17 @@ class MainActivity : ComponentActivity() {
                     override fun shouldOverrideUrlLoading(
                         view: WebView, request: WebResourceRequest,
                     ): Boolean {
-                        route(request.url, webView)
-                        view.destroy()
+                        openPopupUrl(request.url)
+                        view.post { view.destroy() }
                         return true
                     }
 
                     override fun onPageStarted(
                         view: WebView, url: String?, favicon: android.graphics.Bitmap?,
                     ) {
-                        if (url != null && url != "about:blank") route(Uri.parse(url), webView)
+                        if (url != null && url != "about:blank") openPopupUrl(Uri.parse(url))
                         view.stopLoading()
-                        view.destroy()
+                        view.post { view.destroy() }
                     }
                 }
                 val transport = resultMsg.obj as WebView.WebViewTransport
@@ -228,6 +227,11 @@ class MainActivity : ComponentActivity() {
             // If WhatsApp or an external handler is unavailable, stay in Mercadito.
         }
         return true
+    }
+
+    private fun openPopupUrl(uri: Uri) {
+        if (allowed(uri)) webView.loadUrl(uri.toString())
+        else route(uri, webView)
     }
 
     private fun openPicker(params: WebChromeClient.FileChooserParams) {
