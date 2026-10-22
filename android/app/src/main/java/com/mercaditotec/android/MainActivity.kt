@@ -35,6 +35,13 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import java.io.File
+import android.content.ContentValues
+import android.os.Build
+import android.util.Base64
+import android.widget.Toast
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
+import org.json.JSONObject
 
 /**
  * Hosts the COMPLETE, production MercaditoTec web application.
@@ -100,6 +107,21 @@ class MainActivity : ComponentActivity() {
             displayZoomControls = false
         }
 
+        // Origin-restricted bridge, including main-frame validation.
+        // Never expose addJavascriptInterface to untrusted child frames.
+        val hasSafeBridge = WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
+        if (hasSafeBridge) {
+            WebViewCompat.addWebMessageListener(
+                webView,
+                "MercaditoBridge",
+                setOf("https://mercaditotec.store"),
+            ) { _, message, sourceOrigin, isMainFrame, _ ->
+                if (isMainFrame && allowed(sourceOrigin)) {
+                    message.data?.let { handleBridgeMessage(it) }
+                }
+            }
+        }
+
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
 
@@ -115,6 +137,10 @@ class MainActivity : ComponentActivity() {
             override fun onPageFinished(view: WebView, url: String?) {
                 loading.visibility = View.GONE
                 CookieManager.getInstance().flush()
+                if (hasSafeBridge && url != null && allowed(Uri.parse(url))) {
+                    val bridgeScript = assets.open("mobile-bridge.js").bufferedReader().use { it.readText() }
+                    view.evaluateJavascript(bridgeScript, null)
+                }
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -232,6 +258,83 @@ class MainActivity : ComponentActivity() {
     private fun openPopupUrl(uri: Uri) {
         if (allowed(uri)) webView.loadUrl(uri.toString())
         else route(uri, webView)
+    }
+
+    private fun handleBridgeMessage(text: String) {
+        try {
+            val message = JSONObject(text)
+            val action = message.optString("type")
+            if (action != "share" && action != "download") return
+            val file = message.optJSONObject("file")
+            val data = file?.optString("dataUrl").orEmpty()
+            if (file != null && data.isNotBlank()) {
+                if (data.length > 11_500_000) return // approx. 8 MB decoded
+                val encoded = data.substringAfter(",", "")
+                val bytes = Base64.decode(encoded, Base64.DEFAULT)
+                if (bytes.size > 8 * 1024 * 1024) return
+                val proposedName = file.optString("filename", "mercaditotec-qr.png")
+                val name = proposedName.substringAfterLast('/').substringAfterLast('\\')
+                    .replace(Regex("[^a-zA-Z0-9._-]"), "_").take(100)
+                    .ifBlank { "mercaditotec-qr.png" }
+                val mime = file.optString("mime", "image/png")
+                if (action == "download") {
+                    saveDownloadedFile(name, mime, bytes)
+                } else {
+                    shareFile(name, mime, bytes)
+                }
+            } else if (action == "share") {
+                val title = message.optString("title")
+                val messageText = listOf(title, message.optString("text"), message.optString("url"))
+                    .filter { it.isNotBlank() }.joinToString("\n")
+                startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, messageText)
+                }, "Compartir MercaditoTec"))
+            }
+        } catch (_: Exception) {
+            Toast.makeText(this, "No se pudo procesar el archivo.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun shareFile(name: String, mime: String, bytes: ByteArray) {
+        val target = File(cacheDir, "mercadito-shares").apply { mkdirs() }
+        val output = File(target, name)
+        output.writeBytes(bytes)
+        val uri = FileProvider.getUriForFile(this, "$packageName.files", output)
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+            type = mime
+            putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newUri(contentResolver, name, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }, "Compartir QR de MercaditoTec"))
+    }
+
+    private fun saveDownloadedFile(name: String, mime: String, bytes: ByteArray) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Downloads.DISPLAY_NAME, name)
+                put(MediaStore.Downloads.MIME_TYPE, mime)
+                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/MercaditoTec")
+                put(MediaStore.Downloads.IS_PENDING, 1)
+            }
+            val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("No se pudo crear el archivo.")
+            try {
+                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                    ?: throw IllegalStateException("No se pudo guardar el archivo.")
+                values.clear()
+                values.put(MediaStore.Downloads.IS_PENDING, 0)
+                contentResolver.update(uri, values, null, null)
+            } catch (error: Exception) {
+                contentResolver.delete(uri, null, null)
+                throw error
+            }
+            Toast.makeText(this, "Guardado en Descargas/MercaditoTec", Toast.LENGTH_LONG).show()
+        } else {
+            // On legacy Android versions use the OS Sharesheet; scoped
+            // public Downloads is not available without storage permission.
+            shareFile(name, mime, bytes)
+        }
     }
 
     private fun openPicker(params: WebChromeClient.FileChooserParams) {

@@ -4,7 +4,7 @@ import WebKit
 /// Full MercaditoTec. Every tab and interaction is served by the existing
 /// Next.js application; we do NOT reimplement a partial shop directory.
 /// WKWebView is a native iOS system component, but the UI itself is hybrid.
-final class MercadoViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+final class MercadoViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate, WKScriptMessageHandler {
     private let website = URL(string: "https://mercaditotec.store/descubre")!
     private let allowedHost = "mercaditotec.store"
     private var webView: WKWebView!
@@ -29,6 +29,13 @@ final class MercadoViewController: UIViewController, WKNavigationDelegate, WKUID
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+        configuration.userContentController.add(self, name: "MercaditoBridge")
+        if let scriptURL = Bundle.main.url(forResource: "MobileBridge", withExtension: "js"),
+           let script = try? String(contentsOf: scriptURL, encoding: .utf8) {
+            configuration.userContentController.addUserScript(
+                WKUserScript(source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+            )
+        }
 
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.translatesAutoresizingMaskIntoConstraints = false
@@ -174,6 +181,62 @@ final class MercadoViewController: UIViewController, WKNavigationDelegate, WKUID
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         download.delegate = self
+    }
+
+    // Only top-frame JS from our own HTTPS origin may request native sharing.
+    // Child frames and third-party origins are never trusted.
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "MercaditoBridge",
+              message.frameInfo.isMainFrame,
+              message.frameInfo.securityOrigin.protocol == "https",
+              message.frameInfo.securityOrigin.host == allowedHost,
+              let command = message.body as? [String: Any],
+              let action = command["type"] as? String,
+              action == "share" || action == "download" else { return }
+
+        if let file = command["file"] as? [String: Any],
+           let dataUrl = file["dataUrl"] as? String,
+           dataUrl.utf8.count <= 11_500_000,
+           let encoded = dataUrl.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false).last,
+           let data = Data(base64Encoded: String(encoded), options: .ignoreUnknownCharacters),
+           data.count <= 8 * 1024 * 1024 {
+            let raw = ((file["filename"] as? String) ?? "mercaditotec-qr.png" as String).components(separatedBy: "/").last ?? "mercaditotec-qr.png"
+            let safe = String(raw.prefix(100).map { character in
+                (character.isLetter || character.isNumber || character == "." || character == "-" || character == "_")
+                    ? character : "_"
+            })
+            let destination = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + "-" + (safe.isEmpty ? "mercaditotec-qr.png" : safe))
+            do {
+                try data.write(to: destination, options: .atomic)
+                presentShareSheet(items: [destination])
+            } catch {
+                showFileError()
+            }
+            return
+        }
+
+        if action == "share" {
+            let parts = [command["title"], command["text"], command["url"]]
+                .compactMap { $0 as? String }.filter { !$0.isEmpty }
+            presentShareSheet(items: [parts.joined(separator: "\n")])
+        }
+    }
+
+    private func presentShareSheet(items: [Any]) {
+        let share = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        share.popoverPresentationController?.sourceView = view
+        present(share, animated: true)
+    }
+
+    private func showFileError() {
+        let alert = UIAlertController(
+            title: "MercaditoTec",
+            message: "No se pudo preparar el archivo para compartir.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Aceptar", style: .default))
+        present(alert, animated: true)
     }
 
     func download(_ download: WKDownload, decideDestinationUsing response: URLResponse,
