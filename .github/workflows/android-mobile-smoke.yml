@@ -1,0 +1,56 @@
+name: Android full Mercadito runtime smoke
+
+on:
+  push:
+    branches:
+      - feature/mercadito-full-mobile-android-ios
+    paths:
+      - ".github/workflows/android-mobile-smoke.yml"
+      - "android/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emulator-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: Install platform and SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - name: Compile app
+        run: cd android && ./gradlew --no-daemon :app:assembleDebug
+      - name: Boot emulator, launch real Mercadito, capture screen and URL
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: |
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.mercaditotec.android/.MainActivity
+            sleep 25
+            mkdir -p artifacts
+            adb shell dumpsys activity activities > artifacts/activity.txt
+            adb shell dumpsys window windows > artifacts/windows.txt
+            adb exec-out screencap -p > artifacts/emulator-screen.png
+            adb logcat -d -s chromium WebViewFactory AndroidRuntime > artifacts/webview-log.txt || true
+            grep -q 'com.mercaditotec.android' artifacts/activity.txt
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: mercaditotec-android-emulator-evidence
+          path: artifacts/
+          if-no-files-found: error
