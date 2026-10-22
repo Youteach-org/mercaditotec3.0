@@ -45,8 +45,7 @@ jobs:
             mkdir -p artifacts
             adb shell dumpsys activity activities > artifacts/activity.txt
             adb shell dumpsys window windows > artifacts/windows.txt
-            adb shell screencap -p /sdcard/mercaditotec.png
-            adb pull /sdcard/mercaditotec.png artifacts/emulator-screen.png
+            adb exec-out screencap -p > artifacts/emulator-screen.png
             adb logcat -d -s chromium WebViewFactory AndroidRuntime > artifacts/webview-log.txt || true
             grep -q 'com.mercaditotec.android' artifacts/activity.txt
       - name: Upload evidence
