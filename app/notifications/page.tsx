@@ -13,6 +13,7 @@ import {
   type NotificationApiRecord,
 } from "@/lib/notifications/client";
 import { useSession } from "@/lib/useSession";
+import { isNativeMercaditoApp } from "@/lib/notifications/nativeContainer";
 
 function typeIcon(type: NotificationApiRecord["type"]): string {
   switch (type) {
@@ -45,6 +46,11 @@ export default function NotificationsPage() {
   const [pushBusy, setPushBusy] = useState(false);
   const [pushMessage, setPushMessage] = useState("");
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [nativeApp, setNativeApp] = useState(false);
+
+  useEffect(() => {
+    setNativeApp(isNativeMercaditoApp());
+  }, []);
 
   useEffect(() => {
     if (!firebaseUser || typeof window === "undefined") return;
@@ -173,18 +179,30 @@ export default function NotificationsPage() {
         </header>
 
         <section className="rounded-2xl bg-white px-5 py-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-black text-slate-900">Avisos en esta tablet o celular</h2>
-              <p className="text-sm text-slate-600">Recibe avisos de revisiones, mensajes y pedidos, incluso con Mercadito cerrado.</p>
+          {nativeApp ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="font-black text-slate-900">Notificaciones de MercaditoTec</h2>
+                <p className="mt-1 max-w-xl text-sm text-slate-600">Aquí puedes consultar avisos de pedidos, mensajes y revisiones. La APK todavía no tiene notificaciones del sistema cuando la aplicación está cerrada.</p>
+              </div>
+              <Link href="/configuracion" className="rounded-xl bg-[#174db4] px-4 py-2.5 text-sm font-black text-white">Configuración</Link>
             </div>
-            <button type="button" disabled={pushBusy}
-              onClick={() => void changeDeviceNotifications(!pushEnabled)}
-              className="rounded-xl bg-[#174db4] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">
-              {pushBusy ? "Configurando..." : pushEnabled ? "Desactivar avisos" : "Activar avisos"}
-            </button>
-          </div>
-          {pushMessage && <p role="status" className="mt-2 text-sm font-semibold text-slate-700">{pushMessage}</p>}
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="font-black text-slate-900">Avisos en este navegador</h2>
+                  <p className="text-sm text-slate-600">Recibe avisos de revisiones, mensajes y pedidos, incluso si cierras la pestaña, cuando tu navegador admita notificaciones.</p>
+                </div>
+                <button type="button" disabled={pushBusy}
+                  onClick={() => void changeDeviceNotifications(!pushEnabled)}
+                  className="rounded-xl bg-[#174db4] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">
+                  {pushBusy ? "Configurando..." : pushEnabled ? "Desactivar avisos" : "Activar avisos"}
+                </button>
+              </div>
+              {pushMessage && <p role="status" className="mt-2 text-sm font-semibold text-slate-700">{pushMessage}</p>}
+            </>
+          )}
         </section>
 
         {error && (
