@@ -10,7 +10,7 @@ Cliente Android con **Kotlin + Jetpack Compose**. La interfaz es nativa; **no co
 - Identificación visible de tiendas demostrativas; ninguna se presenta como venta real.
 - La sesión solo se conserva en memoria: **no se almacenan tokens en texto plano**. Es un prototipo funcional, no una versión para distribución pública.
 
-## Compilación y prueba
+El primer build usa Compose BOM 2026.04.01 (Compose 1.11, compatible con SDK 36), porque las librerías 1.12 exigen SDK 37 que no está disponible en el canal estable del runner.\n\n## Compilación y prueba
 
 En el repositorio, el flujo `Build native MercaditoTec Android APK` compila el APK de prueba y lo deja como artifact `mercaditotec-android-nativo-debug`. Android Studio también puede abrir esta carpeta como proyecto Gradle.
 
