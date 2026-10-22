@@ -1,0 +1,52 @@
+name: Build complete MercaditoTec iOS app
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-mobile-build.yml"
+  push:
+    branches:
+      - feature/mercadito-full-mobile-android-ios
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-mobile-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+      - name: Build native iOS container for Simulator (no Apple signing required)
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project MercaditoTec.xcodeproj \
+            -scheme MercaditoTec \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Package simulator app
+        working-directory: ios
+        run: |
+          cd build/Build/Products/Debug-iphonesimulator
+          zip -qry "$GITHUB_WORKSPACE/mercaditotec-ios-simulator.zip" MercaditoTec.app
+      - name: Upload iOS simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: mercaditotec-ios-simulator
+          path: mercaditotec-ios-simulator.zip
+          if-no-files-found: error
