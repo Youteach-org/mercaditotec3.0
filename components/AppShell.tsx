@@ -465,6 +465,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               </button>
 
               {firebaseUser && (
+                <>
                 <Link prefetch={false}
                   href="/configuracion"
                   aria-label="Configuración de MercaditoTec"
@@ -488,6 +489,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     </span>
                   )}
                 </Link>
+                </>
               )}
             </div>
 
