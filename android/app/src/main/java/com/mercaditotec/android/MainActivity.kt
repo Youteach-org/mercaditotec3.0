@@ -1,398 +1,331 @@
 package com.mercaditotec.android
 
+import android.app.DownloadManager
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.os.Message
+import android.provider.MediaStore
+import android.webkit.CookieManager
+import android.webkit.DownloadListener
+import android.webkit.SslErrorHandler
+import android.webkit.SslError
+import android.webkit.URLUtil
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.Button
+import android.widget.TextView
+import android.graphics.Color
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.WebSettings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
+import java.io.File
+import java.net.URI
 
-private val Navy = Color(0xFF123B83)
-private val Orange = Color(0xFFF47B3F)
-private val Cream = Color(0xFFFFF9EE)
-private val Ink = Color(0xFF203450)
-private val pale = Color(0xFFFFECD9)
-
+/**
+ * Hosts the COMPLETE, production MercaditoTec web application.
+ * No duplicated store catalogue or fake native pages.
+ *
+ * This is a hybrid WebView shell: the UI continues to be the real Next.js app;
+ * Android supplies a native window, file/image selection, downloads and back.
+ */
 class MainActivity : ComponentActivity() {
+    private val home = "https://mercaditotec.store/descubre"
+    private val trustedHost = "mercaditotec.store"
+    private lateinit var webView: WebView
+    private lateinit var loading: ProgressBar
+    private lateinit var errorPanel: LinearLayout
+    private var chooserCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingCameraUri: Uri? = null
+
+    private val picker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val callback = chooserCallback ?: return@registerForActivityResult
+        chooserCallback = null
+        val fromPicker = WebChromeClient.FileChooserParams.parseResult(result.resultCode, result.data)
+        val fromCamera = if (
+            result.resultCode == RESULT_OK && fromPicker.isNullOrEmpty()
+        ) pendingCameraUri?.let { arrayOf(it) } else null
+        pendingCameraUri = null
+        callback.onReceiveValue(fromPicker ?: fromCamera)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme(
-                colorScheme = lightColorScheme(
-                    primary = Navy,
-                    secondary = Orange,
-                    background = Cream,
-                    surface = Color.White,
-                    onPrimary = Color.White,
-                    onSurface = Ink,
-                ),
-            ) {
-                MercaditoNativeApp()
+
+        window.statusBarColor = Color.rgb(18, 59, 131)
+        window.navigationBarColor = Color.rgb(18, 59, 131)
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = 0
+
+        val root = FrameLayout(this)
+        webView = WebView(this)
+        root.addView(webView, FrameLayout.LayoutParams(-1, -1))
+
+        loading = ProgressBar(this)
+        root.addView(loading, FrameLayout.LayoutParams(110, 110, Gravity.CENTER))
+
+        errorPanel = makeErrorPanel()
+        errorPanel.visibility = View.GONE
+        root.addView(errorPanel, FrameLayout.LayoutParams(-1, -1))
+        setContentView(root)
+
+        with(webView.settings) {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = false
+            allowContentAccess = true
+            javaScriptCanOpenWindowsAutomatically = false
+            setSupportMultipleWindows(true)
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            cacheMode = WebSettings.LOAD_DEFAULT
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            mediaPlaybackRequiresUserGesture = true
+            builtInZoomControls = false
+            displayZoomControls = false
+        }
+
+        CookieManager.getInstance().setAcceptCookie(true)
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+                route(request.url, view)
+
+            override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                loading.visibility = View.VISIBLE
+                errorPanel.visibility = View.GONE
+            }
+
+            override fun onPageFinished(view: WebView, url: String?) {
+                loading.visibility = View.GONE
+                CookieManager.getInstance().flush()
+            }
+
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                if (request.isForMainFrame) showFailure()
+            }
+
+            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: android.webkit.WebResourceResponse) {
+                if (request.isForMainFrame && response.statusCode >= 500) showFailure()
+            }
+
+            // Never permit invalid TLS certificates, even on public Wi-Fi.
+            override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+                handler.cancel()
+                showFailure()
             }
         }
-    }
-}
 
-@Composable
-private fun MercaditoNativeApp() {
-    var session by remember { mutableStateOf<NativeApi.Session?>(null) }
-    var catalogue by remember { mutableStateOf<NativeApi.Catalogue?>(null) }
-    var selected by remember { mutableStateOf<NativeApi.Store?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var query by rememberSaveable { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-
-    fun refresh() {
-        val current = session ?: return
-        scope.launch {
-            loading = true
-            error = null
-            try {
-                catalogue = NativeApi.catalogue(current)
-            } catch (e: Exception) {
-                error = e.message ?: "No se pudieron cargar las tiendas."
-            } finally {
-                loading = false
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onProgressChanged(view: WebView, newProgress: Int) {
+                if (newProgress >= 90) loading.visibility = View.GONE
             }
-        }
-    }
 
-    BackHandler(enabled = selected != null) { selected = null }
-
-    Surface(modifier = Modifier.fillMaxSize(), color = Cream) {
-        Column {
-            BrandHeader(
-                signedIn = session != null,
-                onLogout = {
-                    // Tokens are deliberately held in memory only.
-                    session = null
-                    catalogue = null
-                    selected = null
-                    error = null
-                },
-            )
-            if (session == null) {
-                LoginScreen(
-                    loading = loading,
-                    error = error,
-                    onLogin = { user, password ->
-                        scope.launch {
-                            loading = true
-                            error = null
-                            try {
-                                session = NativeApi.login(user, password)
-                                catalogue = NativeApi.catalogue(session!!)
-                            } catch (e: Exception) {
-                                // Clear a partially accepted login if account
-                                // sync / eligibility or the catalogue fails.
-                                if (session == null) {
-                                    error = e.message ?: "No fue posible acceder a MercaditoTec."
-                                } else {
-                                    error = e.message ?: "No se pudieron cargar las tiendas."
-                                }
-                            } finally {
-                                loading = false
-                            }
-                        }
-                    },
-                )
-            } else if (selected != null) {
-                ShopDetail(store = selected!!, onBack = { selected = null })
-            } else {
-                CatalogueScreen(
-                    catalogue = catalogue,
-                    loading = loading,
-                    error = error,
-                    query = query,
-                    onQueryChange = { query = it },
-                    onRetry = ::refresh,
-                    onOpen = { selected = it },
-                )
+            override fun onShowFileChooser(
+                view: WebView,
+                callback: ValueCallback<Array<Uri>>,
+                params: FileChooserParams,
+            ): Boolean {
+                chooserCallback?.onReceiveValue(null)
+                chooserCallback = callback
+                openPicker(params)
+                return true
             }
-        }
-    }
-}
 
-@Composable
-private fun BrandHeader(signedIn: Boolean, onLogout: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Navy)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Column {
-            Text("MercaditoTec", fontSize = 26.sp, fontWeight = FontWeight.Black, color = Color.White)
-            Text(
-                "DE ESTUDIANTES · PARA ESTUDIANTES",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFFFD28B),
-            )
-        }
-        if (signedIn) {
-            TextButton(onClick = onLogout) { Text("Salir", color = Color.White) }
-        }
-    }
-}
-
-@Composable
-private fun LoginScreen(
-    loading: Boolean,
-    error: String?,
-    onLogin: (String, String) -> Unit,
-) {
-    var user by rememberSaveable { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Spacer(Modifier.height(28.dp))
-        Box(
-            modifier = Modifier
-                .background(pale, RoundedCornerShape(28.dp))
-                .padding(28.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("🏪", fontSize = 54.sp)
-        }
-        Spacer(Modifier.height(20.dp))
-        Text("Bienvenido al Mercadito", color = Navy, fontSize = 25.sp, fontWeight = FontWeight.Black)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "La aplicación nativa de nuestra comunidad. Entra con tu cuenta institucional de siempre.",
-            color = Ink,
-            textAlign = TextAlign.Center,
-        )
-        Spacer(Modifier.height(30.dp))
-        OutlinedTextField(
-            value = user,
-            onValueChange = { user = it },
-            label = { Text("Usuario institucional") },
-            supportingText = { Text("Se agrega @morelia.tecnm.mx automáticamente") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        if (error != null) {
-            Spacer(Modifier.height(12.dp))
-            Text(error, color = Color(0xFFB3261E), textAlign = TextAlign.Center)
-        }
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = { onLogin(user, password) },
-            enabled = !loading && user.isNotBlank() && password.isNotBlank(),
-            colors = ButtonDefaults.buttonColors(containerColor = Navy),
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-        ) {
-            if (loading) CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp)
-            else Text("Entrar a MercaditoTec", fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(14.dp))
-        Text(
-            "La elegibilidad se comprueba en el servidor. No se crean cuentas nuevas desde esta primera versión.",
-            fontSize = 12.sp, color = Ink, textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun CatalogueScreen(
-    catalogue: NativeApi.Catalogue?,
-    loading: Boolean,
-    error: String?,
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onRetry: () -> Unit,
-    onOpen: (NativeApi.Store) -> Unit,
-) {
-    val filtered = remember(catalogue, query) {
-        val clean = query.trim()
-        catalogue?.stores?.filter { store ->
-            clean.isBlank() ||
-                store.name.contains(clean, ignoreCase = true) ||
-                store.description.contains(clean, ignoreCase = true) ||
-                store.categoryTags.any { it.contains(clean, ignoreCase = true) }
-        }.orEmpty()
-    }
-
-    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
-        Spacer(Modifier.height(20.dp))
-        Text("Tiendas de la comunidad", color = Navy, fontSize = 24.sp, fontWeight = FontWeight.Black)
-        if (catalogue != null) {
-            Text(
-                "${catalogue.realStoreCount} tiendas reales · ${catalogue.stores.count { it.demo }} de muestra",
-                color = Ink, fontSize = 13.sp,
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            placeholder = { Text("Buscar tienda, producto o categoría") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(12.dp))
-
-        if (loading) {
-            Box(Modifier.fillMaxWidth().padding(26.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        }
-        if (error != null) {
-            Text(error, color = Color(0xFFB3261E))
-            OutlinedButton(onClick = onRetry) { Text("Reintentar") }
-        }
-        if (!loading && catalogue == null && error == null) {
-            OutlinedButton(onClick = onRetry) { Text("Cargar tiendas") }
-        }
-        if (!loading && catalogue != null) {
-            if (filtered.isEmpty()) {
-                Text("No se encontraron tiendas.", modifier = Modifier.padding(16.dp))
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(filtered, key = { it.id }) { store ->
-                        ShopCard(store, onClick = { onOpen(store) })
+            override fun onCreateWindow(
+                view: WebView,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message,
+            ): Boolean {
+                if (!isUserGesture) return false
+                // A user-clicked target=_blank is routed by the same allowlist.
+                val child = WebView(this@MainActivity)
+                child.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView, request: WebResourceRequest,
+                    ): Boolean {
+                        route(request.url, webView)
+                        view.destroy()
+                        return true
                     }
-                    item { Spacer(Modifier.height(24.dp)) }
+
+                    override fun onPageStarted(
+                        view: WebView, url: String?, favicon: android.graphics.Bitmap?,
+                    ) {
+                        if (url != null && url != "about:blank") route(Uri.parse(url), webView)
+                        view.stopLoading()
+                        view.destroy()
+                    }
+                }
+                val transport = resultMsg.obj as WebView.WebViewTransport
+                transport.webView = child
+                resultMsg.sendToTarget()
+                return true
+            }
+        }
+
+        webView.setDownloadListener(DownloadListener { url, userAgent, disposition, mime, _ ->
+            download(url, userAgent, disposition, mime)
+        })
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    errorPanel.visibility == View.VISIBLE -> retry()
+                    webView.canGoBack() -> webView.goBack()
+                    else -> finish()
                 }
             }
+        })
+
+        webView.loadUrl(savedInstanceState?.getString("lastPage")?.takeIf { allowed(Uri.parse(it)) } ?: home)
+    }
+
+    private fun allowed(uri: Uri): Boolean =
+        uri.scheme.equals("https", true) && uri.host.equals(trustedHost, true)
+
+    private fun route(uri: Uri, target: WebView): Boolean {
+        if (allowed(uri)) {
+            // Normal in-site links are handled natively by WebView navigation,
+            // unless this is a temporary popup targeting the main WebView.
+            if (target === webView) return false
+            webView.loadUrl(uri.toString())
+            return true
+        }
+        if (uri.scheme == "about") return false
+        try {
+            val intent = if (uri.scheme == "intent") {
+                Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                    component = null
+                    selector = null
+                }
+            } else {
+                Intent(Intent.ACTION_VIEW, uri).apply {
+                    addCategory(Intent.CATEGORY_BROWSABLE)
+                }
+            }
+            startActivity(intent)
+        } catch (_: Exception) {
+            // If WhatsApp or an external handler is unavailable, stay in Mercadito.
+        }
+        return true
+    }
+
+    private fun openPicker(params: WebChromeClient.FileChooserParams) {
+        try {
+            val choose = params.createIntent().apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = params.acceptTypes.firstOrNull { it.isNotBlank() }?.let { accept ->
+                    if (accept.startsWith(".")) "image/*" else accept
+                } ?: "*/*"
+                putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
+            }
+            val canCamera = params.acceptTypes.any { it.startsWith("image/") } || choose.type?.startsWith("image/") == true
+            val captureIntent = if (canCamera) makeCameraIntent() else null
+            val chooser = Intent.createChooser(choose, "Seleccionar archivo")
+            if (captureIntent != null) chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(captureIntent))
+            picker.launch(chooser)
+        } catch (_: Exception) {
+            chooserCallback?.onReceiveValue(null)
+            chooserCallback = null
+            pendingCameraUri = null
         }
     }
-}
 
-@Composable
-private fun ShopCard(store: NativeApi.Store, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(19.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(18.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    if (store.demo) "TIENDA DE MUESTRA" else if (store.openNow) "ABIERTO" else "TIENDA",
-                    color = if (store.demo) Color(0xFF9A4C13) else Navy,
-                    fontSize = 11.sp, fontWeight = FontWeight.Black,
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(store.marketplaceLabel, color = Orange, fontSize = 12.sp)
-            }
-            Spacer(Modifier.height(7.dp))
-            Text(store.name, fontWeight = FontWeight.Black, fontSize = 21.sp, color = Navy)
-            if (store.description.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
-                Text(store.description, maxLines = 3, color = Ink)
-            }
-            Spacer(Modifier.height(9.dp))
-            Text("📍 ${store.deliveryLocation}", color = Ink, fontSize = 13.sp)
-            if (store.categoryTags.isNotEmpty()) {
-                Spacer(Modifier.height(7.dp))
-                Text(store.categoryTags.joinToString(" · "), color = Orange, fontSize = 13.sp)
-            }
-            Spacer(Modifier.height(8.dp))
-            Text("Ver detalles →", color = Navy, fontWeight = FontWeight.Bold)
+    private fun makeCameraIntent(): Intent? = try {
+        val file = File.createTempFile("mercaditotec-photo-", ".jpg", cacheDir)
+        pendingCameraUri = FileProvider.getUriForFile(this, "$packageName.files", file)
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+            putExtra(MediaStore.EXTRA_OUTPUT, pendingCameraUri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            clipData = ClipData.newUri(contentResolver, "photo", pendingCameraUri)
         }
+    } catch (_: Exception) {
+        pendingCameraUri = null
+        null
     }
-}
 
-@Composable
-private fun ShopDetail(store: NativeApi.Store, onBack: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-    ) {
-        TextButton(onClick = onBack) { Text("← Volver a tiendas") }
-        Spacer(Modifier.height(15.dp))
-        Text(store.name, fontSize = 29.sp, fontWeight = FontWeight.Black, color = Navy)
-        if (store.demo) {
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Tienda de muestra: no recibe pedidos y no representa un negocio real.",
-                color = Color(0xFF9A4C13), fontWeight = FontWeight.Bold,
+    private fun download(url: String, userAgent: String, disposition: String, mime: String) {
+        val uri = Uri.parse(url)
+        if (uri.scheme != "https") return
+        try {
+            val filename = URLUtil.guessFileName(url, disposition, mime)
+            val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            manager.enqueue(
+                DownloadManager.Request(uri)
+                    .setMimeType(mime)
+                    .addRequestHeader("User-Agent", userAgent)
+                    .addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url) ?: "")
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename),
             )
+        } catch (_: Exception) {
+            startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
-        Spacer(Modifier.height(16.dp))
-        Text(store.description, fontSize = 17.sp, color = Ink)
-        Spacer(Modifier.height(18.dp))
-        HorizontalDivider(color = Orange)
-        Spacer(Modifier.height(18.dp))
-        Text("Lugar de entrega", fontSize = 15.sp, color = Navy, fontWeight = FontWeight.Bold)
-        Text(store.deliveryLocation.ifBlank { "No especificado" }, color = Ink)
-        Spacer(Modifier.height(18.dp))
-        Text("Categorías", fontSize = 15.sp, color = Navy, fontWeight = FontWeight.Bold)
-        Text(store.categoryTags.joinToString(" · ").ifBlank { "No especificadas" }, color = Ink)
-        Spacer(Modifier.height(18.dp))
-        Text(
-            "Los productos, pedidos y contacto de esta tienda se incorporarán en los módulos nativos siguientes.",
-            color = Ink, fontSize = 13.sp,
-        )
+    }
+
+    private fun makeErrorPanel(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER
+        setBackgroundColor(Color.rgb(255, 249, 238))
+        setPadding(36, 36, 36, 36)
+        addView(TextView(context).apply {
+            text = "MercaditoTec"
+            textSize = 28f
+            setTextColor(Color.rgb(18, 59, 131))
+            gravity = Gravity.CENTER
+        })
+        addView(TextView(context).apply {
+            text = "No se pudo cargar el Mercadito. Revisa tu conexión e inténtalo de nuevo."
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setPadding(0, 18, 0, 18)
+            setTextColor(Color.DKGRAY)
+        })
+        addView(Button(context).apply {
+            text = "Reintentar"
+            setOnClickListener { retry() }
+        })
+    }
+
+    private fun showFailure() {
+        loading.visibility = View.GONE
+        errorPanel.visibility = View.VISIBLE
+    }
+
+    private fun retry() {
+        errorPanel.visibility = View.GONE
+        webView.reload()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("lastPage", webView.url?.takeIf { allowed(Uri.parse(it)) } ?: home)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onDestroy() {
+        chooserCallback?.onReceiveValue(null)
+        chooserCallback = null
+        webView.destroy()
+        super.onDestroy()
     }
 }
