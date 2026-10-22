@@ -1,0 +1,29 @@
+name: MercaditoTec
+options:
+  bundleIdPrefix: com.mercaditotec
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  MercaditoTec:
+    type: application
+    platform: iOS
+    deploymentTarget: "15.0"
+    sources:
+      - path: MercaditoTec
+        excludes:
+          - Info.plist
+    info:
+      path: MercaditoTec/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mercaditotec.app
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGNING_ALLOWED: "NO"
+        GENERATE_INFOPLIST_FILE: "NO"
+        ASSETCATALOG_COMPILER_GENERATE_ASSET_SYMBOLS: "NO"
+schemes:
+  MercaditoTec:
+    build:
+      targets:
+        MercaditoTec: all
