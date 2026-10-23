@@ -16,11 +16,9 @@ import { useSession } from "@/lib/useSession";
 const NAV_ITEMS = [
   { href: "/descubre", label: "Descubre", icon: "home" },
   { href: "/marketplace", label: "Tiendas", icon: "store" },
-  { href: "/orders", label: "Pedidos", icon: "bag" },
   { href: "/mystore", label: "Mis tiendas", icon: "store" },
   { href: "/chat/personal", label: "Mensajes", icon: "chat" },
   { href: "/cosas-perdidas", label: "Cosas perdidas", icon: "lost" },
-  { href: "/profile", label: "Perfil", icon: "profile" },
 ];
 
 function NavIcon({ icon }: { icon: string }) {
