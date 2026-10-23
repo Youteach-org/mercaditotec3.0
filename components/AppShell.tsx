@@ -462,9 +462,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   title="Configuración"
                   className={scrapbookShell ? "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[#174db4] bg-white text-[#123d82] shadow-sm" : "relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"}
                 >
-                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 3.3v2.1M12 18.6v2.1M3.3 12h2.1M18.6 12h2.1M5.85 5.85l1.5 1.5M16.65 16.65l1.5 1.5M18.15 5.85l-1.5 1.5M7.35 16.65l-1.5 1.5" />
-                    <circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.8" />
+                  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.148.083.22.126.32.19.716.25 1.07.117l1.2-.45c.515-.193 1.1.01 1.375.488l1.296 2.245c.275.476.16 1.084-.265 1.432l-.997.818c-.29.238-.435.6-.426.975a6.843 6.843 0 0 1 0 .315c-.009.375.137.737.426.975l.997.817c.424.348.54.956.265 1.433l-1.296 2.245a1.125 1.125 0 0 1-1.376.488l-1.2-.45a1.125 1.125 0 0 0-1.071.117c-.072.043-.145.085-.219.126-.332.183-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281a1.125 1.125 0 0 0-.645-.87 6.937 6.937 0 0 1-.219-.126 1.125 1.125 0 0 0-1.07-.117l-1.2.45a1.125 1.125 0 0 1-1.376-.488l-1.296-2.245a1.125 1.125 0 0 1 .265-1.433l.997-.817c.29-.238.435-.6.426-.975a6.843 6.843 0 0 1 0-.315c.009-.375-.137-.737-.426-.975l-.997-.818a1.125 1.125 0 0 1-.265-1.432l1.296-2.245a1.125 1.125 0 0 1 1.376-.488l1.2.45c.355.133.75.073 1.071-.117.072-.043.145-.085.219-.126.332-.184.582-.496.645-.87l.213-1.281Z" />
+                    <circle cx="12" cy="12" r="3" />
                   </svg>
                 </Link>
                 <Link prefetch={false}
