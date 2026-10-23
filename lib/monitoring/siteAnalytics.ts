@@ -28,7 +28,10 @@ export type SiteAnalytics = {
 };
 
 const ZONE_HOST = "mercaditotec.store";
-const CACHE_MS = 120_000;
+// A dashboard request is on-demand. Within each Worker instance, expensive upstream
+// analytics reads are shared for 30 minutes, even when several admins refresh.
+// Workers do not share in-memory caches across instances/locations.
+const CACHE_MS = 30 * 60_000;
 let zoneCache: { tag: string; at: number } | null = null;
 const cache = new Map<number, { at: number; promise: Promise<SiteAnalytics> }>();
 
@@ -122,12 +125,22 @@ const DAILY_QUERY = `query DailySiteTraffic($zoneTag: string, $start: Date, $end
   } }
 }`;
 
-const PATH_QUERY = `query PopularSitePages($zoneTag: string, $start: Time, $end: Time) {
+// One Cloudflare GraphQL HTTP request supplies both aggregates in the common case.
+// The daily-only query is retained as a compatibility fallback when a zone/plan
+// does not expose the optional adaptive page-path dataset.
+const COMBINED_QUERY = `query MercaditoAnalytics(
+  $zoneTag: string, $startDate: Date, $endDate: Date,
+  $startTime: Time, $endTime: Time
+) {
   viewer { zones(filter: { zoneTag: $zoneTag }) {
+    daily: httpRequests1dGroups(
+      limit: 31, orderBy: [date_ASC],
+      filter: { date_geq: $startDate, date_lt: $endDate }
+    ) { dimensions { date } sum { pageViews requests } uniq { uniques } }
     popular: httpRequestsAdaptiveGroups(
-      limit: 200, orderBy: [count_DESC],
+      limit: 100, orderBy: [count_DESC],
       filter: {
-        datetime_geq: $start, datetime_lt: $end,
+        datetime_geq: $startTime, datetime_lt: $endTime,
         clientRequestHTTPHost: "mercaditotec.store", requestSource: "eyeball"
       }
     ) { count avg { sampleInterval } dimensions { clientRequestPath } }
@@ -153,13 +166,28 @@ async function fetchSiteAnalytics(days: 7 | 30): Promise<SiteAnalytics> {
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const start = new Date(today.getTime() - (days - 1) * 86_400_000);
     const tomorrow = new Date(today.getTime() + 86_400_000);
-    const variables = {
+    const dayVariables = {
       zoneTag,
       start: start.toISOString().slice(0, 10),
       end: tomorrow.toISOString().slice(0, 10),
     };
-    const dailyData = await graphql(token, DAILY_QUERY, variables);
-    const zone = firstZone(dailyData);
+    let zone: Record<string, unknown> | null = null;
+    try {
+      const data = await graphql(token, COMBINED_QUERY, {
+        zoneTag,
+        startDate: dayVariables.start,
+        endDate: dayVariables.end,
+        startTime: start.toISOString(),
+        endTime: now.toISOString(),
+      });
+      zone = firstZone(data);
+    } catch {
+      // Fallback is intentionally rare and cached too: charts remain available
+      // if the plan lacks the optional per-path analytics dataset.
+      const data = await graphql(token, DAILY_QUERY, dayVariables);
+      zone = firstZone(data);
+      result.topPagesReason = "El plan o los permisos de Cloudflare no permiten consultar las rutas individuales.";
+    }
     if (!zone || !Array.isArray(zone.daily)) {
       return { ...result, reason: "Cloudflare no devolvió datos diarios para esta zona." };
     }
@@ -177,15 +205,9 @@ async function fetchSiteAnalytics(days: 7 | 30): Promise<SiteAnalytics> {
     result.requests = daily.reduce((total, day) => total + day.requests, 0);
     result.uniqueIpsToday = todayValue?.uniqueIps ?? 0;
 
-    try {
-      const pathData = await graphql(token, PATH_QUERY, {
-        zoneTag, start: start.toISOString(), end: now.toISOString(),
-      });
-      const pathZone = firstZone(pathData);
-      result.topPages = parsePopularPages(pathZone?.popular);
+    if (Array.isArray(zone.popular)) {
+      result.topPages = parsePopularPages(zone.popular);
       if (!result.topPages.length) result.topPagesReason = "No hay rutas de páginas disponibles para este periodo.";
-    } catch {
-      result.topPagesReason = "El plan o los permisos de Cloudflare no permiten consultar las rutas individuales.";
     }
     return result;
   } catch (error) {
