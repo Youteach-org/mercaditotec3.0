@@ -77,7 +77,7 @@ export async function listAllArcoRequests(): Promise<(ArcoRequestRecord & { emai
   })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
-export async function resolveArcoRequest(id: string, status: ArcoStatus, response: string) {
+export async function resolveArcoRequest(id: string, status: ArcoStatus, response: string, actorUid: string) {
   if (!/^[a-zA-Z0-9_-]{1,128}__[0-9]{8}__(?:access|rectification|cancellation|opposition)$/.test(id))
     throw new PrivacyError(400, "Identificador de solicitud inválido.");
   const ref = getAdminDb().collection("arco_requests").doc(id);
@@ -93,6 +93,7 @@ export async function resolveArcoRequest(id: string, status: ArcoStatus, respons
       response: status === "in_review" ? "" : response,
       updatedAt: now,
       resolvedAt: status === "in_review" ? null : now,
+      handledBy: actorUid,
     });
   });
   const updated = await ref.get();
