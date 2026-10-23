@@ -28,7 +28,6 @@ export type SiteAnalytics = {
 };
 
 const ZONE_HOST = "mercaditotec.store";
-const DEFAULT_ACCOUNT = "043e7755b65ac4fc8b8572963a544340";
 const CACHE_MS = 120_000;
 let zoneCache: { tag: string; at: number } | null = null;
 const cache = new Map<number, { at: number; promise: Promise<SiteAnalytics> }>();
