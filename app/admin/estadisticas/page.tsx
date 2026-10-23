@@ -71,7 +71,8 @@ export default function EstadisticasPage() {
           <h1 className="mt-1 text-3xl font-black sm:text-4xl">Estadísticas de visitas</h1>
           <p className="mt-2 max-w-3xl text-sm text-stone-200">
             Actividad real del sitio, consultada desde aquí. Las estadísticas de servidor no dependen
-            del script de rastreo que Brave bloqueó.
+            del script de rastreo que Brave bloqueó. Los datos se guardan en caché durante 30 minutos
+            por instancia del servidor; no hay consultas automáticas mientras navegan tus visitantes.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <div className="flex rounded-xl bg-white/15 p-1" role="group" aria-label="Periodo de estadísticas">
