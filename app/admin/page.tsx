@@ -78,6 +78,12 @@ const cards: Array<{
     icon: "🧾",
   },
   {
+    title: "Estadísticas de visitas",
+    description: "Consulta visitas por día, actividad de la página y secciones más consultadas desde MercaditoTec.",
+    href: "/admin/estadisticas",
+    icon: "📈",
+  },
+  {
     title: "Consumo y rendimiento",
     description: "Vigila las peticiones de Cloudflare y los límites gratuitos de Firebase, sin actualizaciones automáticas.",
     href: "/admin/usage",
