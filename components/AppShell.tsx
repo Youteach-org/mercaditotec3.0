@@ -389,14 +389,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         </Link>
                       );
                     })}
-                    <Link prefetch={false}
-                      href="/configuracion"
-                      onClick={() => setMobileMenuOpen(false)}
-                      aria-current={pathname === "/configuracion" ? "page" : undefined}
-                      className={`mkt-mobile-dropdown-link ${pathname === "/configuracion" ? "mkt-mobile-dropdown-link-active" : ""}`}
-                    >
-                      <span aria-hidden="true">⚙️</span><span>Configuración</span>
-                    </Link>
                     {showAdmin && (
                       <Link prefetch={false}
                         href="/admin"
