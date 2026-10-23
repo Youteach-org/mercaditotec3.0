@@ -11,7 +11,7 @@ export async function PATCH(
   context: RouteContext<"/api/admin/privacy-requests/[id]">,
 ) {
   try {
-    await requireSuperadmin(request);
+    const actor = await requireSuperadmin(request);
     const { id } = await context.params;
     const raw = await request.text();
     if (raw.length > 2400)
@@ -20,7 +20,7 @@ export async function PATCH(
     try { body = JSON.parse(raw); }
     catch { return NextResponse.json({ error: "Respuesta inválida." }, { status: 400 }); }
     const { status, response } = parseArcoResolution(body);
-    return NextResponse.json({ request: await resolveArcoRequest(id, status, response) }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({ request: await resolveArcoRequest(id, status, response, actor.uid) }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof ApiAuthError || error instanceof PrivacyError)
       return NextResponse.json({ error: error.message }, { status: error.status });
