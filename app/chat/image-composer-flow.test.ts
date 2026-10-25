@@ -26,7 +26,8 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(library).not.toContain("void sendImages()");
     expect(modal).toContain('aria-modal="true"');
     expect(modal).toContain("value={imageCaption}");
-    expect(modal).toContain('placeholder="Escribe un comentario para enviarlo junto con la imagen..."');
+    expect(modal).not.toContain('placeholder="Escribe un comentario');
+    expect(modal).toContain('aria-label="Comentario de las imágenes"');
     expect(modal).toContain("autoFocus");
     expect(modal).toContain("ref={imageCaptionRef}");
     expect(modal).toContain('maxLength={1000}');

@@ -5,6 +5,7 @@ import {
   canEndorseStudent,
   ENDORSEMENTS_REQUIRED,
   normalizeStudentTrustStatus,
+  isStudentApprovalEligible,
   trustPeriodId,
   type StudentTrustStatus,
 } from "./domain";
@@ -120,6 +121,12 @@ export async function endorseStudent(
 
     const endorserData = endorserSnapshot.data() ?? {};
     const targetData = targetSnapshot.data() ?? {};
+    if (!isStudentApprovalEligible(targetData)) {
+      throw new TrustRepositoryError(
+        409,
+        "Este estudiante todavía no verificó su correo institucional.",
+      );
+    }
     const currentCounter = Number(counterSnapshot.data()?.count ?? 0);
 
     const eligibility = canEndorseStudent({
