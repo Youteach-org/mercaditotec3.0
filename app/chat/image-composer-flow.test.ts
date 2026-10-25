@@ -33,7 +33,8 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(chat).toContain("caption,");
     expect(chat).toContain("openImageComposer();");
     expect(chat).toContain("imageUrls: urls,");
-    expect(chat).toContain('text: (imageComposerOpen ? imageCaption : text).trim()');
+    expect(chat).toContain("buildImageMessagePayload({");
+    expect(chat).toContain("caption,");
   });
 
   it("starts multiple selection on a long press, with a visible count and a preview step", () => {
