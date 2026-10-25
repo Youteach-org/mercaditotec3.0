@@ -910,7 +910,7 @@ function ChatContent() {
 
     const picked = Array.from(files)
       .filter((file) => file.type.startsWith("image/"))
-      .slice(0, 10);
+      .slice(0, 4);
 
     if (picked.length === 0) {
       setToast("Solo se permiten imágenes.");
@@ -924,14 +924,18 @@ function ChatContent() {
   }
 
   function toggleSavedUrl(url: string) {
+    if (sendingImages) return;
     setSelectedImages([]);
     setImageReuseMode("shared");
 
-    setSelectedSavedUrls((prev) =>
-      prev.includes(url)
-        ? prev.filter((x) => x !== url)
-        : [...prev, url]
-    );
+    setSelectedSavedUrls((prev) => {
+      if (prev.includes(url)) return prev.filter((x) => x !== url);
+      if (prev.length >= 4) {
+        setToast("Puedes enviar hasta cuatro imágenes por mensaje.");
+        return prev;
+      }
+      return [...prev, url];
+    });
   }
 
   async function saveImageReference(
@@ -1689,6 +1693,8 @@ function ChatContent() {
 
         {galleryOpen && (
           <div
+            data-chat-image-picker="true"
+            data-no-image-zoom="true"
             onClick={(e) => e.stopPropagation()}
             className={darkMode ? "mb-2 rounded-2xl border border-slate-700 bg-slate-800 p-3" : "mb-2 rounded-2xl border border-gray-200 bg-gray-50 p-3"}
           >
@@ -1696,13 +1702,33 @@ function ChatContent() {
               <p className={darkMode ? "text-xs md:text-sm font-semibold text-slate-100" : "text-xs md:text-sm font-semibold text-gray-800"}>
                 Biblioteca de imágenes
               </p>
-              <button
-                onClick={() => setGalleryOpen(false)}
-                className="bg-red-600 text-white px-3 py-1 rounded-xl text-xs"
-              >
-                Cerrar
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedSavedUrls.length > 0 && (
+                  <button
+                    type="button"
+                    disabled={sendingImages}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void sendImages();
+                    }}
+                    className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                  >
+                    {sendingImages ? "Enviando..." : `Enviar seleccionadas (${selectedSavedUrls.length})`}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setGalleryOpen(false)}
+                  className="bg-red-600 text-white px-3 py-1 rounded-xl text-xs"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
+            <p className={darkMode ? "mb-2 text-xs text-slate-300" : "mb-2 text-xs text-slate-600"}>
+              Toca una imagen para seleccionarla. Después pulsa Enviar seleccionadas (máximo 4).
+            </p>
 
             {userImages.length === 0 ? (
               <p className={darkMode ? "text-xs text-yellow-300" : "text-xs text-gray-600"}>
@@ -1715,14 +1741,25 @@ function ChatContent() {
                   return (
                     <button
                       key={img.id}
-                      onClick={() => toggleSavedUrl(img.url)}
-                      className={selected ? "rounded-xl border-2 border-blue-600 p-1 bg-blue-50" : darkMode ? "rounded-xl border border-slate-600 p-1 bg-slate-900" : "rounded-xl border border-gray-300 p-1 bg-white"}
+                      type="button"
+                      aria-pressed={selected}
+                      aria-label={selected ? "Quitar imagen seleccionada" : "Seleccionar imagen guardada"}
+                      disabled={sendingImages}
+                      data-chat-image-select="true"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleSavedUrl(img.url);
+                      }}
+                      className={selected ? "relative rounded-xl border-2 border-blue-600 p-1 bg-blue-50" : darkMode ? "relative rounded-xl border border-slate-600 p-1 bg-slate-900" : "relative rounded-xl border border-gray-300 p-1 bg-white"}
                     >
                       <img
                         src={img.url}
                         alt="guardada"
+                        data-no-image-zoom="true"
                         className="w-full h-24 object-cover rounded-lg"
                       />
+                      {selected && <span className="absolute right-2 top-2 rounded-full bg-blue-700 px-2 py-1 text-[11px] font-bold text-white">✓</span>}
                     </button>
                   );
                 })}
@@ -1787,20 +1824,31 @@ function ChatContent() {
                       return (
                         <button
                           key={img.id}
-                          onClick={() => toggleSavedUrl(img.url)}
+                          type="button"
+                          aria-pressed={selected}
+                          aria-label={selected ? "Quitar imagen seleccionada" : "Seleccionar imagen compartida"}
+                          disabled={sendingImages}
+                          data-chat-image-select="true"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            toggleSavedUrl(img.url);
+                          }}
                           className={
                             selected
-                              ? "rounded-xl border-2 border-blue-600 p-1 bg-blue-50"
+                              ? "relative rounded-xl border-2 border-blue-600 p-1 bg-blue-50"
                               : darkMode
-                              ? "rounded-xl border border-slate-600 p-1 bg-slate-900"
-                              : "rounded-xl border border-gray-300 p-1 bg-white"
+                              ? "relative rounded-xl border border-slate-600 p-1 bg-slate-900"
+                              : "relative rounded-xl border border-gray-300 p-1 bg-white"
                           }
                         >
                           <img
                             src={img.url}
                             alt="compartida"
+                            data-no-image-zoom="true"
                             className="w-full h-24 object-cover rounded-lg"
                           />
+                          {selected && <span className="absolute right-2 top-2 rounded-full bg-blue-700 px-2 py-1 text-[11px] font-bold text-white">✓</span>}
                         </button>
                       );
                     })}
