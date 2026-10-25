@@ -32,7 +32,12 @@ jobs:
             exit 0
           fi
           if jq -e '.errors | length > 0' <<< "$body" >/dev/null 2>&1; then
-            echo "EXISTING_TOKEN_ANALYTICS=denied_or_dataset_unavailable"
+            if jq -e '[.errors[]?.message // "" | ascii_downcase | test("auth|permission|access denied|not authorized|forbidden")] | any' <<< "$body" >/dev/null; then
+              echo "EXISTING_TOKEN_ANALYTICS=permissions_denied"
+            else
+              echo "EXISTING_TOKEN_ANALYTICS=query_rejected_other_reason"
+              jq -r '.errors[]? | .extensions.code // .extensions.error_code // "NO_ERROR_CODE"' <<< "$body" | head -n 2
+            fi
             exit 0
           fi
           if jq -e '.data.viewer.accounts | type=="array"' <<< "$body" >/dev/null 2>&1; then
