@@ -302,6 +302,9 @@ function ChatContent() {
 
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [selectedSavedUrls, setSelectedSavedUrls] = useState<string[]>([]);
+  const [galleryMultiSelect, setGalleryMultiSelect] = useState(false);
+  const [imageComposerOpen, setImageComposerOpen] = useState(false);
+  const [imageCaption, setImageCaption] = useState("");
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [sendingImages, setSendingImages] = useState(false);
   const [imageReuseMode, setImageReuseMode] =
@@ -327,6 +330,9 @@ function ChatContent() {
   );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const imageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const imageLongPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const ignoreClickAfterLongPressRef = useRef<{ url: string; at: number } | null>(null);
   const messageRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initializedRef = useRef(false);
@@ -920,22 +926,96 @@ function ChatContent() {
 
     setSelectedImages(picked);
     setSelectedSavedUrls([]);
+    setGalleryMultiSelect(false);
     setImageReuseMode("shared");
+    setImageCaption(text);
+    setImageComposerOpen(true);
   }
 
   function toggleSavedUrl(url: string) {
     if (sendingImages) return;
+    if (!selectedSavedUrls.includes(url) && selectedSavedUrls.length >= 4) {
+      setToast("Puedes enviar hasta cuatro imágenes por mensaje.");
+      return;
+    }
+    setSelectedSavedUrls((prev) =>
+      prev.includes(url) ? prev.filter((x) => x !== url) : prev.length < 4 ? [...prev, url] : prev,
+    );
+  }
+
+  function openImageComposer() {
+    if (sendingImages) return;
+    if (!selectedImages.length && !selectedSavedUrls.length) return;
+    setImageCaption(text);
+    setImageComposerOpen(true);
+  }
+
+  function onGalleryImageTap(url: string) {
+    if (sendingImages) return;
+    const ignored = ignoreClickAfterLongPressRef.current;
+    if (ignored?.url === url && Date.now() - ignored.at < 1_200) {
+      ignoreClickAfterLongPressRef.current = null;
+      return;
+    }
+    ignoreClickAfterLongPressRef.current = null;
     setSelectedImages([]);
     setImageReuseMode("shared");
+    if (galleryMultiSelect) {
+      toggleSavedUrl(url);
+      return;
+    }
+    // A regular tap previews one image, with a caption composer before sending.
+    setSelectedSavedUrls([url]);
+    setImageCaption(text);
+    setImageComposerOpen(true);
+  }
 
-    setSelectedSavedUrls((prev) => {
-      if (prev.includes(url)) return prev.filter((x) => x !== url);
-      if (prev.length >= 4) {
-        setToast("Puedes enviar hasta cuatro imágenes por mensaje.");
-        return prev;
-      }
-      return [...prev, url];
-    });
+  function beginGalleryMultiSelect(url: string) {
+    if (sendingImages) return;
+    ignoreClickAfterLongPressRef.current = { url, at: Date.now() };
+    setGalleryMultiSelect(true);
+    setSelectedImages([]);
+    setImageReuseMode("shared");
+    setSelectedSavedUrls((prev) =>
+      prev.includes(url) ? prev : prev.length < 4 ? [...prev, url] : prev,
+    );
+  }
+
+  function stopImageLongPress() {
+    if (imageLongPressTimerRef.current !== null) {
+      clearTimeout(imageLongPressTimerRef.current);
+      imageLongPressTimerRef.current = null;
+    }
+    imageLongPressStartRef.current = null;
+  }
+
+  function startImageLongPress(event: React.PointerEvent<HTMLButtonElement>, url: string) {
+    if (sendingImages || galleryMultiSelect) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    stopImageLongPress();
+    imageLongPressStartRef.current = { x: event.clientX, y: event.clientY };
+    imageLongPressTimerRef.current = setTimeout(() => {
+      imageLongPressTimerRef.current = null;
+      imageLongPressStartRef.current = null;
+      beginGalleryMultiSelect(url);
+    }, 550);
+  }
+
+  function moveImageLongPress(event: React.PointerEvent<HTMLButtonElement>) {
+    const start = imageLongPressStartRef.current;
+    if (!start) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12) {
+      stopImageLongPress();
+    }
+  }
+
+  function cancelImageComposer() {
+    setImageComposerOpen(false);
+    setSelectedImages([]);
+    setSelectedSavedUrls([]);
+    setImageCaption("");
+    setGalleryMultiSelect(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function saveImageReference(
@@ -1024,7 +1104,10 @@ function ChatContent() {
 
   async function sendImages() {
     if (!firebaseUser) return;
-    if (!ensureNicknameReady()) return;
+    if (!ensureNicknameReady()) {
+      setImageComposerOpen(false);
+      return;
+    }
 
     if (
       selectedImages.length === 0 &&
@@ -1073,7 +1156,7 @@ function ChatContent() {
       }
 
       const sent = await sendChatMessage({
-        text: text.trim(),
+        text: (imageComposerOpen ? imageCaption : text).trim(),
         senderRole,
         messageType: "image",
         imageUrls: urls,
@@ -1090,6 +1173,9 @@ function ChatContent() {
       setSelectedImages([]);
       setSelectedSavedUrls([]);
       setImageReuseMode("shared");
+      setGalleryMultiSelect(false);
+      setImageComposerOpen(false);
+      setImageCaption("");
       setText("");
       clearReply();
       setGalleryOpen(false);
@@ -1693,6 +1779,7 @@ function ChatContent() {
 
         {galleryOpen && (
           <div
+            data-popup-root="true"
             data-chat-image-picker="true"
             data-no-image-zoom="true"
             onClick={(e) => e.stopPropagation()}
@@ -1703,18 +1790,27 @@ function ChatContent() {
                 Biblioteca de imágenes
               </p>
               <div className="flex flex-wrap items-center gap-2">
-                {selectedSavedUrls.length > 0 && (
+                {galleryMultiSelect && selectedSavedUrls.length > 0 && (
                   <button
                     type="button"
                     disabled={sendingImages}
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      void sendImages();
+                      openImageComposer();
                     }}
                     className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
                   >
-                    {sendingImages ? "Enviando..." : `Enviar seleccionadas (${selectedSavedUrls.length})`}
+                    Continuar ({selectedSavedUrls.length})
+                  </button>
+                )}
+                {galleryMultiSelect && (
+                  <button type="button" onClick={() => {
+                    stopImageLongPress();
+                    setGalleryMultiSelect(false);
+                    setSelectedSavedUrls([]);
+                  }} className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold">
+                    Cancelar selección
                   </button>
                 )}
                 <button
@@ -1727,7 +1823,9 @@ function ChatContent() {
               </div>
             </div>
             <p className={darkMode ? "mb-2 text-xs text-slate-300" : "mb-2 text-xs text-slate-600"}>
-              Toca una imagen para seleccionarla. Después pulsa Enviar seleccionadas (máximo 4).
+              {galleryMultiSelect
+                ? "Selección múltiple: toca hasta cuatro imágenes y pulsa Continuar."
+                : "Toca una imagen para verla, escribir un comentario y enviarla. Mantén presionada una imagen para seleccionar varias."}
             </p>
 
             {userImages.length === 0 ? (
@@ -1746,10 +1844,20 @@ function ChatContent() {
                       aria-label={selected ? "Quitar imagen seleccionada" : "Seleccionar imagen guardada"}
                       disabled={sendingImages}
                       data-chat-image-select="true"
+                      onPointerDown={(event) => startImageLongPress(event, img.url)}
+                      onPointerMove={moveImageLongPress}
+                      onPointerUp={stopImageLongPress}
+                      onPointerCancel={stopImageLongPress}
+                      onPointerLeave={stopImageLongPress}
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (!galleryMultiSelect) beginGalleryMultiSelect(img.url);
+                      }}
                       onClick={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
-                        toggleSavedUrl(img.url);
+                        onGalleryImageTap(img.url);
                       }}
                       className={selected ? "relative rounded-xl border-2 border-blue-600 p-1 bg-blue-50" : darkMode ? "relative rounded-xl border border-slate-600 p-1 bg-slate-900" : "relative rounded-xl border border-gray-300 p-1 bg-white"}
                     >
@@ -1757,7 +1865,8 @@ function ChatContent() {
                         src={img.url}
                         alt="guardada"
                         data-no-image-zoom="true"
-                        className="w-full h-24 object-cover rounded-lg"
+                        draggable={false}
+                        className="w-full h-24 select-none object-cover rounded-lg"
                       />
                       {selected && <span className="absolute right-2 top-2 rounded-full bg-blue-700 px-2 py-1 text-[11px] font-bold text-white">✓</span>}
                     </button>
@@ -1829,10 +1938,20 @@ function ChatContent() {
                           aria-label={selected ? "Quitar imagen seleccionada" : "Seleccionar imagen compartida"}
                           disabled={sendingImages}
                           data-chat-image-select="true"
+                          onPointerDown={(event) => startImageLongPress(event, img.url)}
+                          onPointerMove={moveImageLongPress}
+                          onPointerUp={stopImageLongPress}
+                          onPointerCancel={stopImageLongPress}
+                          onPointerLeave={stopImageLongPress}
+                          onContextMenu={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (!galleryMultiSelect) beginGalleryMultiSelect(img.url);
+                          }}
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            toggleSavedUrl(img.url);
+                            onGalleryImageTap(img.url);
                           }}
                           className={
                             selected
@@ -1846,7 +1965,8 @@ function ChatContent() {
                             src={img.url}
                             alt="compartida"
                             data-no-image-zoom="true"
-                            className="w-full h-24 object-cover rounded-lg"
+                            draggable={false}
+                            className="w-full h-24 select-none object-cover rounded-lg"
                           />
                           {selected && <span className="absolute right-2 top-2 rounded-full bg-blue-700 px-2 py-1 text-[11px] font-bold text-white">✓</span>}
                         </button>
@@ -2028,6 +2148,93 @@ function ChatContent() {
           )}
         </div>
       </div>
+
+      {imageComposerOpen && (selectedSavedUrls.length > 0 || selectedImages.length > 0) && (
+        <div
+          data-popup-root="true"
+          data-no-image-zoom="true"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Preparar imágenes para enviar"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !sendingImages) {
+              event.stopPropagation();
+              cancelImageComposer();
+            }
+          }}
+          className="fixed inset-0 z-[100001] flex flex-col bg-slate-950 text-white"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-4 py-3">
+            <div>
+              <h2 className="text-base font-bold">Enviar imágenes</h2>
+              <p className="text-xs text-slate-300">
+                {selectedImages.length + selectedSavedUrls.length} de 4 seleccionadas
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={sendingImages}
+              onClick={cancelImageComposer}
+              aria-label="Volver a la biblioteca sin enviar"
+              className="rounded-xl border border-slate-600 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Volver
+            </button>
+          </div>
+
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
+            <div className={
+              selectedImages.length + selectedSavedUrls.length === 1
+                ? "flex h-full w-full items-center justify-center"
+                : "grid w-full max-w-4xl grid-cols-2 gap-3"
+            }>
+              {[...selectedSavedUrls, ...previewUrls].map((url) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt="Imagen seleccionada para enviar"
+                  data-no-image-zoom="true"
+                  draggable={false}
+                  className="max-h-[60vh] max-w-full rounded-xl object-contain"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="shrink-0 space-y-3 border-t border-slate-700 bg-slate-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+            {selectedImages.length > 0 && (
+              <label className="flex items-center gap-2 text-xs text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={imageReuseMode === "product"}
+                  onChange={(event) => setImageReuseMode(event.target.checked ? "product" : "shared")}
+                />
+                Foto de mi producto · solo yo puedo reutilizarla
+              </label>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={imageCaption}
+                onChange={(event) => setImageCaption(event.target.value)}
+                placeholder="Añade un comentario (opcional)..."
+                aria-label="Comentario de las imágenes"
+                rows={2}
+                maxLength={1000}
+                className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+              />
+              <button
+                type="button"
+                disabled={sendingImages}
+                onClick={() => void sendImages()}
+                className="shrink-0 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {sendingImages ? "Enviando..." : "Enviar"}
+              </button>
+            </div>
+            {toast && <p role="status" className="text-xs text-amber-200">{toast}</p>}
+          </div>
+        </div>
+      )}
 
       {reportMessageId && firebaseUser && (
         <ReportDialog

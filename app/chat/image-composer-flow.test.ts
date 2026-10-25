@@ -1,0 +1,57 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const chat = readFileSync("app/chat/page.tsx", "utf8");
+const viewer = readFileSync("components/GlobalImageViewer.tsx", "utf8");
+
+describe("chat image picker — tap preview and long-press multiple selection", () => {
+  const library = chat.slice(chat.indexOf("{galleryOpen && ("), chat.indexOf('<div className="space-y-2">', chat.indexOf("{galleryOpen && (")));
+  const modal = chat.slice(chat.indexOf("{imageComposerOpen && ("), chat.indexOf("{reportMessageId && firebaseUser && ("));
+
+  it("does not close the library before React can receive a pointer click", () => {
+    // Regression: the document-level pointerdown handler used to unmount the
+    // gallery before its image button's onClick could ever run.
+    expect(chat).toContain('document.addEventListener("pointerdown", handlePointerDown, true)');
+    expect(chat).toContain('target?.closest("[data-popup-root=\'true\']")');
+    expect(library).toContain('data-popup-root="true"');
+    expect(library).toContain('data-chat-image-picker="true"');
+    expect(viewer).toContain('target.closest("[data-chat-image-picker], [data-chat-image-select]")');
+  });
+
+  it("opens the photo composer on a normal tap without sending automatically", () => {
+    expect(chat).toContain("function onGalleryImageTap(url: string)");
+    expect(chat).toContain("setSelectedSavedUrls([url]);");
+    expect(chat).toContain("setImageComposerOpen(true);");
+    expect(library).toContain("onGalleryImageTap(img.url)");
+    expect(library).not.toContain("void sendImages()");
+    expect(modal).toContain('aria-modal="true"');
+    expect(modal).toContain("value={imageCaption}");
+    expect(modal).toContain('placeholder="Añade un comentario (opcional)..."');
+    expect(modal).toContain('maxLength={1000}');
+    expect(modal).toContain("onClick={() => void sendImages()}");
+    expect(chat).toContain('text: (imageComposerOpen ? imageCaption : text).trim()');
+  });
+
+  it("starts multiple selection on a long press, with a visible count and a preview step", () => {
+    expect(chat).toContain("}, 550);");
+    expect(chat).toContain("setGalleryMultiSelect(true);");
+    expect(chat).toContain("onPointerDown={(event) => startImageLongPress(event, img.url)}");
+    expect(chat).toContain("onPointerMove={moveImageLongPress}");
+    expect(chat).toContain("onPointerUp={stopImageLongPress}");
+    expect(chat).toContain("onPointerCancel={stopImageLongPress}");
+    expect(chat).toContain("ignoreClickAfterLongPressRef");
+    expect(library).toContain("Continuar ({selectedSavedUrls.length})");
+    expect(library).toContain("Cancelar selección");
+    expect(chat).toContain("prev.length < 4");
+  });
+
+  it("supports photos newly chosen from the device without extra upload or viewer clicks", () => {
+    expect(chat).toContain("setSelectedImages(picked);");
+    expect(chat).toContain("setImageCaption(text);");
+    expect(chat).toContain("setImageComposerOpen(true);");
+    expect(modal).toContain("Foto de mi producto · solo yo puedo reutilizarla");
+    expect(modal).toContain("...previewUrls");
+    expect(modal).toContain('data-no-image-zoom="true"');
+    expect(modal).toContain("cancelImageComposer");
+  });
+});
