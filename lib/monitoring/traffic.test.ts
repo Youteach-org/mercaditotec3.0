@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { parseTrafficAnalytics } from "./traffic";
+import { getRecentTraffic, parseTrafficAnalytics } from "./traffic";
+
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("low-cost recent visitor diagnostics", () => {
   it("keeps unique IPs per minute separate rather than summing them as people", () => {
@@ -26,6 +28,31 @@ describe("low-cost recent visitor diagnostics", () => {
     expect(result.topPaths).toEqual([
       { path: "/api/chat", requests: 12 }, { path: "/marketplace", requests: 4 },
     ]);
+  });
+
+  it("recovers minute counts even if the optional path dataset is denied", async () => {
+    vi.stubEnv("CLOUDFLARE_ANALYTICS_TOKEN", "non-secret-unit-test-token");
+    vi.stubEnv("CLOUDFLARE_ZONE_ID", "unit-test-zone");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({
+        errors: [{ message: "Path analytics dataset unavailable" }],
+      }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({
+        data: { viewer: { zones: [{
+          recent: [{ dimensions: { datetimeMinute: "2026-10-25T15:00:00Z" },
+            uniq: { uniques: 4 }, sum: { requests: 24, pageViews: 3 } }],
+        }] } },
+      }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getRecentTraffic(new Date("2026-10-25T15:05:00Z"));
+    expect(result.status).toBe("available");
+    expect(result.requestsLast15Minutes).toBe(24);
+    expect(result.uniqueIpsLatestMinute).toBe(4);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const fallbackQuery = JSON.parse(fetchMock.mock.calls[1][1].body).query as string;
+    expect(fallbackQuery).toContain("httpRequests1mGroups");
+    expect(fallbackQuery).not.toContain("topPaths");
   });
 
   it("does not invent zero visitors when the provider has no data", () => {
