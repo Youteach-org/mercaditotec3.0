@@ -109,8 +109,8 @@ export default function EstadisticasPage() {
 
         <section className="grid gap-3 sm:grid-cols-3" aria-label="Resumen de tráfico">
           <Summary name="Respuestas HTML" value={ready ? snapshot?.pageViews ?? null : null}
-            note={`Páginas HTML entregadas en ${days} días. No son ${number(snapshot?.pageViews)} personas ni usuarios únicos.`} />
-          <Summary name="Peticiones al sitio" value={ready ? snapshot?.requests ?? null : null}
+            note={`Respuestas HTML exitosas en la zona Cloudflare (${days} días). No representan personas ni sesiones.`} />
+          <Summary name="Peticiones a la zona" value={ready ? snapshot?.requests ?? null : null}
             note="Incluye recursos, tráfico automático y solicitudes a la web. No equivale a visitas." />
           <Summary name="IPs distintas hoy" value={ready ? snapshot?.uniqueIpsToday ?? null : null}
             note="Estimación de direcciones IP, no de personas ni de usuarios registrados." />
@@ -118,7 +118,7 @@ export default function EstadisticasPage() {
 
         <section className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm" aria-labelledby="history-title">
           <h2 id="history-title" className="text-xl font-black">Respuestas HTML por día</h2>
-          <p className="mt-1 text-sm text-stone-600">Cada barra suma respuestas HTML exitosas, incluidas visitas repetidas. Días en UTC: en Michoacán el día comienza 6 horas antes que en este gráfico. Estos datos no identifican personas.</p>
+          <p className="mt-1 text-sm text-stone-600">Cada barra suma respuestas HTML exitosas, incluidas visitas repetidas. El día UTC comienza a las 18:00 del día anterior en Michoacán. Son totales de la zona Cloudflare, no personas identificadas.</p>
           {ready && snapshot && (
             <div className="mt-6 overflow-x-auto pb-2">
               <div className={`flex h-56 items-end gap-1 sm:gap-2 ${days === 30 ? "min-w-[750px]" : ""}`}
