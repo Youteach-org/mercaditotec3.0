@@ -19,6 +19,25 @@ const missing = (reason: string): Meter => ({ value: null, reason });
 const metric = (value: number): Meter => ({ value });
 let cached: { at: number; promise: Promise<UsageSnapshot> } | null = null;
 const WORKER_SCRIPT = "mercaditotec3-0";
+/** Safe error diagnostics for the admin-only usage panel (no raw provider payloads). */
+export function monitoringErrorReason(httpStatus: number, providerStatus?: unknown): string {
+  const known = new Set([
+    "PERMISSION_DENIED", "NOT_FOUND", "INVALID_ARGUMENT", "UNAUTHENTICATED",
+    "RESOURCE_EXHAUSTED", "FAILED_PRECONDITION", "UNAVAILABLE",
+  ]);
+  const code = typeof providerStatus === "string" && known.has(providerStatus)
+    ? ` — ${providerStatus}` : "";
+  const prefix = `Google Cloud Monitoring: HTTP ${httpStatus}${code}.`;
+  switch (httpStatus) {
+    case 400: return `${prefix} La consulta de métricas fue rechazada por sus parámetros.`;
+    case 401: return `${prefix} No se pudo autenticar la cuenta de servicio.`;
+    case 403: return `${prefix} Google rechazó el acceso a las métricas; verifica los permisos de la cuenta de servicio.`;
+    case 404: return `${prefix} Google no encontró el recurso consultado; debemos revisar la ruta o el proyecto.`;
+    case 429: return `${prefix} Se alcanzó temporalmente un límite de peticiones.`;
+    default: return `${prefix} Es necesario revisar la respuesta del servicio de métricas.`;
+  }
+}
+
 const DEFAULT_CF_ACCOUNT = "043e7755b65ac4fc8b8572963a544340";
 
 async function cloudflareCounters(now: Date): Promise<UsageSnapshot["workers"]> {
@@ -90,11 +109,15 @@ async function firestoreCounter(
       signal: AbortSignal.timeout(9000),
       cache: "no-store",
     });
-    if (!response.ok) return missing(
-      response.status === 403 || response.status === 404
-        ? "La cuenta de servicio no puede consultar Cloud Monitoring. Consulta Firebase Console."
-        : `Google Cloud Monitoring no respondió (HTTP ${response.status}).`,
-    );
+    if (!response.ok) {
+      // Distinguish IAM failures from invalid metric queries. Only expose an
+      // HTTP code and a known Google status; never forward raw error bodies,
+      // account identifiers, access tokens or project metadata to the browser.
+      const body = await response.json().catch(() => null) as {
+        error?: { status?: unknown };
+      } | null;
+      return missing(monitoringErrorReason(response.status, body?.error?.status));
+    }
     const body = await response.json();
     if (body.nextPageToken) return missing("La consulta devolvió resultados parciales.");
     const count = sumMonitoringTimeSeries(body);
