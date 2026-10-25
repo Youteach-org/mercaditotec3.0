@@ -28,6 +28,7 @@ import ReportDialog from "@/components/moderation/ReportDialog";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { validateNicknameSyntax } from "@/lib/security/nickname";
 
+const CHAT_BACKGROUND_IDLE_MS = 5 * 60_000;
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 const TEMPLATE_MESSAGES = [
   "Ok",
@@ -267,6 +268,7 @@ function ChatContent() {
     appUserAny?.admin === true;
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [liveChatPaused, setLiveChatPaused] = useState(false);
   const [retentionNow, setRetentionNow] = useState(() => Date.now());
   const [userImages, setUserImages] = useState<UserImage[]>([]);
   const [sharedImages, setSharedImages] = useState<SharedImage[]>([]);
@@ -519,7 +521,7 @@ function ChatContent() {
     return () => {
       cancelled = true;
     };
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, liveChatPaused]);
 
   useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
@@ -588,6 +590,31 @@ function ChatContent() {
   ]);
 
   useEffect(() => {
+    let backgroundTimer: ReturnType<typeof setTimeout> | null = null;
+    const updateVisibility = () => {
+      if (backgroundTimer !== null) {
+        clearTimeout(backgroundTimer);
+        backgroundTimer = null;
+      }
+      if (document.hidden) {
+        // Avoid fresh Firestore snapshots for brief tab switches.
+        backgroundTimer = setTimeout(() => {
+          backgroundTimer = null;
+          setLiveChatPaused(true);
+        }, CHAT_BACKGROUND_IDLE_MS);
+      } else {
+        setLiveChatPaused(false);
+      }
+    };
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      if (backgroundTimer !== null) clearTimeout(backgroundTimer);
+    };
+  }, []);
+
+  useEffect(() => {
     // Only local clock work: no Firestore reads, no API call, no listener reset.
     // The visible 48-hour window still expires older messages on screen.
     const refreshClock = () => {
@@ -602,12 +629,9 @@ function ChatContent() {
   }, []);
 
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!firebaseUser || liveChatPaused) return;
     let unsubscribe: (() => void) | null = null;
     const watchMessages = () => {
-      unsubscribe?.();
-      unsubscribe = null;
-      if (document.hidden) return;
       const q = query(
         collection(db, "messages"),
         where("createdAt", ">=", generalChatCutoff()),
@@ -683,22 +707,15 @@ function ChatContent() {
 
     };
     watchMessages();
-    document.addEventListener("visibilitychange", watchMessages);
-    return () => {
-      document.removeEventListener("visibilitychange", watchMessages);
-      unsubscribe?.();
-    };
+    return () => unsubscribe?.();
   }, [firebaseUser?.uid]);
 
   useEffect(() => {
     // Personal image history is only needed inside the image picker.
     // Avoid loading up to 100 documents for every student entering chat.
-    if (!firebaseUser || !galleryOpen) return;
+    if (!firebaseUser || !galleryOpen || liveChatPaused) return;
     let unsubscribe: (() => void) | null = null;
     const watchImages = () => {
-      unsubscribe?.();
-      unsubscribe = null;
-      if (document.hidden) return;
       const q = query(
         collection(db, "users", firebaseUser.uid, "images"),
         orderBy("createdAt", "desc"),
@@ -714,12 +731,8 @@ function ChatContent() {
       });
     };
     watchImages();
-    document.addEventListener("visibilitychange", watchImages);
-    return () => {
-      document.removeEventListener("visibilitychange", watchImages);
-      unsubscribe?.();
-    };
-  }, [firebaseUser?.uid, galleryOpen]);
+    return () => unsubscribe?.();
+  }, [firebaseUser?.uid, galleryOpen, liveChatPaused]);
 
   useEffect(() => {
     if (!firebaseUser || !galleryOpen) return;
@@ -746,12 +759,9 @@ function ChatContent() {
   // New messages read aggregated counts from the existing messages listener.
   // Only a user's own reaction records are required to mark selected emoji.
   useEffect(() => {
-    if (!firebaseUser) return;
+    if (!firebaseUser || liveChatPaused) return;
     let unsubscribe: (() => void) | null = null;
     const watchMyReactions = () => {
-      unsubscribe?.();
-      unsubscribe = null;
-      if (document.hidden) return;
       const q = query(
         collection(db, "message_reactions"),
         where("userId", "==", firebaseUser.uid),
@@ -765,11 +775,7 @@ function ChatContent() {
       });
     };
     watchMyReactions();
-    document.addEventListener("visibilitychange", watchMyReactions);
-    return () => {
-      document.removeEventListener("visibilitychange", watchMyReactions);
-      unsubscribe?.();
-    };
+    return () => unsubscribe?.();
   }, [firebaseUser?.uid]);
 
   // Old messages do not have counters. Keep their previous listener only
@@ -781,15 +787,12 @@ function ChatContent() {
   );
 
   useEffect(() => {
-    if (!firebaseUser || !hasLegacyMessages) {
+    if (!firebaseUser || !hasLegacyMessages || liveChatPaused) {
       setLegacyReactions([]);
       return;
     }
     let unsubscribe: (() => void) | null = null;
     const watchLegacyReactions = () => {
-      unsubscribe?.();
-      unsubscribe = null;
-      if (document.hidden) return;
       const q = query(
         collection(db, "message_reactions"),
         orderBy("createdAt", "desc"),
@@ -803,12 +806,8 @@ function ChatContent() {
       });
     };
     watchLegacyReactions();
-    document.addEventListener("visibilitychange", watchLegacyReactions);
-    return () => {
-      document.removeEventListener("visibilitychange", watchLegacyReactions);
-      unsubscribe?.();
-    };
-  }, [firebaseUser?.uid, hasLegacyMessages]);
+    return () => unsubscribe?.();
+  }, [firebaseUser?.uid, hasLegacyMessages, liveChatPaused]);
 
   useEffect(() => {
     const urls = selectedImages.map((file) => URL.createObjectURL(file));
