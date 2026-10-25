@@ -21,12 +21,13 @@ describe("Mercadito monitoring and efficient chat", () => {
     const chat = text("../../app/chat/page.tsx");
     expect(chat).not.toContain('moderationApiFetch(firebaseUser, "/api/chat/messages", {\n          method: "GET"');
     expect(chat).toContain("const watchMessages = () =>");
-    expect(chat).toContain('document.addEventListener("visibilitychange", watchMessages)');
-    expect(chat).toContain('document.addEventListener("visibilitychange", watchImages)');
-    expect(chat).toContain('document.addEventListener("visibilitychange", watchMyReactions)');
-    expect(chat).toContain('document.addEventListener("visibilitychange", watchLegacyReactions)');
-    expect(chat).toContain("if (!firebaseUser || !hasLegacyMessages)");
-    expect(chat).toContain("}, [firebaseUser?.uid]);");
+    expect(chat).toContain('document.addEventListener("visibilitychange", updateVisibility)');
+    expect(chat).toContain("CHAT_BACKGROUND_IDLE_MS = 5 * 60_000");
+    for (const watcher of ["watchMessages", "watchImages", "watchMyReactions", "watchLegacyReactions"]) {
+      expect(chat).not.toContain(`document.addEventListener("visibilitychange", ${watcher})`);
+    }
+    expect(chat).toContain("if (!firebaseUser || !hasLegacyMessages || liveChatPaused)");
+    expect(chat).toContain("}, [firebaseUser?.uid, liveChatPaused]);");
     expect(chat).not.toContain("}, [firebaseUser?.uid, retentionNow]);");
     expect(chat).toContain("isGeneralChatMessageCurrent(Number(msg.createdAt), retentionNow)");
   });

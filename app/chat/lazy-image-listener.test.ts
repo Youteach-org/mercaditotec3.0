@@ -18,8 +18,9 @@ describe("chat image gallery read budget", () => {
     expect(imageListener).toContain("limit(100)");
   });
 
-  it("reopens the listener when the gallery opens and closes it on dismissal", () => {
+  it("subscribes only when the gallery is open and resumes after extended background inactivity", () => {
     expect(imageListener).toContain("unsubscribe?.()");
-    expect(source).toContain("}, [firebaseUser?.uid, galleryOpen]);");
+    expect(source).toContain("}, [firebaseUser?.uid, galleryOpen, liveChatPaused]);");
+    expect(imageListener).toContain("liveChatPaused");
   });
 });
