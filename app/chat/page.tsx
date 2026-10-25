@@ -521,7 +521,7 @@ function ChatContent() {
     return () => {
       cancelled = true;
     };
-  }, [firebaseUser?.uid, liveChatPaused]);
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     localStorage.setItem("mercaditotec_dark_mode", String(darkMode));
@@ -708,7 +708,7 @@ function ChatContent() {
     };
     watchMessages();
     return () => unsubscribe?.();
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, liveChatPaused]);
 
   useEffect(() => {
     // Personal image history is only needed inside the image picker.
@@ -776,7 +776,7 @@ function ChatContent() {
     };
     watchMyReactions();
     return () => unsubscribe?.();
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser?.uid, liveChatPaused]);
 
   // Old messages do not have counters. Keep their previous listener only
   // while legacy messages remain visible in the 48-hour retention window.
