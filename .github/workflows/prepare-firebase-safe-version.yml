@@ -69,6 +69,7 @@ jobs:
               else . end
             ],
             assets: .result.assets,
+            keep_assets: true,
             usage_model: .result.usage_model
           } | with_entries(select(.value != null))' <<< "$active_beta" > "$payload"
           jq -e '.modules | length >= 1' "$payload" >/dev/null
