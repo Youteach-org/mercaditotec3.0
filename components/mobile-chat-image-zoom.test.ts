@@ -51,8 +51,22 @@ describe("global image zoom", () => {
     expect(viewer).toContain('target.closest("[data-image-zoom-src]")');
   });
 
-  it("uses the global viewer for general-chat message images", () => {
+  it("uses the global viewer for sent general-chat images, but not for images being selected", () => {
     expect(chat).toContain('data-force-image-zoom="true"');
     expect(chat).not.toContain("zoomImageUrl");
+    expect(chat).toContain('data-chat-image-picker="true"');
+    expect(chat).toContain('data-chat-image-select="true"');
+    expect(viewer).toContain('target.closest("[data-chat-image-picker], [data-chat-image-select]")');
+    expect(chat).toContain('data-no-image-zoom="true"');
+  });
+
+  it("lets library selections be sent from the same panel instead of enlarged", () => {
+    expect(chat).toContain("Enviar seleccionadas");
+    expect(chat).toContain("void sendImages()");
+    expect(chat).toContain("aria-pressed={selected}");
+    expect(chat).toContain("toggleSavedUrl(img.url)");
+    expect(chat).toContain("event.stopPropagation()");
+    expect(chat).toContain('type="button"');
+    expect(chat).toContain("prev.length >= 4");
   });
 });
