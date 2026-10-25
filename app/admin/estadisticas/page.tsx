@@ -44,7 +44,7 @@ export default function EstadisticasPage() {
       if (!response.ok) throw new Error(data.error ?? "No fue posible obtener las estadísticas.");
       setSnapshot(data as SiteAnalytics);
     } catch (caught) {
-      setSnapshot(null);
+      // Preserve the last successful figures if a manual refresh fails.
       setError(caught instanceof Error ? caught.message : "No fue posible obtener las estadísticas.");
     } finally {
       setBusy(false);
@@ -55,7 +55,8 @@ export default function EstadisticasPage() {
     if (!sessionLoading && firebaseUser) void refresh();
   }, [sessionLoading, firebaseUser, refresh]);
 
-  const ready = !busy && snapshot?.status === "available";
+  // A refresh must not blank the counters and unmount the charts.
+  const ready = snapshot?.status === "available" && snapshot.days === days;
   const maxViews = Math.max(1, ...(snapshot?.daily.map((day) => day.pageViews) ?? [1]));
   const maxPaths = Math.max(1, ...(snapshot?.topPages.map((entry) => entry.requestsEstimate) ?? [1]));
 
@@ -68,7 +69,7 @@ export default function EstadisticasPage() {
 
         <header className="rounded-3xl bg-stone-950 px-5 py-6 text-white shadow-lg sm:p-8">
           <p className="text-sm font-bold tracking-wider text-amber-300">MERCADITOTEC</p>
-          <h1 className="mt-1 text-3xl font-black sm:text-4xl">Estadísticas de visitas</h1>
+          <h1 className="mt-1 text-3xl font-black sm:text-4xl">Estadísticas de tráfico</h1>
           <p className="mt-2 max-w-3xl text-sm text-stone-200">
             Actividad real del sitio, consultada desde aquí. Las estadísticas de servidor no dependen
             del script de rastreo que Brave bloqueó. Los datos se guardan en caché durante 30 minutos
@@ -107,21 +108,21 @@ export default function EstadisticasPage() {
         )}
 
         <section className="grid gap-3 sm:grid-cols-3" aria-label="Resumen de tráfico">
-          <Summary name="Páginas vistas" value={ready ? snapshot?.pageViews ?? null : null}
-            note={`Total del periodo de ${days} días según Cloudflare.`} />
-          <Summary name="Peticiones al sitio" value={ready ? snapshot?.requests ?? null : null}
+          <Summary name="Respuestas HTML" value={ready ? snapshot?.pageViews ?? null : null}
+            note={`Respuestas HTML exitosas en la zona Cloudflare (${days} días). No representan personas ni sesiones.`} />
+          <Summary name="Peticiones a la zona" value={ready ? snapshot?.requests ?? null : null}
             note="Incluye recursos, tráfico automático y solicitudes a la web. No equivale a visitas." />
           <Summary name="IPs distintas hoy" value={ready ? snapshot?.uniqueIpsToday ?? null : null}
             note="Estimación de direcciones IP, no de personas ni de usuarios registrados." />
         </section>
 
         <section className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm" aria-labelledby="history-title">
-          <h2 id="history-title" className="text-xl font-black">Páginas vistas por día</h2>
-          <p className="mt-1 text-sm text-stone-600">Historial diario (fechas en UTC). Solo mostramos números obtenidos del servidor.</p>
+          <h2 id="history-title" className="text-xl font-black">Respuestas HTML por día</h2>
+          <p className="mt-1 text-sm text-stone-600">Cada barra suma respuestas HTML exitosas, incluidas visitas repetidas. El día UTC comienza a las 18:00 del día anterior en Michoacán. Son totales de la zona Cloudflare, no personas identificadas.</p>
           {ready && snapshot && (
             <div className="mt-6 overflow-x-auto pb-2">
               <div className={`flex h-56 items-end gap-1 sm:gap-2 ${days === 30 ? "min-w-[750px]" : ""}`}
-                role="img" aria-label="Gráfica de páginas vistas diariamente">
+                role="img" aria-label="Gráfica de respuestas HTML por día">
                 {snapshot.daily.map((item, index) => (
                   <div key={item.day} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
                     <span className="text-[10px] font-bold tabular-nums text-stone-700" title={number(item.pageViews)}>

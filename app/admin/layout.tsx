@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { signOut } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
@@ -24,19 +24,29 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [access, setAccess] = useState<AccessState>("checking");
   const [verified, setVerified] = useState<{ uid: string; path: string; retry: number } | null>(null);
   const [retry, setRetry] = useState(0);
+  const lastAuthorizedRef = useRef<{ uid: string; path: string } | null>(null);
+  const lastFocusCheckRef = useRef(Date.now());
 
   useEffect(() => {
-    const recheck = () => setRetry((current) => current + 1);
+    const recheck = () => {
+      // Do not re-query Firestore on rapid tab switches or browser focus changes.
+      const now = Date.now();
+      if (now - lastFocusCheckRef.current < 30_000) return;
+      lastFocusCheckRef.current = now;
+      setRetry((current) => current + 1);
+    };
     window.addEventListener("focus", recheck);
     return () => window.removeEventListener("focus", recheck);
   }, []);
 
   useEffect(() => {
     if (loading) {
+      lastAuthorizedRef.current = null;
       setAccess("checking");
       return;
     }
     if (!firebaseUser) {
+      lastAuthorizedRef.current = null;
       setAccess("denied");
       router.replace("/login");
       return;
@@ -44,7 +54,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
     let cancelled = false;
     const abortController = new AbortController();
-    setAccess("checking");
+    // Keep the already authorized screen mounted during a same-user/same-path
+    // focus revalidation. A new route or account always shows the access gate.
+    if (lastAuthorizedRef.current?.uid !== firebaseUser.uid ||
+        lastAuthorizedRef.current?.path !== pathname) {
+      setAccess("checking");
+    }
 
     void (async () => {
       try {
@@ -58,6 +73,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           const body = await response.json().catch(() => ({}));
           if (cancelled) return;
           if (body.role === "superadmin" || body.role === "subadmin") {
+            lastAuthorizedRef.current = { uid: firebaseUser.uid, path: pathname };
+            lastFocusCheckRef.current = Date.now();
             setVerified({ uid: firebaseUser.uid, path: pathname, retry });
             setAccess("allowed");
           } else {
@@ -92,7 +109,6 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     firebaseUser !== null &&
     verified.uid === firebaseUser.uid &&
     verified.path === pathname &&
-    verified.retry === retry &&
     isAdminRole(appUser)
   ) {
     return <>{children}</>;
