@@ -48,55 +48,81 @@ function stableHash(value: string): number {
   return hash >>> 0;
 }
 
+/** Deterministic pseudo-random generator; each client chooses a fresh visit seed. */
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function shuffled<T>(items: readonly T[], random: () => number): T[] {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index--) {
+    const other = Math.floor(random() * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
 function isDemo(store: FeaturedStore): boolean {
   return store.id.startsWith("demo-") || "demoCategory" in store;
 }
 
 /**
- * Returns all matched stores, with exactly the first six as the featured
- * positions when at least six are available. Published Ke-Rollos and
- * YouTeach always occupy one of these six. Remaining real stores outrank
- * samples; unfeatured stores remain available in the same listing.
+ * Fair order across ALL published stores, not just the first six.
  *
- * Order is randomized deterministically per local day (Mexico City), not
- * on every render/refetch, so customers do not see cards jump around.
+ * - Published stores use a full seeded Fisher-Yates shuffle, preventing the
+ *   repository's alphabetical/source order from deciding who stays below six.
+ * - Ke-Rollos! and YouTeach (only when actually public) take distinct,
+ *   randomized slots somewhere in the first NINE published positions.
+ * - Samples follow genuine published stores, as before.
+ * - The selected order stays stable while browsing/searching/paginating;
+ *   the marketplace page chooses a new seed when the visitor opens Tiendas.
+ *
+ * A fixed seed is useful for deterministic tests and same-visit rerenders.
  */
 export function orderMarketplaceFeatured<T extends FeaturedStore>(
   stores: readonly T[],
   date: Date = new Date(),
+  visitSeed = 0,
 ): T[] {
   if (!stores.length) return [];
-  const day = mexicoCityDay(date);
-  const used = new Set<string>();
-  const reserved: T[] = [];
 
+  const day = mexicoCityDay(date);
+  const random = seededRandom(stableHash(`${day}:${visitSeed}`));
+  const published = shuffled(stores.filter((store) => !isDemo(store)), random);
+  const demos = shuffled(stores.filter(isDemo), random);
+  if (!published.length) return demos;
+
+  const reserved: T[] = [];
+  const reservedIds = new Set<string>();
   for (const brand of PRIORITY_BRANDS) {
-    const match = stores.find((store) =>
-      !isDemo(store) && !used.has(store.id) && featuredPriorityBrand(store) === brand
+    const match = published.find((store) =>
+      !reservedIds.has(store.id) && featuredPriorityBrand(store) === brand
     );
     if (match) {
-      used.add(match.id);
       reserved.push(match);
+      reservedIds.add(match.id);
     }
   }
 
-  const available = stores.filter((store) => !used.has(store.id));
-  const byDailyRank = (a: T, b: T) =>
-    stableHash(`${day}:${a.id}`) - stableHash(`${day}:${b.id}`) ||
-    a.id.localeCompare(b.id);
-
-  const candidates = [
-    ...available.filter((store) => !isDemo(store)).sort(byDailyRank),
-    ...available.filter(isDemo).sort(byDailyRank),
-  ];
-  const chosen = [...reserved, ...candidates].slice(0, 6);
-  // Change their positions daily while keeping reserved shops inside six.
-  const featured = [...chosen].sort((a, b) =>
-    stableHash(`featured:${day}:${a.id}`) -
-      stableHash(`featured:${day}:${b.id}`) ||
-    a.id.localeCompare(b.id)
+  const ordinary = published.filter((store) => !reservedIds.has(store.id));
+  const firstNineSlots = shuffled(
+    Array.from({ length: Math.min(9, published.length) }, (_, index) => index),
+    random,
   );
-  const featuredIds = new Set(featured.map((store) => store.id));
+  const placements = new Map<number, T>(
+    reserved.map((store, index) => [firstNineSlots[index], store]),
+  );
 
-  return [...featured, ...stores.filter((store) => !featuredIds.has(store.id))];
+  let ordinaryIndex = 0;
+  const orderedPublished = Array.from({ length: published.length }, (_, index) =>
+    placements.get(index) ?? ordinary[ordinaryIndex++]
+  );
+  return [...orderedPublished, ...demos];
 }

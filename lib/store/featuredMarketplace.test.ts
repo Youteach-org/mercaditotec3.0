@@ -3,18 +3,16 @@ import { featuredPriorityBrand, orderMarketplaceFeatured } from "./featuredMarke
 
 type Shop = { id: string; name: string; slug: string };
 const shop = (id: string, name = id, slug = id): Shop => ({ id, name, slug });
-const date = new Date("2026-10-13T16:00:00.000Z");
+const date = new Date("2026-10-25T16:00:00.000Z");
 
 const real = [
-  shop("a", "Alfa"), shop("b", "Bravo"), shop("c", "Cositas"),
-  shop("d", "Dulces"), shop("e", "El Rincón"), shop("f", "Frutas"),
-  shop("g", "Galletas"), shop("ke-original", "Ke-Rollos!", "k-rollos"),
-  shop("h", "Hamburguesas"), shop("yt-original", "You Teach", "youteach"),
-  shop("i", "Innovación"),
+  ...Array.from({ length: 18 }, (_, index) => shop(`shop-${index}`)),
+  shop("ke-original", "Ke-Rollos!", "k-rollos"),
+  shop("yt-original", "You Teach", "youteach"),
 ];
 
-describe("Marketplace 6-featured reserved positions", () => {
-  it("recognizes the actual Ke-Rollos! public slug and YouTeach aliases", () => {
+describe("fair Tiendas rotation with Ke-Rollos! and YouTeach in first nine", () => {
+  it("recognizes Ke-Rollos! official slug and YouTeach's future aliases", () => {
     expect(featuredPriorityBrand(shop("kr", "Ke-Rollos!", "k-rollos"))).toBe("ke-rollos");
     expect(featuredPriorityBrand(shop("kr", "Rollos de sushi", "ke-rollos"))).toBe("ke-rollos");
     expect(featuredPriorityBrand(shop("yt", "YouTeach", "youteach"))).toBe("youteach");
@@ -22,61 +20,82 @@ describe("Marketplace 6-featured reserved positions", () => {
     expect(featuredPriorityBrand(shop("other", "Cositas Culs", "cositas"))).toBeNull();
   });
 
-  it("always includes both approved brands within the first six even when listed later", () => {
-    for (let day = 1; day <= 30; day++) {
-      const ordered = orderMarketplaceFeatured(real, new Date(2026, 9, day, 12));
-      const topSix = ordered.slice(0, 6);
-      expect(topSix.some((store) => store.slug === "k-rollos")).toBe(true);
-      expect(topSix.some((store) => store.slug === "youteach")).toBe(true);
-      expect(new Set(ordered.map((store) => store.id)).size).toBe(real.length);
-      expect(ordered).toHaveLength(real.length);
-    }
-  });
-
-  it("reserves YouTeach before it is created, without inventing a public draft listing", () => {
-    const withoutYouTeach = real.filter((store) => store.slug !== "youteach");
-    const ordered = orderMarketplaceFeatured(withoutYouTeach, date);
-    expect(ordered.slice(0, 6).some((store) => store.slug === "k-rollos")).toBe(true);
-    expect(ordered.some((store) => store.slug === "youteach")).toBe(false);
-    expect(ordered).toHaveLength(withoutYouTeach.length);
-    // The rule takes effect automatically when an approved YouTeach appears.
-    const newlyApproved = orderMarketplaceFeatured([...withoutYouTeach, shop("yt", "YouTeach", "you-teach")], date);
-    expect(newlyApproved.slice(0, 6).some((store) => store.id === "yt")).toBe(true);
-  });
-
-  it("keeps demo shops out of the six featured positions when six real stores exist", () => {
-    const demos = Array.from({ length: 12 }, (_, i) => shop(`demo-${i}`, `Demo ${i}`));
-    const ordered = orderMarketplaceFeatured([...demos, ...real], date);
-    expect(ordered.slice(0, 6).every((store) => !store.id.startsWith("demo-"))).toBe(true);
-    expect(ordered).toHaveLength(demos.length + real.length);
-  });
-
-  it("fills the six places with demos only when too few published stores exist", () => {
-    const demos = Array.from({ length: 10 }, (_, i) => shop(`demo-${i}`));
-    const ordered = orderMarketplaceFeatured([shop("kr", "Ke-Rollos!", "k-rollos"), ...demos], date);
-    expect(ordered.slice(0, 6).filter((store) => store.id === "kr")).toHaveLength(1);
-    expect(ordered.slice(0, 6).filter((store) => store.id.startsWith("demo-"))).toHaveLength(5);
-  });
-
-  it("is identical within the local day and varies store slots between days", () => {
-    const first = orderMarketplaceFeatured(real, date).map((store) => store.id);
-    const same = orderMarketplaceFeatured(real, new Date(date.getTime() + 3_600_000)).map((store) => store.id);
-    expect(first).toEqual(same);
+  it("keeps each priority brand somewhere in the FIRST NINE, not always among first six", () => {
     const kePositions = new Set<number>();
     const ytPositions = new Set<number>();
-    for (let d = 13; d < 30; d++) {
-      const six = orderMarketplaceFeatured(real, new Date(2026, 9, d, 14)).slice(0, 6);
-      kePositions.add(six.findIndex((store) => store.id === "ke-original"));
-      ytPositions.add(six.findIndex((store) => store.id === "yt-original"));
+    for (let seed = 0; seed < 150; seed++) {
+      const result = orderMarketplaceFeatured(real, date, seed);
+      const ke = result.findIndex((store) => store.slug === "k-rollos");
+      const yt = result.findIndex((store) => store.slug === "youteach");
+      expect(ke).toBeGreaterThanOrEqual(0);
+      expect(ke).toBeLessThan(9);
+      expect(yt).toBeGreaterThanOrEqual(0);
+      expect(yt).toBeLessThan(9);
+      expect(ke).not.toBe(yt);
+      expect(result.map((store) => store.id).sort()).toEqual(real.map((store) => store.id).sort());
+      kePositions.add(ke);
+      ytPositions.add(yt);
     }
-    expect(kePositions.size).toBeGreaterThan(1);
-    expect(ytPositions.size).toBeGreaterThan(1);
+    expect(kePositions.size).toBe(9);
+    expect(ytPositions.size).toBe(9);
+    expect([...kePositions].some((index) => index >= 6)).toBe(true);
   });
 
-  it("never brings a nonmatching store into active search/category filters", () => {
-    const searchResults = real.filter((store) => store.name.toLowerCase().includes("fru"));
-    const ordered = orderMarketplaceFeatured(searchResults, date);
-    expect(ordered).toHaveLength(searchResults.length);
-    expect(ordered.some((store) => store.slug === "k-rollos" || store.slug === "youteach")).toBe(false);
+  it("rotates every ordinary shop rather than leaving nonfeatured stores in alphabetical order", () => {
+    const positions = new Map<string, Set<number>>();
+    for (let seed = 0; seed < 150; seed++) {
+      const result = orderMarketplaceFeatured(real, date, seed);
+      result.forEach((store, index) => {
+        const set = positions.get(store.id) ?? new Set<number>();
+        set.add(index);
+        positions.set(store.id, set);
+      });
+    }
+    for (const store of real) {
+      expect(positions.get(store.id)?.size).toBeGreaterThan(5);
+    }
+    expect(positions.get("shop-17")?.has(0)).toBe(true);
+  });
+
+  it("is stable for the same visit, including after source-order changes", () => {
+    const a = orderMarketplaceFeatured(real, date, 8675309).map((s) => s.id);
+    const b = orderMarketplaceFeatured(real, date, 8675309).map((s) => s.id);
+    expect(a).toEqual(b);
+    expect(orderMarketplaceFeatured(real, date, 8675310).map((s) => s.id)).not.toEqual(a);
+  });
+
+  it("reserves YouTeach only when approved and present in the public listing", () => {
+    const without = real.filter((store) => store.slug !== "youteach");
+    for (let seed = 0; seed < 30; seed++) {
+      const ordered = orderMarketplaceFeatured(without, date, seed);
+      expect(ordered.findIndex((s) => s.slug === "k-rollos")).toBeLessThan(9);
+      expect(ordered.some((s) => s.slug === "youteach")).toBe(false);
+    }
+    const withYouTeach = orderMarketplaceFeatured(
+      [...without, shop("youteach", "YouTeach", "you-teach")], date, 143,
+    );
+    expect(withYouTeach.findIndex((s) => s.id === "youteach")).toBeLessThan(9);
+  });
+
+  it("does not allow demo stores to displace published shops", () => {
+    const demos = Array.from({ length: 12 }, (_, i) => shop(`demo-${i}`, `Demo ${i}`));
+    const ordered = orderMarketplaceFeatured([...demos, ...real], date, 56);
+    expect(ordered.slice(0, real.length).every((s) => !s.id.startsWith("demo-"))).toBe(true);
+    expect(ordered.slice(real.length).every((s) => s.id.startsWith("demo-"))).toBe(true);
+  });
+
+  it("fills empty slots with demos when few published shops exist", () => {
+    const demos = Array.from({ length: 10 }, (_, i) => shop(`demo-${i}`));
+    const result = orderMarketplaceFeatured([shop("kr", "Ke-Rollos!", "k-rollos"), ...demos], date, 1);
+    expect(result[0]?.id).toBe("kr");
+    expect(result).toHaveLength(11);
+  });
+
+  it("never introduces a store missing from the selected search/category results", () => {
+    const filtered = real.filter((s) => s.id.startsWith("shop-1"));
+    const ordered = orderMarketplaceFeatured(filtered, date, 33);
+    expect(ordered).toHaveLength(filtered.length);
+    expect(ordered.every((s) => filtered.some((x) => x.id === s.id))).toBe(true);
+    expect(ordered.some((s) => s.id === "ke-original" || s.id === "yt-original")).toBe(false);
   });
 });
