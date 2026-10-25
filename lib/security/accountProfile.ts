@@ -50,6 +50,27 @@ export function institutionalIdentity(
   };
 }
 
+/**
+ * Return only changed, security-relevant account identity fields.
+ * Returning null leaves Firestore untouched (no updatedAt-only write), while
+ * the caller still runs the same auth and eligibility checks on every login.
+ */
+export function accountIdentityChanges(
+  existing: Record<string, unknown>,
+  identity: InstitutionalIdentity,
+  verified?: boolean,
+): Record<string, unknown> | null {
+  const changes: Record<string, unknown> = {};
+  if (existing.email !== identity.email) changes.email = identity.email;
+  if (existing.emailLocalPart !== identity.localPart) {
+    changes.emailLocalPart = identity.localPart;
+  }
+  if (verified !== undefined && existing.emailVerified !== verified) {
+    changes.emailVerified = verified;
+  }
+  return Object.keys(changes).length > 0 ? changes : null;
+}
+
 function newStudentProfile(
   identity: InstitutionalIdentity,
   emailVerified: boolean,
@@ -177,11 +198,10 @@ export async function bootstrapAccountProfile(
   const existing = snapshot.data() ?? {};
 
   if (snapshot.exists && typeof existing.nickname === "string" && existing.nickname.trim()) {
-    await reference.update({
-      email: identity.email,
-      emailLocalPart: identity.localPart,
-      updatedAt: Timestamp.fromDate(now),
-    });
+    const changes = accountIdentityChanges(existing, identity);
+    if (changes) {
+      await reference.update({ ...changes, updatedAt: Timestamp.fromDate(now) });
+    }
     return;
   }
 
@@ -245,12 +265,14 @@ export async function syncVerifiedAccountProfile(
     return;
   }
 
-  await reference.update({
-    email: identity.email,
-    emailLocalPart: identity.localPart,
-    emailVerified: claims.email_verified === true,
-    updatedAt: Timestamp.fromDate(now),
-  });
+  const changes = accountIdentityChanges(
+    existing ?? {},
+    identity,
+    claims.email_verified === true,
+  );
+  if (changes) {
+    await reference.update({ ...changes, updatedAt: Timestamp.fromDate(now) });
+  }
   if (existing?.emailVerified !== true && !isAdminRole(existing)) {
     await notifyAdminsSafely({
       type: "student_pending",
