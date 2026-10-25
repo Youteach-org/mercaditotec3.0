@@ -49,6 +49,24 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(chat).toContain("prev.length < 4");
   });
 
+  it("shows the caption BELOW the image within the same chat bubble", () => {
+    const messageBubble = chat.slice(chat.indexOf("{msg.replyTo && ("), chat.indexOf("{newMessagesWaiting > 0 && ("));
+    expect(messageBubble.indexOf("{msg.imageUrls && msg.imageUrls.length > 0 && (")).toBeLessThan(
+      messageBubble.indexOf("{!!msg.text && ("),
+    );
+    expect(messageBubble).toContain("{msg.text}");
+    expect(messageBubble).toContain("whitespace-pre-wrap");
+  });
+
+  it("the main Send button never sends a selected photo before confirmation", () => {
+    const handler = chat.slice(chat.indexOf("async function sendCurrentMessage()"), chat.indexOf("function handleTextKeyDown("));
+    expect(handler).toContain("openImageComposer();");
+    expect(handler).not.toContain("sendImages(");
+    expect(chat).toContain("async function sendImages(caption: string)");
+    expect(chat).toContain("if (!imageComposerOpen)");
+    expect(chat).toContain("onClick={() => void sendImages(imageCaption)}");
+  });
+
   it("supports photos newly chosen from the device without extra upload or viewer clicks", () => {
     expect(chat).toContain("setSelectedImages(picked);");
     expect(chat).toContain("setImageCaption(text);");
