@@ -83,7 +83,7 @@ jobs:
             --data-binary "@$payload")"
           if [[ "$http" != "200" && "$http" != "201" ]]; then
             echo "VERSION_PREPARATION_FAILED_HTTP=$http"
-            jq -r '[.errors[]? | {code, message}] | .[0:3] | .[] | "CF_ERROR_CODE=\\(.code) CF_ERROR_MESSAGE=\\(.message)"' "$response_file" | head -c 1000
+            jq -r '[.errors[]? | {code, message}] | .[0:3] | .[] | "CF_ERROR_CODE=\(.code) CF_ERROR_MESSAGE=\(.message)"' "$response_file" | head -c 1000
             exit 1
           fi
           if ! jq -e '.success == true' "$response_file" >/dev/null; then
