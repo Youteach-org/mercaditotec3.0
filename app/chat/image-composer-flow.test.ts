@@ -28,7 +28,11 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(modal).toContain("value={imageCaption}");
     expect(modal).toContain('placeholder="Añade un comentario (opcional)..."');
     expect(modal).toContain('maxLength={1000}');
-    expect(modal).toContain("onClick={() => void sendImages()}");
+    expect(modal).toContain("onClick={() => void sendImages(imageCaption)}");
+    expect(chat).toContain("buildImageMessagePayload({");
+    expect(chat).toContain("caption,");
+    expect(chat).toContain("openImageComposer();");
+    expect(chat).toContain("imageUrls: urls,");
     expect(chat).toContain('text: (imageComposerOpen ? imageCaption : text).trim()');
   });
 
