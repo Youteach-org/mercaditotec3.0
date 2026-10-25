@@ -331,6 +331,7 @@ function ChatContent() {
   );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const imageCaptionRef = useRef<HTMLTextAreaElement | null>(null);
   const imageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageLongPressStartRef = useRef<{ x: number; y: number } | null>(null);
   const ignoreClickAfterLongPressRef = useRef<{ url: string; at: number } | null>(null);
@@ -1102,6 +1103,13 @@ function ChatContent() {
     setText("");
     clearReply();
   }
+
+  useEffect(() => {
+    // The WhatsApp-like media composer must receive the keyboard focus.
+    // Otherwise text typed after selecting a photo could go into the chat's
+    // underlying input instead of the caption and produce an image-only post.
+    if (imageComposerOpen) imageCaptionRef.current?.focus();
+  }, [imageComposerOpen]);
 
   async function sendImages(caption: string) {
     if (!firebaseUser) return;
@@ -2222,10 +2230,12 @@ function ChatContent() {
             )}
             <div className="flex items-end gap-2">
               <textarea
+                ref={imageCaptionRef}
+                autoFocus
                 value={imageCaption}
                 onChange={(event) => setImageCaption(event.target.value)}
-                placeholder="Añade un comentario (opcional)..."
-                aria-label="Comentario de las imágenes"
+                placeholder="Escribe un comentario para enviarlo junto con la imagen..."
+                aria-label="Comentario que se enviará junto con las imágenes"
                 rows={2}
                 maxLength={1000}
                 className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
