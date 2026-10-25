@@ -1,0 +1,40 @@
+name: Inspect active Worker version copy capability (read-only)
+on:
+  push:
+    branches: [diagnostics/analytics-authorization-only-20261025]
+    paths: [.github/workflows/inspect-firebase-version-clone-capability.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CF_ACCOUNT: 043e7755b65ac4fc8b8572963a544340
+      CF_WORKER: mercaditotec3-0
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Inspect modules and bindings metadata without outputting secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}"
+          api() { curl -fsS --max-time 25 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"; }
+          deploy="$(api "workers/scripts/${CF_WORKER}/deployments")"
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$deploy")"
+          percentage="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$deploy")"
+          [[ "$active" == 3c14286d* && "$percentage" == "100" ]] || { echo "SAFE_ABORT_ACTIVE_VERSION_CHANGED"; exit 1; }
+          echo "ACTIVE_VERSION=${active:0:8}"
+          script="$(api "workers/scripts/${CF_WORKER}/versions/${active}")"
+          jq -e '[.result.resources.bindings[]? | select(.name=="FIREBASE_SERVICE_ACCOUNT_JSON" and .type=="secret_text")] | length == 1' <<< "$script" >/dev/null || { echo "SAFE_ABORT_FIREBASE_BINDING_MISSING"; exit 1; }
+          echo "SCRIPT_ENDPOINT_FIREBASE_PRESENT=true"
+          beta="$(api "workers/workers/${CF_WORKER}/versions/${active}?include=modules")"
+          jq -e '.success == true' <<< "$beta" >/dev/null
+          echo "BETA_FIELDS=$(jq -r '.result | keys | join(",")' <<< "$beta")"
+          echo "BETA_MAIN_MODULE=$(jq -r '.result.main_module // "null"' <<< "$beta")"
+          echo "BETA_MODULE_COUNT=$(jq -r '(.result.modules // []) | length' <<< "$beta")"
+          echo "BETA_MODULE_CONTENT_PRESENT=$(jq -r '[.result.modules[]? | has("content_base64")] | all' <<< "$beta")"
+          echo "BETA_BINDING_TYPES=$(jq -r '[.result.bindings[]? | .type] | sort | join(",")' <<< "$beta")"
+          echo "BETA_ASSETS_FIELDS=$(jq -r '(.result.assets // {} | keys) | join(",")' <<< "$beta")"
+          echo "BETA_COMPAT_DATE=$(jq -r '.result.compatibility_date // "null"' <<< "$beta")"
+          echo "BETA_DEPLOY_NOT_INVOKED=true"
