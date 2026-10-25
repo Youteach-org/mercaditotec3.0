@@ -60,13 +60,13 @@ describe("global image zoom", () => {
     expect(chat).toContain('data-no-image-zoom="true"');
   });
 
-  it("lets library selections be sent from the same panel instead of enlarged", () => {
-    expect(chat).toContain("Enviar seleccionadas");
-    expect(chat).toContain("void sendImages()");
+  it("opens a caption preview on a regular tap, and supports long-press multi-select", () => {
+    expect(chat).toContain("onGalleryImageTap(img.url)");
+    expect(chat).toContain("setImageComposerOpen(true)");
+    expect(chat).toContain("onPointerDown={(event) => startImageLongPress(event, img.url)}");
+    expect(chat).toContain("beginGalleryMultiSelect(url)");
+    expect(chat).toContain("Continuar ({selectedSavedUrls.length})");
     expect(chat).toContain("aria-pressed={selected}");
-    expect(chat).toContain("toggleSavedUrl(img.url)");
-    expect(chat).toContain("event.stopPropagation()");
-    expect(chat).toContain('type="button"');
-    expect(chat).toContain("prev.length >= 4");
+    expect(chat).toContain("prev.length < 4");
   });
 });
