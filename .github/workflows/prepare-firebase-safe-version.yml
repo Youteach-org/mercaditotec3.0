@@ -1,0 +1,112 @@
+name: Prepare safe Mercadito version with inherited Firebase (no deployment)
+
+on:
+  push:
+    branches: [diagnostics/analytics-authorization-only-20261025]
+    paths: [.github/workflows/prepare-firebase-safe-version.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    concurrency:
+      group: mercadito-prepare-safe-version-20261025
+      cancel-in-progress: false
+    env:
+      CF_ACCOUNT: 043e7755b65ac4fc8b8572963a544340
+      CF_WORKER: mercaditotec3-0
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Clone only healthy live Worker into a NEW UNDEPLOYED version, inheriting its encrypted Firebase secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare API token}"
+          base="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}"
+          api() { curl -fsS --max-time 45 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"; }
+
+          deployment="$(api "workers/scripts/${CF_WORKER}/deployments")"
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$deployment")"
+          percent="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$deployment")"
+          count="$(jq -r '.result.deployments[0].versions | length' <<< "$deployment")"
+          if [[ "$active" != 3c14286d* || "$percent" != "100" || "$count" != "1" ]]; then
+            echo "SAFE_ABORT: active deployment does not match verified safe version."
+            exit 1
+          fi
+          echo "VERIFIED_ACTIVE=${active:0:8}"
+
+          recent="$(api "workers/scripts/${CF_WORKER}/versions?per_page=2")"
+          latest="$(jq -r '.result | if type=="array" then .[0].id elif type=="object" then (.items // .versions // [])[0].id else empty end' <<< "$recent")"
+          if [[ -z "$latest" ]]; then
+            echo "SAFE_ABORT: no latest Worker version."
+            exit 1
+          fi
+          latest_detail="$(api "workers/scripts/${CF_WORKER}/versions/${latest}")"
+          if jq -e '[.result.resources.bindings[]? | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length == 1' <<< "$latest_detail" >/dev/null; then
+            echo "LATEST_ALREADY_HAS_FIREBASE=${latest:0:8}; no new version needed."
+            exit 0
+          fi
+
+          active_beta="$(api "workers/workers/${CF_WORKER}/versions/${active}?include=modules")"
+          jq -e '.success == true and (.result.modules | length >= 1) and (.result.bindings | length == 7) and ([.result.bindings[] | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length == 1) and ([.result.modules[] | has("content_base64") and has("name") and has("content_type")] | all)' <<< "$active_beta" >/dev/null || {
+            echo "SAFE_ABORT: active version cannot be cloned exactly."
+            exit 1
+          }
+
+          payload="$(mktemp)"
+          jq -c --arg active "$active" '{
+            annotations: {"workers/message":"Restore all active bindings including encrypted Firebase before Analytics setup"},
+            main_module: .result.main_module,
+            modules: .result.modules,
+            compatibility_date: .result.compatibility_date,
+            compatibility_flags: .result.compatibility_flags,
+            bindings: [.result.bindings[] |
+              if (.type == "secret_text" and .name == "FIREBASE_SERVICE_ACCOUNT_JSON") then
+                {name: "FIREBASE_SERVICE_ACCOUNT_JSON", type:"inherit", version_id:$active}
+              else . end
+            ],
+            assets: .result.assets,
+            usage_model: .result.usage_model
+          } | with_entries(select(.value != null))' <<< "$active_beta" > "$payload"
+          jq -e '.modules | length >= 1' "$payload" >/dev/null
+          jq -e '[.bindings[] | select(.name=="FIREBASE_SERVICE_ACCOUNT_JSON" and .type=="inherit" and .version_id != "latest")] | length == 1' "$payload" >/dev/null
+
+          echo "Creating an UNDEPLOYED Worker version. Live traffic remains on ${active:0:8}."
+          response_file="$(mktemp)"
+          http="$(curl --silent --show-error --max-time 70 -o "$response_file" -w "%{http_code}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -X POST "${base}/workers/workers/${CF_WORKER}/versions?deploy=false" \
+            --data-binary "@$payload")"
+          if [[ "$http" != "200" && "$http" != "201" ]]; then
+            echo "VERSION_PREPARATION_FAILED_HTTP=$http"
+            jq -r '[.errors[]? | .code] | join(",")' "$response_file" | head -c 300
+            exit 1
+          fi
+          if ! jq -e '.success == true' "$response_file" >/dev/null; then
+            echo "VERSION_PREPARATION_NOT_CONFIRMED"
+            jq -r '[.errors[]? | .code] | join(",")' "$response_file" | head -c 300
+            exit 1
+          fi
+          fresh="$(jq -r '.result.id // empty' "$response_file")"
+          echo "CREATED_UNDEPLOYED_VERSION=${fresh:0:8}"
+          [[ -n "$fresh" && "$fresh" != "$active" ]] || exit 1
+
+          verified="$(api "workers/scripts/${CF_WORKER}/versions/${fresh}")"
+          jq -e '[.result.resources.bindings[]? | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length == 1' <<< "$verified" >/dev/null || {
+            echo "WARNING: new version did not include the inherited Firebase secret."
+            exit 1
+          }
+          echo "NEW_VERSION_FIREBASE_PRESENT=true"
+          # Protect live traffic: ensure no automatic deployment occurred.
+          after="$(api "workers/scripts/${CF_WORKER}/deployments")"
+          same="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$after")"
+          percentage="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$after")"
+          if [[ "$same" != "$active" || "$percentage" != "100" ]]; then
+            echo "WARNING: deployment unexpectedly changed!"
+            exit 1
+          fi
+          echo "LIVE_DEPLOYMENT_UNCHANGED=${same:0:8} 100%"
