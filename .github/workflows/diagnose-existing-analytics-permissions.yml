@@ -1,0 +1,42 @@
+name: Check Mercadito Analytics permissions (read only)
+on:
+  push:
+    branches: [diagnostics/analytics-authorization-only-20261025]
+permissions:
+  contents: read
+jobs:
+  permissions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Probe the existing Cloudflare deployment credential without changing anything
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "CREDENTIAL_NOT_AVAILABLE"
+            exit 0
+          fi
+          # One small, read-only query. No visitor identities or secret values printed.
+          json='{"query":"query { viewer { accounts(filter: { accountTag: \"043e7755b65ac4fc8b8572963a544340\" }) { workersInvocationsAdaptive(limit: 1, filter: { scriptName: \"mercaditotec3-0\" }) { sum { requests } } } } }"}'
+          response="$(curl -sS --max-time 15 -w '\nSTATUS:%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' -X POST \
+            --data "$json" https://api.cloudflare.com/client/v4/graphql)"
+          code="${response##*STATUS:}"
+          body="${response%$'\n'STATUS:*}"
+          if [[ "$code" != "200" ]]; then
+            echo "EXISTING_TOKEN_ANALYTICS=unavailable HTTP_STATUS=$code"
+            exit 0
+          fi
+          if jq -e '.errors | length > 0' <<< "$body" >/dev/null 2>&1; then
+            echo "EXISTING_TOKEN_ANALYTICS=denied_or_dataset_unavailable"
+            exit 0
+          fi
+          if jq -e '.data.viewer.accounts | type=="array"' <<< "$body" >/dev/null 2>&1; then
+            echo "EXISTING_TOKEN_ANALYTICS=authorized"
+          else
+            echo "EXISTING_TOKEN_ANALYTICS=unknown"
+          fi
