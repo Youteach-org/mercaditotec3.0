@@ -1,0 +1,102 @@
+name: Prepare FULL Mercadito version with Firebase and assets (no deploy)
+
+on:
+  push:
+    branches: [diagnostics/analytics-authorization-only-20261025]
+    paths: [.github/workflows/prepare-complete-version-with-assets.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: mercadito-full-version-with-firebase-20261025
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 043e7755b65ac4fc8b8572963a544340
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Fetch exact production branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/student-stores
+      - name: Set Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Confirm safe intermediate binding and unchanged live deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare deployment credential}"
+          base="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/mercaditotec3-0"
+          api() { curl -fsS --max-time 35 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"; }
+          deploy="$(api deployments)"
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$deploy")"
+          percent="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$deploy")"
+          [[ "$active" == 3c14286d* && "$percent" == "100" ]] || { echo "SAFE_ABORT_WRONG_ACTIVE_VERSION"; exit 1; }
+          versions="$(api 'versions?per_page=1')"
+          latest="$(jq -r '.result | if type=="array" then .[0].id else (.items // .versions // [])[0].id end' <<< "$versions")"
+          [[ "$latest" == e144201d* ]] || { echo "SAFE_ABORT_WRONG_LATEST_VERSION"; exit 1; }
+          ready="$(api "versions/${latest}")"
+          jq -e '[.result.resources.bindings[]? | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length==1' <<< "$ready" >/dev/null || {
+            echo "SAFE_ABORT_FIREBASE_NOT_IN_LATEST"
+            exit 1
+          }
+          echo "PREFLIGHT_FIREBASE_IN_LATEST=true"
+          echo "LIVE_ACTIVE=${active:0:8} 100%"
+
+      - name: Install project dependencies
+        run: npm ci
+      - name: Build complete assets and Worker
+        run: node scripts/cloudflare-build.mjs
+      - name: Verify build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .open-next/worker.js
+          test -d .open-next/assets
+          test -x .cloudflare-tools/node_modules/.bin/wrangler
+          echo "STATIC_ASSET_COUNT=$(find .open-next/assets -type f | wc -l)"
+      - name: Upload complete version; DO NOT DEPLOY
+        shell: bash
+        run: |
+          set -euo pipefail
+          .cloudflare-tools/node_modules/.bin/wrangler versions upload --config wrangler.jsonc \
+            --message "Complete Firebase-preserving analytics preparation. Production unchanged." --keep-vars
+          echo "COMPLETE_VERSION_UPLOADED_UNDEPLOYED=true"
+      - name: Verify all bindings, static assets, and live deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/mercaditotec3-0"
+          api() { curl -fsS --max-time 45 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"; }
+          deploy="$(api deployments)"
+          jq -e '.result.deployments[0].versions | length==1' <<< "$deploy" >/dev/null
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$deploy")"
+          [[ "$active" == 3c14286d* ]] || { echo "ERROR_LIVE_DEPLOYMENT_CHANGED"; exit 1; }
+          latest="$(api 'versions?per_page=1' | jq -r '.result | if type=="array" then .[0].id else (.items // .versions // [])[0].id end')"
+          [[ "$latest" != e144201d* && "$latest" != "$active" ]] || { echo "ERROR_VERSION_NOT_UPLOADED"; exit 1; }
+          detail="$(api "versions/${latest}")"
+          jq -e '[.result.resources.bindings[]? | select(.name=="FIREBASE_SERVICE_ACCOUNT_JSON" and .type=="secret_text")] | length==1' <<< "$detail" >/dev/null || {
+            echo "ERROR_NEW_VERSION_FIREBASE_MISSING"; exit 1;
+          }
+          jq -e '[.result.resources.bindings[]? | select(.type=="assets" and .name=="ASSETS")] | length==1' <<< "$detail" >/dev/null || {
+            echo "ERROR_NEW_VERSION_ASSETS_MISSING"; exit 1;
+          }
+          jq -e '[.result.resources.bindings[]? | select(.type=="ai")] | length>=1' <<< "$detail" >/dev/null || {
+            echo "ERROR_NEW_VERSION_AI_MISSING"; exit 1;
+          }
+          jq -e '[.result.resources.bindings[]? | select(.type=="ratelimit")] | length==3' <<< "$detail" >/dev/null || {
+            echo "ERROR_NEW_VERSION_RATELIMIT_MISSING"; exit 1;
+          }
+          echo "SAFE_COMPLETE_VERSION=${latest:0:8}"
+          echo "FIREBASE_PRESENT=true"
+          echo "ASSETS_PRESENT=true"
+          echo "AI_PRESENT=true"
+          echo "RATELIMITS_PRESENT=3"
+          echo "PRODUCTION_UNCHANGED=${active:0:8} 100%"
