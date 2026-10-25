@@ -133,8 +133,34 @@ export async function getRecentTraffic(now: Date): Promise<TrafficSnapshot> {
     });
     if (!response.ok) return blank(`No se pudo consultar Cloudflare Analytics (HTTP ${response.status}).`);
     const body = await response.json() as { errors?: Array<unknown> };
-    if (body.errors?.length) return blank("Cloudflare no autorizó la consulta de visitas o no dispone de este conjunto de métricas.");
-    return parseTrafficAnalytics(body);
+    if (!body.errors?.length) return parseTrafficAnalytics(body);
+
+    // The optional per-path dataset is unavailable on some Cloudflare plans.
+    // Retry with ONLY the recent-minute rollup. An unavailable routes dataset
+    // must never prevent showing the actual recent request and IP counters.
+    const minuteOnly = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+      method: "POST",
+      signal: AbortSignal.timeout(9000),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query($zoneTag: string, $start: Time, $end: Time) {
+          viewer { zones(filter: { zoneTag: $zoneTag }) {
+            recent: httpRequests1mGroups(
+              limit: 20, orderBy: [datetimeMinute_DESC],
+              filter: { datetime_geq: $start, datetime_lt: $end }
+            ) { dimensions { datetimeMinute } uniq { uniques } sum { requests pageViews } }
+          } }
+        }`,
+        variables: { zoneTag, start, end },
+      }),
+      cache: "no-store",
+    });
+    if (!minuteOnly.ok) return blank(`Cloudflare no devolvió actividad reciente (HTTP ${minuteOnly.status}).`);
+    const recovered = await minuteOnly.json() as { errors?: Array<unknown> };
+    if (recovered.errors?.length) {
+      return blank("Cloudflare no ofrece la agrupación por minuto en este plan o con los permisos actuales.");
+    }
+    return parseTrafficAnalytics(recovered);
   } catch {
     return blank("Cloudflare Analytics no está disponible temporalmente.");
   }
