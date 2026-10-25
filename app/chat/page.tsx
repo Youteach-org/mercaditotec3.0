@@ -2150,6 +2150,93 @@ function ChatContent() {
         </div>
       </div>
 
+      {imageComposerOpen && (selectedSavedUrls.length > 0 || selectedImages.length > 0) && (
+        <div
+          data-popup-root="true"
+          data-no-image-zoom="true"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Preparar imágenes para enviar"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && !sendingImages) {
+              event.stopPropagation();
+              cancelImageComposer();
+            }
+          }}
+          className="fixed inset-0 z-[100001] flex flex-col bg-slate-950 text-white"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-4 py-3">
+            <div>
+              <h2 className="text-base font-bold">Enviar imágenes</h2>
+              <p className="text-xs text-slate-300">
+                {selectedImages.length + selectedSavedUrls.length} de 4 seleccionadas
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={sendingImages}
+              onClick={cancelImageComposer}
+              aria-label="Volver a la biblioteca sin enviar"
+              className="rounded-xl border border-slate-600 px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            >
+              Volver
+            </button>
+          </div>
+
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-4">
+            <div className={
+              selectedImages.length + selectedSavedUrls.length === 1
+                ? "flex h-full w-full items-center justify-center"
+                : "grid w-full max-w-4xl grid-cols-2 gap-3"
+            }>
+              {[...selectedSavedUrls, ...previewUrls].map((url) => (
+                <img
+                  key={url}
+                  src={url}
+                  alt="Imagen seleccionada para enviar"
+                  data-no-image-zoom="true"
+                  draggable={false}
+                  className="max-h-[60vh] max-w-full rounded-xl object-contain"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="shrink-0 space-y-3 border-t border-slate-700 bg-slate-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+            {selectedImages.length > 0 && (
+              <label className="flex items-center gap-2 text-xs text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={imageReuseMode === "product"}
+                  onChange={(event) => setImageReuseMode(event.target.checked ? "product" : "shared")}
+                />
+                Foto de mi producto · solo yo puedo reutilizarla
+              </label>
+            )}
+            <div className="flex items-end gap-2">
+              <textarea
+                value={imageCaption}
+                onChange={(event) => setImageCaption(event.target.value)}
+                placeholder="Añade un comentario (opcional)..."
+                aria-label="Comentario de las imágenes"
+                rows={2}
+                maxLength={2000}
+                className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
+              />
+              <button
+                type="button"
+                disabled={sendingImages}
+                onClick={() => void sendImages()}
+                className="shrink-0 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+              >
+                {sendingImages ? "Enviando..." : "Enviar"}
+              </button>
+            </div>
+            {toast && <p role="status" className="text-xs text-amber-200">{toast}</p>}
+          </div>
+        </div>
+      )}
+
       {reportMessageId && firebaseUser && (
         <ReportDialog
           user={firebaseUser}
