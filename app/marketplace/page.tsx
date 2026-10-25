@@ -335,6 +335,13 @@ export default function MarketplacePage() {
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [storePage, setStorePage] = useState(0);
+  const [storeVisitSeed, setStoreVisitSeed] = useState(0);
+
+  useEffect(() => {
+    // A NEW visit to Tiendas gets a NEW randomized order, but filtering,
+    // pagination and normal re-renders keep that order stable.
+    setStoreVisitSeed(Math.floor(Math.random() * 0x100000000));
+  }, []);
   const [category, setCategory] = useState("all");
   const [approvedCategories, setApprovedCategories] = useState<StoreCategoryApiRecord[]>([]);
   const [previewStore, setPreviewStore] = useState<PublicStoreSummary | null>(null);
@@ -478,7 +485,10 @@ export default function MarketplacePage() {
     return previewMode ? matchingStores : matchingStores.filter((store, index) => index < 18 || !("demoCategory" in store));
   }, [approvedCategories, category, normalizedQuery, sourceStores, previewMode]);
 
-  const featuredOrder = useMemo(() => orderMarketplaceFeatured(filteredStores), [filteredStores]);
+  const featuredOrder = useMemo(
+    () => orderMarketplaceFeatured(filteredStores, new Date(), storeVisitSeed),
+    [filteredStores, storeVisitSeed],
+  );
   const featured = featuredOrder.slice(0, 6);
   const additionalStores = featuredOrder.slice(6);
   const storesPerPage = 12;
