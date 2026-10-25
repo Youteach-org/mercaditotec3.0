@@ -1,0 +1,60 @@
+name: Diagnose Cloudflare Worker secret bindings (read-only)
+
+on:
+  push:
+    branches:
+      - diagnostics/mercaditotec-secret-bindings-20261024
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CF_ACCOUNT: "043e7755b65ac4fc8b8572963a544340"
+      CF_WORKER: "mercaditotec3-0"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Inspect active and recent version binding names without exposing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+            echo "ERROR: Repository deployment token is not available."
+            exit 1
+          fi
+          api() {
+            curl -fsS --retry 2 --connect-timeout 10 --max-time 25 \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/workers/scripts/${CF_WORKER}/$1"
+          }
+          echo "Read-only Cloudflare inspection. Never print raw API responses or secret values."
+          recent="$(api 'versions?per_page=8')"
+          if [[ "$(jq -r '.success // false' <<< "$recent")" != "true" ]]; then
+            echo "Versions endpoint denied or failed."
+            exit 1
+          fi
+          echo "Recent version IDs, source, and encrypted binding NAMES only:"
+          mapfile -t versions < <(jq -r '.result[]? | .id // empty' <<< "$recent")
+          if [[ "${#versions[@]}" -eq 0 ]]; then
+            echo "Cloudflare returned no versions."
+            exit 1
+          fi
+          for version in "${versions[@]:0:8}"; do
+            detail="$(api "versions/${version}")"
+            if [[ "$(jq -r '.success // false' <<< "$detail")" != "true" ]]; then
+              echo "Unable to inspect version ${version:0:8}."
+              continue
+            fi
+            names="$(jq -r '[.result.resources.bindings // [] | .[] | select(.type == "secret_text") | .name] | sort | join(",")' <<< "$detail")"
+            echo "VERSION=${version:0:8} SECRET_NAMES=${names:-none}"
+          done
+          deploy="$(api 'deployments')"
+          if [[ "$(jq -r '.success // false' <<< "$deploy")" == "true" ]]; then
+            echo "Active deployment version IDs and percentages:"
+            jq -r '.result.deployments // .result // [] | .[0].versions[]? | "ACTIVE_VERSION=" + (.version_id|tostring|.[0:8]) + " PERCENT=" + (.percentage|tostring)' <<< "$deploy"
+          else
+            echo "Deployment listing permission unavailable."
+          fi
