@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   AccountProfileError,
+  accountIdentityChanges,
   buildOwnProfileUpdate,
   institutionalIdentity,
 } from "./accountProfile";
@@ -77,5 +78,49 @@ describe("immutable account identity", () => {
     ]) {
       expect(() => buildOwnProfileUpdate(input)).toThrow(AccountProfileError);
     }
+  });
+});
+
+describe("avoid unnecessary Firestore profile writes", () => {
+  const identity = { email: "a22121079@morelia.tecnm.mx", localPart: "a22121079" };
+
+  it("skips existing verified users when nothing has changed", () => {
+    expect(accountIdentityChanges({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      emailVerified: true,
+      role: "user",
+    }, identity, true)).toBeNull();
+  });
+
+  it("updates only changed fields when the email verification changes", () => {
+    expect(accountIdentityChanges({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      emailVerified: false,
+    }, identity, true)).toEqual({ emailVerified: true });
+  });
+
+  it("repairs missing or inconsistent institutional identity fields", () => {
+    expect(accountIdentityChanges({ emailVerified: true }, identity, true)).toEqual({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+    });
+  });
+
+  it("does not update verification during an already bootstrapped nickname flow", () => {
+    expect(accountIdentityChanges({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      emailVerified: false,
+    }, identity)).toBeNull();
+  });
+
+  it("preserves the original unverified-token behavior for manually activated profiles", () => {
+    expect(accountIdentityChanges({
+      email: identity.email,
+      emailLocalPart: identity.localPart,
+      emailVerified: true,
+    }, identity, false)).toEqual({ emailVerified: false });
   });
 });
