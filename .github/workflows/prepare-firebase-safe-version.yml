@@ -63,13 +63,11 @@ jobs:
             modules: .result.modules,
             compatibility_date: .result.compatibility_date,
             compatibility_flags: .result.compatibility_flags,
-            bindings: [.result.bindings[] |
+            bindings: [.result.bindings[] | select(.type != "assets") |
               if (.type == "secret_text" and .name == "FIREBASE_SERVICE_ACCOUNT_JSON") then
                 {name: "FIREBASE_SERVICE_ACCOUNT_JSON", type:"inherit", version_id:$active}
               else . end
             ],
-            assets: .result.assets,
-            keep_assets: true,
             usage_model: .result.usage_model
           } | with_entries(select(.value != null))' <<< "$active_beta" > "$payload"
           jq -e '.modules | length >= 1' "$payload" >/dev/null
