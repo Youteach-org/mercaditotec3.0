@@ -10,8 +10,23 @@ export async function GET(request: Request) {
   try {
     const actor = await requireAdmin(request);
     const db = getAdminDb();
+    // Registration creates a pending profile before email verification.
+    // Count only eligible registrations; in-person activations follow the
+    // existing admin-verified identity exception. Aggregate queries avoid
+    // fetching entire user documents on each admin visit.
     const usersPendingPromise = isSuperadminRole(actor.profile)
-      ? db.collection("users").where("studentStatus", "==", "pending").count().get()
+      ? Promise.all([
+          db.collection("users")
+            .where("studentStatus", "==", "pending")
+            .where("emailVerified", "==", true)
+            .count().get(),
+          db.collection("users")
+            .where("studentStatus", "==", "pending")
+            .where("registrationSource", "==", "manual_admin")
+            .where("manualActivationStatus", "==", "activated")
+            .where("emailVerified", "==", false)
+            .count().get(),
+        ])
       : Promise.resolve(null);
     const [users, stores] = await Promise.all([
       usersPendingPromise,
@@ -19,7 +34,7 @@ export async function GET(request: Request) {
     ]);
     return NextResponse.json(
       {
-        usersPending: users?.data().count ?? 0,
+        usersPending: users ? users[0].data().count + users[1].data().count : 0,
         storesPending: stores.data().count,
       },
       { headers: { "Cache-Control": "private, no-store" } },

@@ -5,6 +5,7 @@ import { getAdminDb } from "../firestoreRest";
 import {
   effectiveAdminRole,
   normalizeStudentTrustStatus,
+  isStudentApprovalEligible,
   type AdminRole,
   type StudentTrustStatus,
 } from "./domain";
@@ -35,6 +36,7 @@ export interface AdminUserSummary {
   registrationSource: string | null;
   manualActivationStatus: string | null;
   emailVerified: boolean;
+  approvalEligible: boolean;
 }
 
 export function parseAdminTrustChange(input: unknown): "verified" | "revoked" {
@@ -93,6 +95,7 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
     registrationSource: typeof data.registrationSource === "string" ? data.registrationSource : null,
     manualActivationStatus: typeof data.manualActivationStatus === "string" ? data.manualActivationStatus : null,
     emailVerified: data.emailVerified === true,
+    approvalEligible: isStudentApprovalEligible(data),
   };
 }
 
@@ -136,6 +139,12 @@ export async function setStudentTrustByAdmin(
     throw new AdminUserError(
       409,
       "La aprobación manual solo está disponible para usuarios pendientes.",
+    );
+  }
+  if (status === "verified" && !isStudentApprovalEligible(current)) {
+    throw new AdminUserError(
+      409,
+      "Este usuario todavía no ha verificado su correo institucional. No se puede aprobar.",
     );
   }
 

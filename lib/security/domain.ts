@@ -162,6 +162,26 @@ export function isManuallyActivatedProfile(profile: unknown, email: string): boo
     && !isAdminRole(data);
 }
 
+/**
+ * A pending student's account must first be verified through Firebase email,
+ * or through the existing supervised in-person activation process.
+ * The "studentStatus" field alone is not evidence of identity verification:
+ * it is initialized as "pending" as soon as a registration is bootstrapped.
+ */
+export function isStudentApprovalEligible(profile: unknown): boolean {
+  if (!profile || typeof profile !== "object") return false;
+  const data = profile as Record<string, unknown>;
+  if (data.emailVerified === true) return true;
+  return isManuallyActivatedProfile(data, String(data.email ?? ""));
+}
+
+export function isStudentPendingApproval(profile: unknown): boolean {
+  if (!profile || typeof profile !== "object") return false;
+  const data = profile as Record<string, unknown>;
+  return normalizeStudentTrustStatus(data.studentStatus) === "pending"
+    && isStudentApprovalEligible(data);
+}
+
 export type StudentAccessEligibility =
   | {
       allowed: true;

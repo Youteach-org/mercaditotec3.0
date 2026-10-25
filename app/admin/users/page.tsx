@@ -30,6 +30,7 @@ interface AdminUserSummary {
   registrationSource: string | null;
   manualActivationStatus: string | null;
   emailVerified: boolean;
+  approvalEligible: boolean;
 }
 
 const TRUST_LABEL: Record<StudentTrustStatus, string> = {
@@ -44,11 +45,12 @@ const TRUST_CLASS: Record<StudentTrustStatus, string> = {
   revoked: "bg-red-100 text-red-800",
 };
 
-type TrustFilter = "all" | StudentTrustStatus;
+type TrustFilter = "all" | "unverified" | StudentTrustStatus;
 
 const TRUST_FILTER_STORAGE_KEY = "mercadito-admin-users-trust-filter";
 const TRUST_FILTER_VALUES: readonly TrustFilter[] = [
   "all",
+  "unverified",
   "pending",
   "verified",
   "revoked",
@@ -131,7 +133,15 @@ export default function AdminUsersPage() {
   const visibleUsers = useMemo(() => {
     const clean = query.trim().toLowerCase();
     return users.filter((user) => {
-      const matchesStatus = trustFilter === "all" || user.studentStatus === trustFilter;
+      const awaitingIdentityVerification =
+        user.studentStatus === "pending" && !user.approvalEligible;
+      const matchesStatus =
+        trustFilter === "all"
+          || (trustFilter === "unverified" && awaitingIdentityVerification)
+          || (trustFilter === "pending"
+            && user.studentStatus === "pending" && user.approvalEligible)
+          || (trustFilter !== "unverified" && trustFilter !== "pending"
+            && user.studentStatus === trustFilter);
       const matchesQuery =
         !clean ||
         [user.username, user.email, user.displayName, user.uid]
@@ -443,6 +453,7 @@ export default function AdminUsersPage() {
           <div className="flex flex-wrap gap-2">
             {([
               ["all", "Todos"],
+              ["unverified", "Sin verificar"],
               ["pending", "Pendientes"],
               ["verified", "Confirmados"],
               ["revoked", "Revocados"],
@@ -544,8 +555,16 @@ export default function AdminUsersPage() {
                       <p className="mt-1 break-all text-sm text-gray-600">{user.email || "Sin correo visible"}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${TRUST_CLASS[user.studentStatus]}`}>
-                        {TRUST_LABEL[user.studentStatus]}
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                        user.studentStatus === "pending" && !user.approvalEligible
+                          ? "bg-slate-100 text-slate-700"
+                          : TRUST_CLASS[user.studentStatus]
+                      }`}>
+                        {user.studentStatus === "pending" && !user.approvalEligible
+                          ? user.registrationSource === "manual_admin"
+                            ? "Sin activar"
+                            : "Correo sin verificar"
+                          : TRUST_LABEL[user.studentStatus]}
                       </span>
                       {user.registrationSource === "manual_admin" && (
                         <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -598,7 +617,7 @@ export default function AdminUsersPage() {
                         Abrir chat privado
                       </Link>
                     )}
-                    {user.studentStatus === "pending" && (
+                    {user.studentStatus === "pending" && user.approvalEligible && (
                       <>
                         <span className="rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800">
                           Pendiente: se confirmará automáticamente al llegar a 2/2 avales.
@@ -614,6 +633,13 @@ export default function AdminUsersPage() {
                           </button>
                         )}
                       </>
+                    )}
+                    {user.studentStatus === "pending" && !user.approvalEligible && (
+                      <span className="rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm font-semibold text-slate-700">
+                        {user.registrationSource === "manual_admin"
+                          ? "La cuenta necesita completar su activación presencial antes de solicitar aprobación."
+                          : "El correo aún no se verificó. No está en la cola de aprobaciones."}
+                      </span>
                     )}
                     {user.studentStatus === "verified" && (
                       <button
