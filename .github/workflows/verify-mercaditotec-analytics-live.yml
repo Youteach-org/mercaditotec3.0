@@ -1,0 +1,42 @@
+name: Verify live Mercadito statistics secrets (read-only)
+on:
+  push:
+    branches: [diagnostics/analytics-authorization-only-20261025]
+    paths: [.github/workflows/verify-mercaditotec-analytics-live.yml]
+permissions:
+  contents: read
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: 043e7755b65ac4fc8b8572963a544340
+      CF_WORKER: mercaditotec3-0
+    steps:
+      - name: Read-only confirm secret types in active version
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?Missing Cloudflare read credential}"
+          base="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}/workers/scripts/${CF_WORKER}"
+          get() { curl -fsS --max-time 25 -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"; }
+          deployments="$(get deployments)"
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$deployments")"
+          percentage="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$deployments")"
+          [[ -n "$active" ]] || { echo "ERROR_ACTIVE_VERSION_NOT_FOUND"; exit 1; }
+          latest="$(get 'versions?per_page=1' | jq -r '.result | if type=="array" then .[0].id else (.items // .versions // [])[0].id end')"
+          echo "ACTIVE_VERSION=${active:0:8} TRAFFIC=$percentage"
+          echo "LATEST_VERSION=${latest:0:8}"
+          for item in active latest; do
+            if [[ "$item" == active ]]; then version="$active"; else version="$latest"; fi
+            detail="$(get "versions/${version}")"
+            for var in FIREBASE_SERVICE_ACCOUNT_JSON CLOUDFLARE_ANALYTICS_TOKEN; do
+              binding_type="$(jq -r --arg n "$var" '.result.resources.bindings[]? | select(.name==$n) | .type' <<< "$detail" | head -n 1)"
+              [[ -n "$binding_type" ]] || binding_type=missing
+              echo "${item^^}_${var}_TYPE=$binding_type"
+            done
+            echo "${item^^}_HAS_ASSETS=$(jq -r '[.result.resources.bindings[]? | select(.type=="assets")] | length>0' <<< "$detail")"
+          done
+          echo "PUBLIC_HEALTH_HTTP=$(curl -L -sS --max-time 20 -o /dev/null -w '%{http_code}' https://mercaditotec.store/__health)"
+          echo "PUBLIC_ADMIN_STATS_UNAUTH_HTTP=$(curl -L -sS --max-time 20 -o /dev/null -w '%{http_code}' https://mercaditotec.store/api/admin/estadisticas)"
