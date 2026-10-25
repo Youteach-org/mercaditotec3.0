@@ -2234,8 +2234,7 @@ function ChatContent() {
                 autoFocus
                 value={imageCaption}
                 onChange={(event) => setImageCaption(event.target.value)}
-                placeholder="Escribe un comentario para enviarlo junto con la imagen..."
-                aria-label="Comentario que se enviará junto con las imágenes"
+                aria-label="Comentario de las imágenes"
                 rows={2}
                 maxLength={1000}
                 className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
