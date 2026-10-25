@@ -1,0 +1,108 @@
+name: Remove confirmed unused damaged Mercadito Worker version (one-time)
+
+on:
+  push:
+    branches: [diagnostics/mercaditotec-secret-bindings-20261024]
+    paths:
+      - .github/workflows/remove-damaged-cloudflare-version-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  remove-confirmed-version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: safe-remove-cloudflare-1f5fe46a
+      cancel-in-progress: false
+    env:
+      CF_ACCOUNT: "043e7755b65ac4fc8b8572963a544340"
+      CF_WORKER: "mercaditotec3-0"
+      CF_TARGET_PREFIX: "1f5fe46a"
+      CF_ACTIVE_PREFIX: "3c14286d"
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Strict preflight and exact single-version deletion
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${CLOUDFLARE_API_TOKEN:?GitHub Cloudflare token missing}"
+          base="https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT}"
+          api_get() {
+            curl --fail --silent --show-error --max-time 25 \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "${base}/$1"
+          }
+
+          echo "PRE-FLIGHT: checking script versions and live rollout. No deployment will be changed."
+          recent="$(api_get "workers/scripts/${CF_WORKER}/versions?per_page=20")"
+          mapfile -t ids < <(jq -r '.result | if type=="array" then .[]? elif type=="object" then (.items // .versions // [] | .[]?) else empty end | .id // empty' <<< "$recent")
+          mapfile -t targets < <(printf '%s\n' "${ids[@]}" | grep "^\${CF_TARGET_PREFIX}" || true)
+          if [[ "${#targets[@]}" -ne 1 || ! "${targets[0]}" =~ ^[a-f0-9-]{36}$ ]]; then
+            echo "SAFE ABORT: damaged target version unavailable or ambiguous; not deleting anything."
+            exit 1
+          fi
+          target="${targets[0]}"
+          echo "TARGET=${target:0:8}"
+
+          live="$(api_get "workers/scripts/${CF_WORKER}/deployments")"
+          active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$live")"
+          percent="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$live")"
+          count="$(jq -r '.result.deployments[0].versions | length' <<< "$live")"
+          if [[ "$count" != "1" || "$percent" != "100" || "$active" != "${CF_ACTIVE_PREFIX}"* || "$active" == "$target" ]]; then
+            echo "SAFE ABORT: the live version differs from verified Firebase-preserving version."
+            exit 1
+          fi
+          echo "ACTIVE=${active:0:8} 100%"
+
+          active_detail="$(api_get "workers/scripts/${CF_WORKER}/versions/${active}")"
+          target_detail="$(api_get "workers/scripts/${CF_WORKER}/versions/${target}")"
+          if ! jq -e '[.result.resources.bindings[]? | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length == 1' <<< "$active_detail" >/dev/null; then
+            echo "SAFE ABORT: active Firebase secret is not confirmed."
+            exit 1
+          fi
+          if jq -e '[.result.resources.bindings[]? | select(.type=="secret_text" and .name=="FIREBASE_SERVICE_ACCOUNT_JSON")] | length > 0' <<< "$target_detail" >/dev/null; then
+            echo "SAFE ABORT: target unexpectedly has the Firebase secret."
+            exit 1
+          fi
+
+          # Official per-version delete endpoint is under Workers Beta, NOT script deletion.
+          # Requiring a successful GET to the identical resource protects against accidental
+          # deletion of the Worker script or some other Cloudflare resource.
+          url="${base}/workers/workers/${CF_WORKER}/versions/${target}"
+          body_file="$(mktemp)"
+          code="$(curl --silent --show-error --max-time 25 -o "$body_file" -w "%{http_code}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$url")"
+          if [[ "$code" != "200" ]]; then
+            echo "SAFE ABORT: Cloudflare's version-specific API is unavailable (HTTP ${code})."
+            exit 1
+          fi
+          returned_id="$(jq -r '.result.id // .id // empty' "$body_file")"
+          if [[ "$returned_id" != "$target" ]]; then
+            echo "SAFE ABORT: version API did not identify the exact same target."
+            exit 1
+          fi
+          echo "Verified exact target via both Cloudflare version API families."
+
+          # The only destructive network request in this workflow.
+          code="$(curl --silent --show-error --max-time 25 -X DELETE -o "$body_file" -w "%{http_code}" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" "$url")"
+          if [[ "$code" != "200" && "$code" != "204" ]]; then
+            echo "Cloudflare declined version deletion (HTTP ${code}). Worker untouched."
+            exit 1
+          fi
+          if [[ "$code" == "200" ]] && ! jq -e '.success == true' "$body_file" >/dev/null; then
+            echo "Cloudflare did not confirm deletion success."
+            exit 1
+          fi
+          echo "DELETED_VERSION=${target:0:8}"
+
+          # Verify production rollout remains pinned to same healthy version.
+          after="$(api_get "workers/scripts/${CF_WORKER}/deployments")"
+          after_active="$(jq -r '.result.deployments[0].versions[0].version_id // empty' <<< "$after")"
+          after_percentage="$(jq -r '.result.deployments[0].versions[0].percentage // empty' <<< "$after")"
+          if [[ "$after_active" != "$active" || "$after_percentage" != "100" ]]; then
+            echo "ALERT: live rollout changed unexpectedly; review immediately."
+            exit 1
+          fi
+          echo "LIVE_UNCHANGED=${active:0:8} 100%"
