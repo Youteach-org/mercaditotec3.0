@@ -168,6 +168,11 @@ export default function GlobalImageViewer() {
       const target = event.target;
       if (!(target instanceof Element)) return;
 
+      // The chat library is a *selector*, not a photo viewer. Never steal
+      // clicks from its image buttons, even if a future image is marked
+      // zoomable or events are dispatched outside React's delegated handler.
+      if (target.closest("[data-chat-image-picker], [data-chat-image-select]")) return;
+
       // Marketplace images are already handled in document capture before
       // a parent Next.js Link can navigate; don't handle them twice here.
       if (target.closest("[data-image-double-href]")) return;
@@ -200,7 +205,7 @@ export default function GlobalImageViewer() {
 
       const img = target.closest("img");
       if (!(img instanceof HTMLImageElement)) return;
-      if (img.dataset.noImageZoom === "true") return;
+      if (img.dataset.noImageZoom === "true" || img.closest("[data-no-image-zoom='true']")) return;
 
       const interactiveParent = img.closest("button, a, label");
       if (interactiveParent && img.dataset.forceImageZoom !== "true") return;
