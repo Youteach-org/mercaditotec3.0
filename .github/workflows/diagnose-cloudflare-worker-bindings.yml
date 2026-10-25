@@ -37,7 +37,7 @@ jobs:
             exit 1
           fi
           echo "Recent version IDs, source, and encrypted binding NAMES only:"
-          mapfile -t versions < <(jq -r '.result[]? | .id // empty' <<< "$recent")
+          mapfile -t versions < <(jq -r '.result | if type == "array" then .[]? elif type == "object" then (.items // .versions // [] | .[]?) else empty end | .id // empty' <<< "$recent")
           if [[ "${#versions[@]}" -eq 0 ]]; then
             echo "Cloudflare returned no versions."
             exit 1
