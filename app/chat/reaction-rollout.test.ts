@@ -8,7 +8,7 @@ describe("chat reaction rollout preserves existing records", () => {
   it("does not load a global 500-reaction feed for new-only chat timelines", () => {
     expect(source).toContain("const hasLegacyMessages = messages.some");
     expect(source).toContain("!isSummarizedMessage(message)");
-    expect(source).toContain("if (!firebaseUser || !hasLegacyMessages)");
+    expect(source).toContain("if (!firebaseUser || !hasLegacyMessages || liveChatPaused)");
     expect(source).toContain("setLegacyReactions([])");
   });
 
