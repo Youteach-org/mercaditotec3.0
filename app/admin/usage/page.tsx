@@ -212,6 +212,13 @@ export default function AdminUsagePage() {
             Desde medianoche del Pacífico. Cloud Monitoring puede publicar los datos con varios minutos de retraso.
             Las cifras son orientativas; Firebase Console es la referencia para las cuotas exactas.
           </p>
+          {snapshot?.monitoringServiceAccountEmail && (
+            <p className="rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-700">
+              Cuenta de servicio utilizada realmente por MercaditoTec para consultar Google:
+              {" "}<code className="break-all font-semibold">{snapshot.monitoringServiceAccountEmail}</code>.
+              Debe ser la misma que tenga el rol Visualizador de Monitoring en IAM.
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Reading label="Lecturas" item={snapshot?.firestore.reads ?? { value: null, reason: "Consulta las métricas." }} quota={FREE_QUOTA.firestoreReadsPerDay} />
             <Reading label="Escrituras" item={snapshot?.firestore.writes ?? { value: null, reason: "Consulta las métricas." }} quota={FREE_QUOTA.firestoreWritesPerDay} />

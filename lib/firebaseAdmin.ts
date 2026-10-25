@@ -365,6 +365,11 @@ export function getFirebaseProjectId(): string {
   return getServiceAccount().project_id;
 }
 
+/** Non-secret principal identifier for the authenticated admin diagnostics panel. */
+export function getFirebaseServiceAccountEmail(): string {
+  return getServiceAccount().client_email;
+}
+
 export async function deleteFirebaseAuthUser(uid: string): Promise<void> {
   const cleanUid = uid.trim();
   if (!cleanUid || cleanUid.length > 128) {

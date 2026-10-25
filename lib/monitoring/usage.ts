@@ -1,4 +1,4 @@
-import { getAdminAccessToken, getFirebaseProjectId } from "../firebaseAdmin";
+import { getAdminAccessToken, getFirebaseProjectId, getFirebaseServiceAccountEmail } from "../firebaseAdmin";
 import { pacificDayStartUtc, sumMonitoringTimeSeries, workerAnalyticsTotals } from "./domain";
 import { getRecentTraffic, type TrafficSnapshot } from "./traffic";
 
@@ -13,6 +13,8 @@ export interface UsageSnapshot {
   workers: { requests: Meter; errors: Meter; subrequests: Meter };
   firestore: { reads: Meter; writes: Meter; deletes: Meter };
   traffic: TrafficSnapshot;
+  /** Deployed service-account principal for admin diagnostics. */
+  monitoringServiceAccountEmail: string | null;
 }
 
 const missing = (reason: string): Meter => ({ value: null, reason });
@@ -20,14 +22,33 @@ const metric = (value: number): Meter => ({ value });
 let cached: { at: number; promise: Promise<UsageSnapshot> } | null = null;
 const WORKER_SCRIPT = "mercaditotec3-0";
 /** Safe error diagnostics for the admin-only usage panel (no raw provider payloads). */
-export function monitoringErrorReason(httpStatus: number, providerStatus?: unknown): string {
+export function monitoringErrorReason(httpStatus: number, providerStatus?: unknown, providerReason?: unknown): string {
   const known = new Set([
     "PERMISSION_DENIED", "NOT_FOUND", "INVALID_ARGUMENT", "UNAUTHENTICATED",
     "RESOURCE_EXHAUSTED", "FAILED_PRECONDITION", "UNAVAILABLE",
   ]);
   const code = typeof providerStatus === "string" && known.has(providerStatus)
     ? ` — ${providerStatus}` : "";
-  const prefix = `Google Cloud Monitoring: HTTP ${httpStatus}${code}.`;
+  const safeReasons = new Set([
+    "IAM_PERMISSION_DENIED", "SERVICE_DISABLED", "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+    "CONSUMER_INVALID", "CONSUMER_SUSPENDED", "BILLING_DISABLED",
+    "BILLING_NOT_ENABLED", "SECURITY_POLICY_VIOLATED",
+  ]);
+  const reason = typeof providerReason === "string" && safeReasons.has(providerReason)
+    ? `; causa: ${providerReason}` : "";
+  const prefix = `Google Cloud Monitoring: HTTP ${httpStatus}${code}${reason}.`;
+  if (providerReason === "SERVICE_DISABLED") {
+    return `${prefix} La API aparece deshabilitada para el proyecto consumidor de esta solicitud.`;
+  }
+  if (providerReason === "IAM_PERMISSION_DENIED") {
+    return `${prefix} La identidad de la consulta carece del permiso efectivo.`;
+  }
+  if (providerReason === "ACCESS_TOKEN_SCOPE_INSUFFICIENT") {
+    return `${prefix} El token OAuth no tiene el alcance necesario.`;
+  }
+  if (providerReason === "CONSUMER_INVALID" || providerReason === "CONSUMER_SUSPENDED") {
+    return `${prefix} Google rechaza el proyecto consumidor de la API.`;
+  }
   switch (httpStatus) {
     case 400: return `${prefix} La consulta de métricas fue rechazada por sus parámetros.`;
     case 401: return `${prefix} No se pudo autenticar la cuenta de servicio.`;
@@ -114,9 +135,14 @@ async function firestoreCounter(
       // HTTP code and a known Google status; never forward raw error bodies,
       // account identifiers, access tokens or project metadata to the browser.
       const body = await response.json().catch(() => null) as {
-        error?: { status?: unknown };
+        error?: {
+          status?: unknown;
+          details?: Array<{ "@type"?: unknown; reason?: unknown }>;
+        };
       } | null;
-      return missing(monitoringErrorReason(response.status, body?.error?.status));
+      const info = body?.error?.details?.find((entry) =>
+        entry?.["@type"] === "type.googleapis.com/google.rpc.ErrorInfo");
+      return missing(monitoringErrorReason(response.status, body?.error?.status, info?.reason));
     }
     const body = await response.json();
     if (body.nextPageToken) return missing("La consulta devolvió resultados parciales.");
@@ -156,7 +182,17 @@ export async function loadOfficialUsage(): Promise<UsageSnapshot> {
       firebaseCounters(now),
       getRecentTraffic(now),
     ]);
-    return { checkedAt: now.toISOString(), source: "provider-metrics" as const, workers, firestore, traffic };
+    let monitoringServiceAccountEmail: string | null = null;
+    try {
+      monitoringServiceAccountEmail = getFirebaseServiceAccountEmail();
+    } catch {
+      // Other existing Firestore and OAuth handling covers missing credentials.
+    }
+    return {
+      checkedAt: now.toISOString(),
+      source: "provider-metrics" as const,
+      workers, firestore, traffic, monitoringServiceAccountEmail,
+    };
   })();
   cached = { at: Date.now(), promise };
   return promise;
