@@ -934,14 +934,13 @@ function ChatContent() {
 
   function toggleSavedUrl(url: string) {
     if (sendingImages) return;
-    setSelectedSavedUrls((prev) => {
-      if (prev.includes(url)) return prev.filter((x) => x !== url);
-      if (prev.length >= 4) {
-        setToast("Puedes enviar hasta cuatro imágenes por mensaje.");
-        return prev;
-      }
-      return [...prev, url];
-    });
+    if (!selectedSavedUrls.includes(url) && selectedSavedUrls.length >= 4) {
+      setToast("Puedes enviar hasta cuatro imágenes por mensaje.");
+      return;
+    }
+    setSelectedSavedUrls((prev) =>
+      prev.includes(url) ? prev.filter((x) => x !== url) : prev.length < 4 ? [...prev, url] : prev,
+    );
   }
 
   function openImageComposer() {
@@ -2220,7 +2219,7 @@ function ChatContent() {
                 placeholder="Añade un comentario (opcional)..."
                 aria-label="Comentario de las imágenes"
                 rows={2}
-                maxLength={2000}
+                maxLength={1000}
                 className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
               />
               <button
