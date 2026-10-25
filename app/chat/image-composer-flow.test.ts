@@ -26,10 +26,17 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(library).not.toContain("void sendImages()");
     expect(modal).toContain('aria-modal="true"');
     expect(modal).toContain("value={imageCaption}");
-    expect(modal).toContain('placeholder="Añade un comentario (opcional)..."');
+    expect(modal).toContain('placeholder="Escribe un comentario para enviarlo junto con la imagen..."');
+    expect(modal).toContain("autoFocus");
+    expect(modal).toContain("ref={imageCaptionRef}");
     expect(modal).toContain('maxLength={1000}');
-    expect(modal).toContain("onClick={() => void sendImages()}");
-    expect(chat).toContain('text: (imageComposerOpen ? imageCaption : text).trim()');
+    expect(modal).toContain("onClick={() => void sendImages(imageCaption)}");
+    expect(chat).toContain("buildImageMessagePayload({");
+    expect(chat).toContain("caption,");
+    expect(chat).toContain("openImageComposer();");
+    expect(chat).toContain("imageUrls: urls,");
+    expect(chat).toContain("buildImageMessagePayload({");
+    expect(chat).toContain("caption,");
   });
 
   it("starts multiple selection on a long press, with a visible count and a preview step", () => {
@@ -43,6 +50,24 @@ describe("chat image picker — tap preview and long-press multiple selection", 
     expect(library).toContain("Continuar ({selectedSavedUrls.length})");
     expect(library).toContain("Cancelar selección");
     expect(chat).toContain("prev.length < 4");
+  });
+
+  it("shows the caption BELOW the image within the same chat bubble", () => {
+    const messageBubble = chat.slice(chat.indexOf("{msg.replyTo && ("), chat.indexOf("{newMessagesWaiting > 0 && ("));
+    expect(messageBubble.indexOf("{msg.imageUrls && msg.imageUrls.length > 0 && (")).toBeLessThan(
+      messageBubble.indexOf("{!!msg.text && ("),
+    );
+    expect(messageBubble).toContain("{msg.text}");
+    expect(messageBubble).toContain("whitespace-pre-wrap");
+  });
+
+  it("the main Send button never sends a selected photo before confirmation", () => {
+    const handler = chat.slice(chat.indexOf("async function sendCurrentMessage()"), chat.indexOf("function handleTextKeyDown("));
+    expect(handler).toContain("openImageComposer();");
+    expect(handler).not.toContain("sendImages(");
+    expect(chat).toContain("async function sendImages(caption: string)");
+    expect(chat).toContain("if (!imageComposerOpen)");
+    expect(chat).toContain("onClick={() => void sendImages(imageCaption)}");
   });
 
   it("supports photos newly chosen from the device without extra upload or viewer clicks", () => {

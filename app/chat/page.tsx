@@ -27,6 +27,7 @@ import AuthGuard from "@/components/AuthGuard";
 import ReportDialog from "@/components/moderation/ReportDialog";
 import { moderationApiFetch } from "@/lib/moderation/client";
 import { validateNicknameSyntax } from "@/lib/security/nickname";
+import { buildImageMessagePayload } from "@/lib/chat/imageMessage";
 
 const CHAT_BACKGROUND_IDLE_MS = 5 * 60_000;
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
@@ -330,6 +331,7 @@ function ChatContent() {
   );
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const imageCaptionRef = useRef<HTMLTextAreaElement | null>(null);
   const imageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const imageLongPressStartRef = useRef<{ x: number; y: number } | null>(null);
   const ignoreClickAfterLongPressRef = useRef<{ url: string; at: number } | null>(null);
@@ -1102,8 +1104,19 @@ function ChatContent() {
     clearReply();
   }
 
-  async function sendImages() {
+  useEffect(() => {
+    // The WhatsApp-like media composer must receive the keyboard focus.
+    // Otherwise text typed after selecting a photo could go into the chat's
+    // underlying input instead of the caption and produce an image-only post.
+    if (imageComposerOpen) imageCaptionRef.current?.focus();
+  }, [imageComposerOpen]);
+
+  async function sendImages(caption: string) {
     if (!firebaseUser) return;
+    if (!imageComposerOpen) {
+      openImageComposer();
+      return;
+    }
     if (!ensureNicknameReady()) {
       setImageComposerOpen(false);
       return;
@@ -1155,10 +1168,11 @@ function ChatContent() {
         });
       }
 
-      const sent = await sendChatMessage({
-        text: (imageComposerOpen ? imageCaption : text).trim(),
+      // One POST creates one Firestore chat message containing BOTH the
+      // image(s) and the exact caption from the confirmation composer.
+      const sent = await sendChatMessage(buildImageMessagePayload({
+        caption,
         senderRole,
-        messageType: "image",
         imageUrls: urls,
         replyTo: replyingTo
           ? {
@@ -1167,7 +1181,7 @@ function ChatContent() {
               text: replyingTo.text,
             }
           : null,
-      });
+      }));
       if (!sent) return;
 
       setSelectedImages([]);
@@ -1207,7 +1221,8 @@ function ChatContent() {
       selectedImages.length > 0 ||
       selectedSavedUrls.length > 0
     ) {
-      await sendImages();
+      // The general chat Send button must never bypass the photo preview.
+      openImageComposer();
       return;
     }
 
@@ -1680,15 +1695,6 @@ function ChatContent() {
                       </button>
                     )}
 
-                    {!!msg.text && (
-                      <p className={darkMode ? "text-[11px] md:text-sm text-slate-100 mt-2 break-words leading-snug" : "text-[11px] md:text-sm text-gray-900 mt-2 break-words leading-snug"}>
-                        {msg.text}
-                      </p>
-                    )}
-                    <div className={darkMode ? "mt-2 flex items-center gap-2 text-[10px] text-slate-300" : "mt-2 flex items-center gap-2 text-[10px] text-gray-500"}>
-                      <span>{formatChatTime(msg.createdAt)}</span>
-                    </div>
-
                     {msg.imageUrls && msg.imageUrls.length > 0 && (
                       <div className={
                         (msg.imageUrls?.length ?? 0) === 1
@@ -1722,6 +1728,16 @@ function ChatContent() {
                         ))}
                       </div>
                     )}
+                    {!!msg.text && (
+                      <p className={darkMode
+                        ? "mt-2 whitespace-pre-wrap break-words text-[11px] leading-snug text-slate-100 md:text-sm"
+                        : "mt-2 whitespace-pre-wrap break-words text-[11px] leading-snug text-gray-900 md:text-sm"}>
+                        {msg.text}
+                      </p>
+                    )}
+                    <div className={darkMode ? "mt-2 flex items-center gap-2 text-[10px] text-slate-300" : "mt-2 flex items-center gap-2 text-[10px] text-gray-500"}>
+                      <span>{formatChatTime(msg.createdAt)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2214,10 +2230,12 @@ function ChatContent() {
             )}
             <div className="flex items-end gap-2">
               <textarea
+                ref={imageCaptionRef}
+                autoFocus
                 value={imageCaption}
                 onChange={(event) => setImageCaption(event.target.value)}
-                placeholder="Añade un comentario (opcional)..."
-                aria-label="Comentario de las imágenes"
+                placeholder="Escribe un comentario para enviarlo junto con la imagen..."
+                aria-label="Comentario que se enviará junto con las imágenes"
                 rows={2}
                 maxLength={1000}
                 className="min-h-12 min-w-0 flex-1 resize-none rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white placeholder:text-slate-400"
@@ -2225,7 +2243,7 @@ function ChatContent() {
               <button
                 type="button"
                 disabled={sendingImages}
-                onClick={() => void sendImages()}
+                onClick={() => void sendImages(imageCaption)}
                 className="shrink-0 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
               >
                 {sendingImages ? "Enviando..." : "Enviar"}
