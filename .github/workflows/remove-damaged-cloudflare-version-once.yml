@@ -37,7 +37,7 @@ jobs:
           echo "PRE-FLIGHT: checking script versions and live rollout. No deployment will be changed."
           recent="$(api_get "workers/scripts/${CF_WORKER}/versions?per_page=20")"
           mapfile -t ids < <(jq -r '.result | if type=="array" then .[]? elif type=="object" then (.items // .versions // [] | .[]?) else empty end | .id // empty' <<< "$recent")
-          mapfile -t targets < <(printf '%s\n' "${ids[@]}" | grep "^\${CF_TARGET_PREFIX}" || true)
+          mapfile -t targets < <(printf '%s\n' "${ids[@]}" | grep "^${CF_TARGET_PREFIX}" || true)
           if [[ "${#targets[@]}" -ne 1 || ! "${targets[0]}" =~ ^[a-f0-9-]{36}$ ]]; then
             echo "SAFE ABORT: damaged target version unavailable or ambiguous; not deleting anything."
             exit 1
