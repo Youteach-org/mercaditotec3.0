@@ -2,7 +2,9 @@ name: Deploy PR 188 isolated test
 on:
   push:
     branches:
-      - fix/store-editor-prod-20261026
+      - feature/student-stores
+    paths:
+      - "deployment/trigger-mercadito-verified-users-20261026.txt"
   workflow_dispatch:
 permissions:
   contents: read
