@@ -55,6 +55,23 @@ export default function StoreScheduleSection({
     };
   }, [onScheduleChanged]);
 
+  async function readScheduleResponse(response: Response): Promise<{ store?: StoreApiRecord; error?: string }> {
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      throw new Error(
+        `El servidor no respondió correctamente al guardar el horario (HTTP ${response.status}). El cambio no se confirmó; vuelve a intentarlo.`,
+      );
+    }
+    const data: { store?: StoreApiRecord; error?: string } = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `No se pudo guardar el horario (HTTP ${response.status}).`);
+    }
+    if (!data.store) {
+      throw new Error("El servidor no confirmó que se haya guardado el horario.");
+    }
+    return data;
+  }
+
   async function persistSchedule(nextSchedule: StoreSchedule) {
     if (!editable) return;
     setSaving(true);
@@ -69,8 +86,7 @@ export default function StoreScheduleSection({
           manualOpen: store.status === "active" && operationalMode === "manual" ? manualOpen : null,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "No se pudo guardar el horario.");
+      const data = await readScheduleResponse(response);
       onStoreChanged(data.store as StoreApiRecord);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "No se pudo guardar el horario.");
@@ -107,8 +123,7 @@ export default function StoreScheduleSection({
           manualOpen: mode === "manual" ? open : null,
         }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? "No se pudo cambiar el estado de la tienda.");
+      const data = await readScheduleResponse(response);
       onStoreChanged(data.store as StoreApiRecord);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "No se pudo cambiar el estado de la tienda.");
