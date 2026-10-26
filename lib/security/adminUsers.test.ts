@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseAdminRoleChange,
   parseAdminTrustChange,
+  isRegisteredAdminListUser,
 } from "./adminUsers";
 
 describe("parseAdminTrustChange", () => {
@@ -31,5 +32,36 @@ describe("parseAdminRoleChange", () => {
     expect(() => parseAdminRoleChange({ role: "superadmin" })).toThrow(
       "Acción de administrador inválida.",
     );
+  });
+});
+
+describe("admin user list identity gate", () => {
+  it("does not treat unverified Firebase signups as users", () => {
+    expect(isRegisteredAdminListUser({
+      email: "a22121079@morelia.tecnm.mx",
+      emailVerified: false,
+      studentStatus: "pending",
+      isActive: true,
+    })).toBe(false);
+  });
+
+  it("lists users only after institutional email verification", () => {
+    expect(isRegisteredAdminListUser({
+      email: "a22121079@morelia.tecnm.mx",
+      emailVerified: true,
+      studentStatus: "pending",
+    })).toBe(true);
+  });
+
+  it("preserves the explicitly approved in-person activation exception", () => {
+    expect(isRegisteredAdminListUser({
+      email: "a22121079@morelia.tecnm.mx",
+      emailVerified: false,
+      registrationSource: "manual_admin",
+      manualActivationStatus: "activated",
+      manualIdentityVerifiedBy: "superadmin",
+      manualIdentityVerifiedAt: 1,
+      createdByAdminUid: "superadmin",
+    })).toBe(true);
   });
 });
