@@ -1,4 +1,5 @@
 import { getAdminDb } from "../firestoreRest";
+import { markPublicMarketplaceChanged } from "../store/publicMarketplaceRevision";
 import { requireActiveCategory } from "../store/categoryRepository";
 import { getStoreForOwner, StoreRepositoryError } from "../store/repository";
 import { DEFAULT_LISTING_HOURS, LISTING_DURATIONS_HOURS, listingExpiryMs } from "./lifecycle";
@@ -161,6 +162,7 @@ export async function finishAutomaticScreening(id: string, decision: "approved" 
     screeningModel: "@cf/google/gemma-4-26b-a4b-it",
     screeningVersion: 1,
   });
+  if (decision === "approved") await markPublicMarketplaceChanged();
   return decision;
 }
 
@@ -192,6 +194,7 @@ export async function markListingSold(uid: string, id: string): Promise<void> {
   if (record.ownerUid !== uid) throw new ListingError(404, "Anuncio no encontrado.");
   if (record.status !== "approved") throw new ListingError(409, "Solo puedes marcar vendidos los anuncios visibles.");
   await getAdminDb().collection("discover_listings").doc(id).update({ status: "sold", updatedAt: Date.now() });
+  await markPublicMarketplaceChanged();
 }
 
 export async function listManualReviewListings(): Promise<ListingRecord[]> {
@@ -238,5 +241,6 @@ export async function decideManualReview(
       screeningReason: decision === "approved" ? null : cleanReason };
   });
   if (!updated) throw new ListingError(503, "No se pudo registrar la revisión.");
+  if (decision === "approved") await markPublicMarketplaceChanged();
   return updated;
 }

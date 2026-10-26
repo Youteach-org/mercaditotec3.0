@@ -64,6 +64,7 @@ export default {
       url.pathname === "/api/internal/firebase-rules-sync" ||
       url.pathname === "/api/internal/marketplace-catalog-refresh" ||
       url.pathname === "/api/internal/chat-retention" ||
+      url.pathname === "/api/internal/store-product-moderation" ||
       url.pathname === "/api/internal/descubre-moderation"
     ) {
       return new Response("Not Found", {
@@ -142,6 +143,9 @@ export default {
       const listingPost = bounded.method === "POST" &&
         url.pathname === "/api/descubre/anuncios";
       const screeningInput = listingPost ? bounded.clone() : null;
+      const storeProductWrite = (bounded.method === "POST" || bounded.method === "PATCH") &&
+        /^\/api\/stores\/[A-Za-z0-9_-]+\/products(?:\/[A-Za-z0-9_-]+)?$/.test(url.pathname);
+      const storeProductInput = storeProductWrite ? bounded.clone() : null;
       let response = await serveCachedPublicShell(
         bounded,
         env,
@@ -195,6 +199,35 @@ export default {
           status: review.decision,
           ...(review.reason ? { message: review.reason } : {}),
         }, { status: ["approved", "manual_review"].includes(review.decision) ? 201 : 422 });
+      }
+
+      if (storeProductWrite && response.ok && storeProductInput) {
+        const submitted = await storeProductInput.json().catch(() => null);
+        const saved = await response.clone().json().catch(() => null);
+        const product = saved?.product;
+        if (submitted && product?.visibility === "published" && product.reviewStatus === "screening") {
+          const review = await screenListing({
+            title: submitted.title,
+            description: submitted.description,
+            imageUrl: Array.isArray(product.imageUrls) ? product.imageUrls[0] : null,
+          }, env.AI);
+          const internalUrl = new URL("/api/internal/store-product-moderation", bounded.url);
+          const finalized = await getHandler().fetch(new Request(internalUrl, {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              "x-mercadito-internal-runtime": "store-product-automatic-screen-v1",
+            },
+            body: JSON.stringify({ id: product.id, contentVersion: product.contentVersion,
+              decision: review.decision, reason: review.reason }),
+          }), env, ctx);
+          if (!finalized.ok) {
+            return json({ product: { ...product, reviewStatus: "screening" },
+              error: "La revisión no pudo concluir. El producto permanece oculto." }, { status: 503 });
+          }
+          response = json({ product: { ...product, reviewStatus: review.decision,
+            reviewReason: review.reason || null } }, { status: bounded.method === "POST" ? 201 : 200 });
+        }
       }
 
       // Wall time includes upstream I/O and is not a CPU metric. Log only a

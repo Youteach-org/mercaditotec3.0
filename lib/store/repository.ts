@@ -534,7 +534,7 @@ export async function adminSetStoreStatus(
     // Cloudflare waitUntil task. Keep existing snapshot data via merge.
     if (target === "active" || target === "suspended") {
       transaction.set(
-        db.collection("public_marketplace_cache").doc("catalog-v2"),
+        db.collection("public_marketplace_cache").doc("catalog-v3"),
         { revision: crypto.randomUUID() },
         { merge: true },
       );

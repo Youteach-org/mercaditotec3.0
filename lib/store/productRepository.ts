@@ -10,6 +10,8 @@ import {
 import { requireActiveCategory, normalizeCategoryName } from "./categoryRepository";
 import { promoteSuggestedCategory } from "./defaultCategories";
 import { assertProductImageUrlsForStore } from "./media";
+import { markPublicMarketplaceChanged } from "./publicMarketplaceRevision";
+import { nextProductReview, needsLegacyProductReview, type StoreProductReviewStatus } from "./productReview";
 import {
   validateProductInput,
   type ProductEditableInput,
@@ -32,6 +34,10 @@ export interface ProductRecord extends ProductOwnershipRecord {
   priceType: ProductPriceType;
   priceAmount: number | null;
   visibility: ProductVisibility;
+  reviewStatus: StoreProductReviewStatus;
+  reviewReason: string | null;
+  contentVersion: number;
+  approvedVersion: number | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -113,6 +119,10 @@ function toProductRecord(id: string, data: DocumentData): ProductRecord {
     priceType: data.priceType as ProductPriceType,
     priceAmount: typeof data.priceAmount === "number" ? data.priceAmount : null,
     visibility: data.visibility as ProductVisibility,
+    reviewStatus: typeof data.reviewStatus === "string" ? data.reviewStatus as StoreProductReviewStatus : "legacy",
+    reviewReason: typeof data.reviewReason === "string" ? data.reviewReason : null,
+    contentVersion: typeof data.contentVersion === "number" ? data.contentVersion : 0,
+    approvedVersion: typeof data.approvedVersion === "number" ? data.approvedVersion : null,
     createdAt: coerceRecordTimestamp(data.createdAt),
     updatedAt: coerceRecordTimestamp(data.updatedAt, coerceRecordTimestamp(data.createdAt)),
   };
@@ -150,8 +160,9 @@ export async function createProduct(
   }
 
   const now = Timestamp.now();
-  const product: ProductRecord = { ...base, createdAt: now, updatedAt: now };
+  const product: ProductRecord = { ...base, ...nextProductReview(base.visibility), createdAt: now, updatedAt: now };
   await reference.set(product);
+  if (store.status === "active") await markPublicMarketplaceChanged();
   return product;
 }
 
@@ -206,6 +217,7 @@ export async function updateProduct(
     ...validated,
     suggestedCategoryName,
     updatedAt: now,
+    ...nextProductReview(validated.visibility, current.contentVersion),
   };
 
   await getAdminDb().collection("products").doc(productId).update({
@@ -217,8 +229,14 @@ export async function updateProduct(
     priceType: next.priceType,
     priceAmount: next.priceAmount,
     visibility: next.visibility,
+    reviewStatus: next.reviewStatus,
+    reviewReason: next.reviewReason,
+    contentVersion: next.contentVersion,
+    approvedVersion: next.approvedVersion,
     updatedAt: now,
   });
+
+  await markPublicMarketplaceChanged();
 
   return next;
 }
@@ -231,6 +249,91 @@ export async function deleteProduct(
   await getEditableStore(ownerUid, storeId);
   await getProductForOwner(ownerUid, storeId, productId);
   await getAdminDb().collection("products").doc(productId).delete();
+  await markPublicMarketplaceChanged();
+}
+
+/** Trusted edge-only result, bound to the exact content version being scanned. */
+export async function finishProductScreening(
+  productId: string,
+  contentVersion: number,
+  decision: "approved" | "blocked" | "needs_changes" | "manual_review",
+  reason: string,
+): Promise<{ ownerUid: string; storeId: string; title: string; status: string }> {
+  const db = getAdminDb();
+  const ref = db.collection("products").doc(productId);
+  let result: { ownerUid: string; storeId: string; title: string; status: string } | null = null;
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) throw new ProductRepositoryError(404, "Producto no encontrado.");
+    const data = snapshot.data()!;
+    if (data.reviewStatus !== "screening" || data.contentVersion !== contentVersion) {
+      throw new ProductRepositoryError(409, "El producto cambió durante su revisión.");
+    }
+    transaction.update(ref, {
+      reviewStatus: decision,
+      reviewReason: decision === "approved" ? null : reason.slice(0, 180),
+      approvedVersion: decision === "approved" ? contentVersion : null,
+      screenedAt: Timestamp.now(),
+    });
+    result = { ownerUid: String(data.ownerUid ?? ""), storeId: String(data.storeId ?? ""),
+      title: String(data.title ?? ""), status: decision };
+  });
+  if (!result) throw new ProductRepositoryError(503, "No se pudo completar la revisión.");
+  if (decision === "approved") await markPublicMarketplaceChanged();
+  return result as { ownerUid: string; storeId: string; title: string; status: string };
+}
+
+export async function listManualReviewStoreProducts() {
+  const products = getAdminDb().collection("products");
+  const [pending, legacy] = await Promise.all([
+    products.where("reviewStatus", "==", "manual_review").limit(100).get(),
+    products.where("visibility", "==", "published").limit(300).get(),
+  ]);
+  const records = [...pending.docs, ...legacy.docs.filter((doc) => {
+    const product = toProductRecord(doc.id, doc.data());
+    return needsLegacyProductReview({ visibility: product.visibility, reviewStatus: product.reviewStatus,
+      createdAt: product.createdAt.toMillis(), updatedAt: product.updatedAt.toMillis() });
+  })];
+  const unique = [...new Map(records.map((doc) => [doc.id, doc])).values()].slice(0, 100);
+  return unique.map((doc) => {
+    const product = toProductRecord(doc.id, doc.data());
+    return { id: product.id, kind: "store-product" as const, title: product.title,
+      description: product.description, imageUrl: product.imageUrls[0] ?? "",
+      priceType: product.priceType, priceAmount: product.priceAmount,
+      ownerUid: product.ownerUid, storeId: product.storeId,
+      contentVersion: product.contentVersion || 1,
+      screeningReason: product.reviewReason ?? (product.reviewStatus === "legacy" ?
+        "Producto anterior sin revisión automática; requiere revisión manual." : null),
+      createdAt: product.createdAt.toMillis(), sellerName: "Vendedor de tienda", location: "",
+      durationHours: null };
+  });
+}
+
+export async function decideManualStoreProduct(id: string, version: number, decision: "approved" | "blocked", reason: string) {
+  const db = getAdminDb();
+  const ref = db.collection("products").doc(id);
+  let result: { ownerUid: string; storeId: string; title: string } | null = null;
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(ref);
+    if (!snapshot.exists) throw new ProductRepositoryError(404, "Producto no encontrado.");
+    const data = snapshot.data()!;
+    const prior = toProductRecord(snapshot.id, data);
+    const legacy = needsLegacyProductReview({ visibility: prior.visibility, reviewStatus: prior.reviewStatus,
+      createdAt: prior.createdAt.toMillis(), updatedAt: prior.updatedAt.toMillis() });
+    if (!((data.reviewStatus === "manual_review" && data.contentVersion === version) ||
+      (legacy && version === 1))) {
+      throw new ProductRepositoryError(409, "El producto ya cambió o fue revisado.");
+    }
+    tx.update(ref, {
+      contentVersion: version,
+      reviewStatus: decision, reviewReason: decision === "approved" ? null : reason.slice(0, 180),
+      approvedVersion: decision === "approved" ? version : null, screenedAt: Timestamp.now(),
+    });
+    result = { ownerUid: String(data.ownerUid ?? ""), storeId: String(data.storeId ?? ""), title: String(data.title ?? "") };
+  });
+  if (!result) throw new ProductRepositoryError(503, "No se pudo resolver la revisión.");
+  await markPublicMarketplaceChanged();
+  return result as { ownerUid: string; storeId: string; title: string };
 }
 
 export async function listProductsForAdmin(storeId: string): Promise<ProductRecord[]> {

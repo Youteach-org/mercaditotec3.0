@@ -1,12 +1,12 @@
 import { FirestoreRestError, getAdminDb } from "../firestoreRest";
 import { buildDiscoverFeed, isEligibleForDiscover, type DiscoverProduct, type DiscoverSourceProduct } from "./discoverFeed";
+import { isApprovedStoreProduct } from "./productReview";
 import { featuredPriorityBrand } from "./featuredMarketplace";
 import { whatsappUrlFromNumber } from "../security/whatsapp";
 import { normalizeStoredSchedule } from "./schedule";
 import { readStoreRatingStats } from "./storeRating";
 import { listActiveCategories } from "./categoryRepository";
 import {
-  isPublicProductVisibility,
   serializePublicProduct,
   serializePublicStore,
   type PublicProduct,
@@ -249,7 +249,16 @@ export async function listPublicProducts(storeId: string): Promise<PublicProduct
     .get();
 
   return snapshot.docs
-    .filter((document) => isPublicProductVisibility(document.data().visibility))
+    .filter((document) => {
+      const data = document.data();
+      const toMs = (stamp: unknown): number => stamp && typeof stamp === "object" && "toMillis" in stamp && typeof stamp.toMillis === "function" ? stamp.toMillis() : 0;
+      return isApprovedStoreProduct({
+        visibility: String(data.visibility ?? ""), reviewStatus: typeof data.reviewStatus === "string" ? data.reviewStatus : "legacy",
+        contentVersion: typeof data.contentVersion === "number" ? data.contentVersion : null,
+        approvedVersion: typeof data.approvedVersion === "number" ? data.approvedVersion : null,
+        createdAt: toMs(data.createdAt), updatedAt: toMs(data.updatedAt),
+      });
+    })
     .map((document) => serializePublicProduct(productSource(document.id, document.data())))
     .sort((a, b) => a.title.localeCompare(b.title, "es"));
 }

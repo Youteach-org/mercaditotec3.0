@@ -9,6 +9,8 @@ import { useSession } from "@/lib/useSession";
 
 interface PendingItem {
   id: string;
+  kind?: "independent" | "store-product";
+  contentVersion?: number;
   sellerName: string;
   title: string;
   description: string;
@@ -69,7 +71,7 @@ export default function AdminDescubreManualPage() {
     try {
       const response = await storeApiFetch(firebaseUser, "/api/admin/descubre", {
         method: "POST",
-        body: JSON.stringify({ id: item.id, decision, reason }),
+        body: JSON.stringify({ id: item.id, kind: item.kind, contentVersion: item.contentVersion, decision, reason }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error ?? "No se pudo completar la revisión.");
@@ -91,7 +93,7 @@ export default function AdminDescubreManualPage() {
       <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-7">
         <h1 className="text-3xl font-black">Revisión manual de productos</h1>
         <p className="mt-2 text-base leading-relaxed">
-          Aquí aparecen anuncios cuya revisión automática no concluyó: falta de cuota, error de imagen o resultado de IA incierto.
+          Aquí aparecen productos de tiendas y anuncios independientes cuya revisión automática no concluyó: falta de cuota, error de imagen o resultado de IA incierto.
           No se muestran al público hasta tu aprobación.
         </p>
         <button type="button" onClick={() => void refresh()} disabled={loadingItems}
@@ -107,6 +109,7 @@ export default function AdminDescubreManualPage() {
       ) : items.map((item) => (
         <article key={item.id} className="rounded-2xl border-2 border-[#123d82] bg-white p-4 shadow-sm sm:p-6">
           <h2 className="text-2xl font-black">{item.title}</h2>
+          <p className="mt-1 text-sm font-bold text-[#123d82]">{item.kind === "store-product" ? "Producto de tienda" : "Anuncio independiente"}</p>
           <p className="mt-1 text-sm font-semibold">Publicado por: {item.sellerName}</p>
           <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
             <a href={item.imageUrl} target="_blank" rel="noopener noreferrer" aria-label={"Ver fotografía completa de " + item.title}>
@@ -118,7 +121,7 @@ export default function AdminDescubreManualPage() {
               <p className="whitespace-pre-wrap break-words">{item.description}</p>
               <p><strong>Precio: </strong>{item.priceAmount == null ? "Preguntar precio" : item.priceAmount.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</p>
               <p><strong>Entrega: </strong>{item.location}</p>
-              <p><strong>Duración después de aprobar: </strong>{item.durationHours} horas</p>
+              {item.kind !== "store-product" && <p><strong>Duración después de aprobar: </strong>{item.durationHours} horas</p>}
               <p><strong>Motivo de revisión: </strong>{item.screeningReason ?? "No pudo completarse la revisión automática."}</p>
               <label className="block font-bold" htmlFor={"review-reason-" + item.id}>Motivo del rechazo</label>
               <textarea id={"review-reason-" + item.id} rows={3} maxLength={180}

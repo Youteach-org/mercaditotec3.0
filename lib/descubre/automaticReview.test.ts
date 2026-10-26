@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { prohibitedTextReason, safeImageUrl, screenListing, classifyAutomaticReviewError } from "./automaticReview.mjs";
 
 const photo = "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/discover-listings/owneruid/6014afbe-fe4c-4b78-b178-27f96bc8be7a.jpg";
+const storePhoto = "https://wfmokinfcypfpdisussw.supabase.co/storage/v1/object/public/chat-images/stores/owneruid/store123/products/product123/nonce123.jpg";
 const input = { title: "Televisión de 43 pulgadas", description: "Usada, funciona bien", imageUrl: photo };
 const jpeg = new Uint8Array([255,216,255,224,0,16,74,70,73,70,0,1,0,1]);
 const fetchPhoto = vi.fn(async () => new Response(jpeg, { headers: { "content-type": "image/jpeg" } }));
@@ -21,6 +22,13 @@ describe("automatic prepublication product screening", () => {
     expect(safeImageUrl(photo)).toBe(true);
     expect(safeImageUrl("https://evil.com/a.jpg")).toBe(false);
     expect(safeImageUrl(photo + "?redirect=https://evil.com")).toBe(false);
+  });
+
+  it("accepts owner-scoped shop product photos through the same image reviewer", async () => {
+    expect(safeImageUrl(storePhoto)).toBe(true);
+    expect(safeImageUrl(storePhoto + "?redirect=https://evil.com")).toBe(false);
+    const ai = { run: async () => ({ response: JSON.stringify({ decision: "APPROVE", matchesText: true, containsProhibited: false, item: "televisión", confidence: 0.96 }) }) };
+    expect((await screenListing({ ...input, imageUrl: storePhoto }, ai, fetchPhoto)).decision).toBe("approved");
   });
 
   it("cannot allow alcohol or drugs even if the model would say APPROVE", async () => {
