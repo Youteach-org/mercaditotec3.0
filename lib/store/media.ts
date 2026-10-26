@@ -89,6 +89,8 @@ export function parseImageUploadPath(path: string, ownerUid: string): {
     throw new Error("La ruta de imagen no pertenece al usuario.");
   }
   if (parts[0] === "profile-images" && parts.length === 3) return { path };
+  // Found-item photos belong to their authenticated creator, not a store.
+  if (parts[0] === "community-posts" && parts.length === 3) return { path };
   // Unlisted item photographs are owned by the authenticated user.
   if (parts[0] === "discover-listings" && parts.length === 3 && /^[A-Za-z0-9_-]+\.(jpg|jpeg|png|webp)$/.test(parts[2])) return { path };
   if (parts[0] === "chat" && parts.length === 5 &&
