@@ -84,6 +84,7 @@ export default function StoreProductsSection({
   const [validationMessage, setValidationMessage] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [suggestingCategory, setSuggestingCategory] = useState(false);
   const [newFiles, setNewFiles] = useState<File[]>([]);
 
   const creationMode = storeStatus === "draft" || storeStatus === "changes_required";
@@ -135,10 +136,12 @@ export default function StoreProductsSection({
     setEditingId(null);
     setNewFiles([]);
     setForm({ ...EMPTY_FORM, categoryId: categories[0]?.id || "" });
+    setSuggestingCategory(false);
   }
 
   function edit(product: StoreProductApiRecord) {
     setEditingId(product.id);
+    setSuggestingCategory(Boolean(product.suggestedCategoryName));
     setNewFiles([]);
     setValidationMessage("");
     setForm({
@@ -280,7 +283,7 @@ export default function StoreProductsSection({
     }
   }
 
-  const categorySelection = form.suggestedCategoryName ? SUGGEST_VALUE : form.categoryId;
+  const categorySelection = suggestingCategory ? SUGGEST_VALUE : form.categoryId;
   const showForm = editable && (editingId !== null || !creationMode || products.length === 0);
 
   return (
@@ -374,7 +377,8 @@ export default function StoreProductsSection({
               <span className="mb-1 block text-sm font-semibold text-gray-700">Categoría</span>
               <select value={categorySelection} onChange={(event) => {
                 const value = event.target.value;
-                setForm((current) => value === SUGGEST_VALUE ? { ...current, categoryId: "", suggestedCategoryName: current.suggestedCategoryName || "" } : { ...current, categoryId: value, suggestedCategoryName: "" });
+                setSuggestingCategory(value === SUGGEST_VALUE);
+                setForm((current) => value === SUGGEST_VALUE ? { ...current, categoryId: "", suggestedCategoryName: current.suggestedCategoryName } : { ...current, categoryId: value, suggestedCategoryName: "" });
               }} className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900">
                 <option value="">Selecciona una categoría</option>
                 {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
