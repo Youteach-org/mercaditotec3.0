@@ -12,9 +12,8 @@ import type { CommunityPostApiRecord } from "@/lib/community/http";
 import {
   buildCommunityPostMediaPath,
 } from "@/lib/community/media";
-import { uploadImageFile } from "@/lib/imageStorage";
+import { prepareImageForUpload, uploadImageFile } from "@/lib/imageStorage";
 import { isAdministrativeBlockActive } from "@/lib/moderation/domain";
-import { validateMediaFileMeta } from "@/lib/store/media";
 import { useSession } from "@/lib/useSession";
 
 function LostAndFoundContent() {
@@ -66,13 +65,14 @@ function LostAndFoundContent() {
     setMessage("");
 
     try {
-      validateMediaFileMeta(photo);
+      // Optimize camera photos before applying the final 1 MB upload limit.
+      const optimizedPhoto = await prepareImageForUpload(photo);
       const path = buildCommunityPostMediaPath({
         ownerUid: firebaseUser.uid,
         nonce: crypto.randomUUID(),
-        mimeType: photo.type,
+        mimeType: optimizedPhoto.type,
       });
-      const imageUrl = await uploadImageFile({ path, file: photo });
+      const imageUrl = await uploadImageFile({ path, file: optimizedPhoto });
 
       await createCommunityPostRequest(firebaseUser, {
         type: "found_item",
@@ -166,7 +166,7 @@ function LostAndFoundContent() {
                 disabled={blocked}
                 onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
               />
-              <small>JPEG, PNG, WebP o GIF · máximo 1 MB.</small>
+              <small>JPEG, PNG, WebP o GIF · se comprimen automáticamente hasta 1 MB.</small>
             </label>
 
             <label>
