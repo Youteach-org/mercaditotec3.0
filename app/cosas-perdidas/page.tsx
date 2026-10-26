@@ -23,6 +23,7 @@ function LostAndFoundContent() {
   const [submitting, setSubmitting] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [publishError, setPublishError] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [location, setLocation] = useState("");
@@ -63,6 +64,7 @@ function LostAndFoundContent() {
 
     setSubmitting(true);
     setMessage("");
+    setPublishError("");
 
     try {
       // Optimize camera photos before applying the final 1 MB upload limit.
@@ -88,10 +90,10 @@ function LostAndFoundContent() {
       setPhoto(null);
       const input = document.getElementById("lost-item-photo") as HTMLInputElement | null;
       if (input) input.value = "";
-      setMessage("Objeto publicado. También aparecerá en Avisos rápidos.");
       await refresh();
+      setMessage("Objeto publicado. También aparecerá en Avisos rápidos.");
     } catch (submitError) {
-      setMessage(
+      setPublishError(
         submitError instanceof Error
           ? submitError.message
           : "No se pudo publicar el objeto encontrado.",
@@ -274,6 +276,33 @@ function LostAndFoundContent() {
           )}
         </section>
       </div>
+
+      {publishError && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="lost-found-publish-error-title"
+          aria-describedby="lost-found-publish-error-description"
+          className="fixed inset-0 z-[200001] flex items-center justify-center bg-slate-950/65 px-4 py-6"
+        >
+          <div className="w-full max-w-md rounded-2xl border-2 border-red-200 bg-white p-6 text-slate-900 shadow-2xl">
+            <h2 id="lost-found-publish-error-title" className="text-xl font-black text-red-800">
+              No se pudo publicar
+            </h2>
+            <p id="lost-found-publish-error-description" className="mt-3 break-words text-base font-semibold leading-relaxed">
+              {publishError}
+            </p>
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setPublishError("")}
+              className="mt-5 w-full rounded-xl bg-[#174db4] px-5 py-3 font-bold text-white"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
 
       {zoomImage && (
         <div
