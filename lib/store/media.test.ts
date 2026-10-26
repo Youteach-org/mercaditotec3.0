@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertProductImageUrlsForStore,
   buildStoreMediaPath,
+  parseImageUploadPath,
   validateMediaFileMeta,
   validateStoreMediaUrl,
 } from "./media";
@@ -147,5 +148,21 @@ describe("assertProductImageUrlsForStore", () => {
     ).toThrow(
       "Una imagen no pertenece a este producto.",
     );
+  });
+});
+
+describe("community post photo upload ownership", () => {
+  it("permits photos for the authenticated owner", () => {
+    expect(parseImageUploadPath("community-posts/user-1/photo.webp", "user-1")).toEqual({
+      path: "community-posts/user-1/photo.webp",
+    });
+  });
+
+  it("rejects another user's community post photo", () => {
+    expect(() => parseImageUploadPath("community-posts/other/photo.webp", "user-1")).toThrow();
+  });
+
+  it("rejects unsafe community post paths", () => {
+    expect(() => parseImageUploadPath("community-posts/user-1/folder/photo.webp", "user-1")).toThrow();
   });
 });
