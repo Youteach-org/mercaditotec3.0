@@ -100,16 +100,18 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
   };
 }
 
+/** Registration drafts are not Mercadito users until identity verification. */
+export function isRegisteredAdminListUser(data: Record<string, unknown>): boolean {
+  return data.emailVerified === true ||
+    isManuallyActivatedProfile(data, String(data.email ?? ""));
+}
+
 export async function listUsersForAdmin(): Promise<AdminUserSummary[]> {
   const snapshot = await getAdminDb().collection("users").list(250);
   // The bootstrap profile is only a registration draft until identity is
   // confirmed. Never expose unverified drafts as Mercadito users in admin.
   return snapshot.docs
-    .filter((document) => {
-      const data = document.data();
-      return data.emailVerified === true ||
-        isManuallyActivatedProfile(data, String(data.email ?? ""));
-    })
+    .filter((document) => isRegisteredAdminListUser(document.data()))
     .map((document) => toSummary(document.id, document.data()))
     .sort((a, b) =>
       (a.email || a.displayName || a.uid).localeCompare(
