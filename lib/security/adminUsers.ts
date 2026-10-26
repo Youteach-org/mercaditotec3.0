@@ -6,6 +6,7 @@ import {
   effectiveAdminRole,
   normalizeStudentTrustStatus,
   isStudentApprovalEligible,
+  isManuallyActivatedProfile,
   type AdminRole,
   type StudentTrustStatus,
 } from "./domain";
@@ -101,7 +102,14 @@ function toSummary(uid: string, data: Record<string, unknown>): AdminUserSummary
 
 export async function listUsersForAdmin(): Promise<AdminUserSummary[]> {
   const snapshot = await getAdminDb().collection("users").list(250);
+  // The bootstrap profile is only a registration draft until identity is
+  // confirmed. Never expose unverified drafts as Mercadito users in admin.
   return snapshot.docs
+    .filter((document) => {
+      const data = document.data();
+      return data.emailVerified === true ||
+        isManuallyActivatedProfile(data, String(data.email ?? ""));
+    })
     .map((document) => toSummary(document.id, document.data()))
     .sort((a, b) =>
       (a.email || a.displayName || a.uid).localeCompare(
@@ -211,6 +219,9 @@ export async function setUserRoleBySuperadmin(
     );
   }
 
+  if (role === "subadmin" && !isStudentApprovalEligible(current)) {
+    throw new AdminUserError(409, "No se puede convertir en administrador una cuenta sin correo verificado.");
+  }
   if (role === "subadmin" && current.registrationSource === "manual_admin") {
     throw new AdminUserError(403, "Las cuentas activadas presencialmente no pueden recibir permisos administrativos sin verificar Firebase Auth.");
   }
