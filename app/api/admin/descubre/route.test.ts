@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   decide: vi.fn(),
   audit: vi.fn(),
   notify: vi.fn(),
+  listProducts: vi.fn(),
+  decideProduct: vi.fn(),
 }));
 
 vi.mock("@/lib/store/auth", () => ({
@@ -23,6 +25,13 @@ vi.mock("@/lib/descubre/listings", () => ({
 }));
 vi.mock("@/lib/security/audit", () => ({ writeAuditEntry: mocks.audit }));
 vi.mock("@/lib/notifications/repository", () => ({ createNotificationSafely: mocks.notify }));
+vi.mock("@/lib/store/productRepository", () => ({
+  listManualReviewStoreProducts: mocks.listProducts,
+  decideManualStoreProduct: mocks.decideProduct,
+  ProductRepositoryError: class ProductRepositoryError extends Error {
+    constructor(public status: number, message: string) { super(message); }
+  },
+}));
 
 import { GET, POST } from "./route";
 import { ApiAuthError } from "@/lib/store/auth";
@@ -41,6 +50,8 @@ beforeEach(() => {
   mocks.decide.mockResolvedValue({ id: "listing-123", ownerUid: "seller", status: "approved" });
   mocks.audit.mockResolvedValue(undefined);
   mocks.notify.mockResolvedValue(undefined);
+  mocks.listProducts.mockResolvedValue([]);
+  mocks.decideProduct.mockResolvedValue({ ownerUid: "seller", storeId: "shop", title: "Pan" });
 });
 
 describe("Admin Descubre manual review", () => {
@@ -71,5 +82,13 @@ describe("Admin Descubre manual review", () => {
     const response = await POST(request("POST", { id: "listing-123", decision: "manual_review" }));
     expect(response.status).toBe(400);
     expect(mocks.decide).not.toHaveBeenCalled();
+  });
+  it("approves a manually reviewed store product and notifies its owner", async () => {
+    const response = await POST(request("POST", { id: "product123", kind: "store-product", contentVersion: 2, decision: "approved" }));
+    expect(response.status).toBe(200);
+    expect(mocks.decideProduct).toHaveBeenCalledWith("product123", 2, "approved", "");
+    expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({
+      recipientUid: "seller", type: "store_product_review_approved", href: "/mystore/shop",
+    }));
   });
 });

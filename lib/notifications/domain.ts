@@ -15,7 +15,10 @@ export type NotificationType =
   | "contact_attempt"
   | "discover_manual_review"
   | "discover_manual_approved"
-  | "discover_manual_rejected";
+  | "discover_manual_rejected"
+  | "store_product_review_approved"
+  | "store_product_review_rejected"
+  | "store_product_manual_review";
 
 export type OrderNotificationEvent =
   | "created"

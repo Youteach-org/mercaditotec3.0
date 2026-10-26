@@ -5,7 +5,7 @@ import QrShareButton from "@/components/share/QrShareButton";
 import { useEffect, useMemo, useState } from "react";
 import CategoryIcon from "@/components/store/CategoryIcon";
 import type { CategoryIconKey } from "@/lib/store/categoryIcon";
-import type { DiscoverFeedItem } from "@/lib/descubre/feed";
+import { orderDiscoverProducts, type DiscoverFeedItem } from "@/lib/descubre/feed";
 import type { PublicDiscoverPreview } from "@/lib/descubre/publicPreview";
 import { countDiscoverProducts } from "@/lib/descubre/homeStats";
 import DiscoverProductCard, { isFlash } from "@/components/descubre/DiscoverProductCard";
@@ -27,6 +27,11 @@ function SearchMark() {
 export default function DescubrePage() {
   const { firebaseUser, loading: sessionLoading } = useSession();
   const [products, setProducts] = useState<(DiscoverFeedItem | PublicDiscoverPreview)[]>([]);
+  const [visitSeed, setVisitSeed] = useState(0);
+
+  useEffect(() => {
+    setVisitSeed(Math.floor(Math.random() * 0x100000000));
+  }, []);
   const [registeredUsers, setRegisteredUsers] = useState<number | null>(null);
   const [realStoreCount, setRealStoreCount] = useState<number | null>(null);
   const [categories, setCategories] = useState<DiscoverCategory[]>([]);
@@ -111,9 +116,10 @@ export default function DescubrePage() {
     return () => window.clearInterval(timer);
   }, []);
 
+  const rotatedProducts = useMemo(() => orderDiscoverProducts(products, visitSeed), [products, visitSeed]);
   const matching = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("es-MX");
-    return products.filter((product) => {
+    return rotatedProducts.filter((product) => {
       if ("personal" in product && product.personal && product.expiresAt <= now) return false;
       if (filter === "offers" && !isFlash(product, now)) return false;
       if (filter !== "all" && filter !== "offers" && product.categoryId !== filter) return false;
@@ -121,7 +127,7 @@ export default function DescubrePage() {
       return (product.title + " " + product.description + " " + product.storeName)
         .toLocaleLowerCase("es-MX").includes(query);
     });
-  }, [products, search, filter, now]);
+  }, [rotatedProducts, search, filter, now]);
   const shown = matching.slice(0, limit);
   // The count covers products actually available in the current Descubre wall:
   // storefront products plus approved unexpired individual listings, not shops.

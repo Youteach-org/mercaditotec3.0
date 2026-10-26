@@ -52,6 +52,19 @@ function priceLabel(product: StoreProductApiRecord) {
   return product.priceType === "negotiable" ? `${amount} — a tratar` : amount;
 }
 
+function productReviewLabel(product: StoreProductApiRecord): string {
+  if (product.visibility === "hidden") return "Oculto";
+  switch (product.reviewStatus) {
+    case "approved": return "Aprobado · visible";
+    case "screening": return "En revisión · no visible";
+    case "manual_review": return "Revisión manual pendiente";
+    case "blocked": return "Rechazado · no visible";
+    case "needs_changes": return "Requiere correcciones";
+    case "legacy": return "Producto anterior";
+    default: return "Pendiente de revisión";
+  }
+}
+
 function ValidationModal({ message, onClose }: { message: string; onClose: () => void }) {
   if (!message) return null;
   return (
@@ -233,7 +246,7 @@ export default function StoreProductsSection({
         }
       }
 
-      setMessage(editingId ? "Producto actualizado." : creationMode ? "Producto inicial guardado. Puedes editarlo antes de enviar la tienda." : "Producto agregado.");
+      setMessage(editingId ? "Producto guardado. Consulta su estado de revisión abajo." : creationMode ? "Producto inicial guardado. Puedes editarlo antes de enviar la tienda." : "Producto guardado. Se publicará cuando apruebe la revisión.");
       resetForm();
       await load();
     } catch (saveError) {
@@ -330,11 +343,14 @@ export default function StoreProductsSection({
                 {creationMode ? (
                   <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800">Producto inicial</span>
                 ) : (
-                  <span className={product.visibility === "published" ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800" : "rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700"}>
-                    {product.visibility === "published" ? "Visible" : "Oculto"}
+                  <span className={product.reviewStatus === "approved" && product.visibility === "published" ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800" : "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900"}>
+                    {productReviewLabel(product)}
                   </span>
                 )}
               </div>
+              {product.reviewReason && ["blocked", "needs_changes", "manual_review"].includes(product.reviewStatus ?? "") && (
+                <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">Motivo: {product.reviewReason}</p>
+              )}
               {editable && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button type="button" onClick={() => edit(product)} className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white">Editar producto</button>

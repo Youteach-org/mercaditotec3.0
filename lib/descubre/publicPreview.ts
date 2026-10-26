@@ -1,5 +1,6 @@
 import type { DiscoverProduct } from "../store/discoverFeed";
 import type { DiscoverFeedItem } from "./feed";
+import { featuredPriorityBrand } from "../store/featuredMarketplace";
 
 /** Public previews deliberately exclude the seller, store, delivery and personal details. */
 export type PublicDiscoverPreview = Pick<DiscoverProduct,
@@ -12,6 +13,7 @@ export type PublicDiscoverPreview = Pick<DiscoverProduct,
   storeSlug: string;
   storeLogoUrl: null;
   deliveryLocation: string;
+  featuredBrand: "ke-rollos" | "youteach" | null;
 } & ({ personal: true; expiresAt: number } | { personal?: false });
 
 export function publicDiscoverPreview(items: readonly DiscoverFeedItem[]): PublicDiscoverPreview[] {
@@ -31,6 +33,8 @@ export function publicDiscoverPreview(items: readonly DiscoverFeedItem[]): Publi
       storeSlug: "",
       storeLogoUrl: null,
       deliveryLocation: "",
+      featuredBrand: "personal" in product && product.personal ? null :
+        featuredPriorityBrand({ id: product.storeId, name: product.storeName, slug: product.storeSlug }),
     };
     if ("personal" in product && product.personal) {
       return { ...base, personal: true, expiresAt: product.expiresAt };

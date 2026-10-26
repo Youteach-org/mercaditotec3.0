@@ -19,6 +19,9 @@ export interface StoreProductApiRecord {
   priceType: ProductPriceType;
   priceAmount: number | null;
   visibility: ProductVisibility;
+  reviewStatus?: "screening" | "approved" | "blocked" | "needs_changes" | "manual_review" | "hidden" | "legacy";
+  reviewReason?: string | null;
+  contentVersion?: number;
   createdAt: string;
   updatedAt: string;
 }

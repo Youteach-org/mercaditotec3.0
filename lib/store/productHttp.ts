@@ -34,6 +34,9 @@ export function serializeProduct(product: ProductRecord) {
     priceType: product.priceType,
     priceAmount: product.priceAmount,
     visibility: product.visibility,
+    reviewStatus: product.reviewStatus,
+    reviewReason: product.reviewReason,
+    contentVersion: product.contentVersion,
     createdAt: product.createdAt.toDate().toISOString(),
     updatedAt: product.updatedAt.toDate().toISOString(),
   };
