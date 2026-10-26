@@ -1,0 +1,46 @@
+name: Deploy PR 188 isolated test
+on:
+  push:
+    branches:
+      - feature/student-stores
+    paths:
+      - "deployment/trigger-mercadito-verified-users-20261026.txt"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mercaditotec-fix188-test
+  cancel-in-progress: true
+jobs:
+  preview:
+    name: Build and deploy isolated store editor
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: node scripts/cloudflare-build.mjs
+      - name: Deploy isolated worker without affecting production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "043e7755b65ac4fc8b8572963a544340"
+        run: .cloudflare-tools/node_modules/.bin/wrangler deploy --config wrangler.fix188.jsonc
+      - name: Verify and publish test URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://mercaditotec-fix188.youteach-tk.workers.dev"
+          echo "### Test PR 188" >> "$GITHUB_STEP_SUMMARY"
+          echo "$BASE/mystore" >> "$GITHUB_STEP_SUMMARY"
+          for path in /marketplace /api/categories; do
+            code="$(curl -L -sS --connect-timeout 15 --max-time 60 -o /tmp/body -w '%{http_code}' "$BASE$path")"
+            echo "$path HTTP $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 400 ]; then
+              head -c 1500 /tmp/body
+              exit 1
+            fi
+          done
