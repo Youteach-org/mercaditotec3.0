@@ -23,6 +23,12 @@ describe("Lost and found page", () => {
     expect(pageSource).toContain('type="file"');
   });
 
+  it("shows publishing errors above overlays instead of below the form", () => {
+    expect(pageSource).toContain('role="alertdialog"');
+    expect(pageSource).toContain('z-[200001]');
+    expect(pageSource).toContain("setPublishError(");
+  });
+
   it("lets only the author render the resolve action", () => {
     expect(pageSource).toContain("post.authorUid === firebaseUser?.uid");
     expect(pageSource).toContain("Marcar como entregado");
