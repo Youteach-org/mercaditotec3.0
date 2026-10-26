@@ -14,7 +14,9 @@ describe("Lost and found page", () => {
   });
 
   it("requires and uploads an owner-bound photo", () => {
-    expect(pageSource).toContain("validateMediaFileMeta");
+    expect(pageSource).toContain("prepareImageForUpload");
+    expect(pageSource).not.toContain("validateMediaFileMeta(photo)");
+    expect(pageSource).toContain("mimeType: optimizedPhoto.type");
     expect(pageSource).toContain("buildCommunityPostMediaPath");
     expect(pageSource).toContain("uploadImageFile");
     expect(pageSource).toContain("firebaseUser.uid");
