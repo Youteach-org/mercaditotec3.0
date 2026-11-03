@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { qrcodegen } from "@/lib/qr/qrcodegen";
+import { shareQrImage } from "@/lib/qr/shareQrImage";
 
 type QrShareButtonProps = {
   title: string;
@@ -231,20 +232,25 @@ export default function QrShareButton({
     }
   }
 
+  function saveQrPng(image: Blob) {
+    const objectUrl = URL.createObjectURL(image);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = qrFileName(title);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    // Leave time for the browser to begin downloading on Windows desktop.
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+  }
+
   async function downloadQr() {
     if (working) return;
     setWorking(true);
     setNotice("");
     try {
       const image = shareFile ?? await cardBlob(qr, title, url, logoUrl);
-      const objectUrl = URL.createObjectURL(image);
-      const anchor = document.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download = qrFileName(title);
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+      saveQrPng(image);
       setNotice("Imagen PNG generada para guardar o imprimir.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "No se pudo descargar.");
@@ -260,22 +266,32 @@ export default function QrShareButton({
       setNotice("La imagen del QR aún no está lista. Usa Descargar PNG si continúa el problema.");
       return;
     }
-    if (typeof navigator.share !== "function" || !navigator.canShare?.({ files: [shareFile] })) {
-      setNotice("Este navegador no permite compartir imágenes. Descarga el PNG y adjúntalo en WhatsApp.");
-      return;
-    }
 
     setWorking(true);
     try {
-      // CRÍTICO: compartir el PNG ya preparado, sin esperas previas ni mezclar
-      // texto o enlaces. Así Android muestra destinos para imágenes, no solo
-      // apps que aceptan mensajes de texto.
-      await navigator.share({ files: [shareFile] });
-      setNotice("Imagen del QR compartida.");
-    } catch (error) {
-      if (error instanceof Error && error.name !== "AbortError") {
-        setNotice("Android no pudo compartir la imagen. Descarga el PNG y adjúntalo desde WhatsApp.");
+      // No async image generation before calling a gesture-restricted API:
+      // PNG was prepared when the popup opened. Windows usually cannot
+      // navigator.share(files), so copy the actual PNG to the clipboard.
+      const result = await shareQrImage(shareFile, {
+        nativeShare: typeof navigator.share === "function"
+          ? (data) => navigator.share(data) : undefined,
+        canNativeShare: typeof navigator.canShare === "function"
+          ? (data) => navigator.canShare(data) : undefined,
+        copyPng: typeof ClipboardItem !== "undefined" && typeof navigator.clipboard?.write === "function"
+          ? (image) => navigator.clipboard.write([new ClipboardItem({ "image/png": image })])
+          : undefined,
+        downloadPng: () => saveQrPng(shareFile),
+      });
+      if (result === "shared") {
+        setNotice("Imagen del QR compartida.");
+      } else if (result === "copied") {
+        setNotice("¡QR copiado como imagen! Abre WhatsApp, correo o un chat y pégalo con Ctrl+V.");
+      } else if (result === "downloaded") {
+        setNotice("Este navegador no permitió compartir ni copiar la imagen. Descargamos el PNG para que puedas adjuntarlo.");
       }
+      // Cancelling the native sheet is not a failure or a completed share.
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "No se pudo compartir el QR. Usa Descargar PNG.");
     } finally {
       setWorking(false);
     }
@@ -350,7 +366,7 @@ export default function QrShareButton({
               </button>
             </div>
             <p className="mt-2 text-center text-xs font-semibold leading-relaxed text-[#123d82]">
-              Compartir QR envía la imagen a las aplicaciones disponibles. WhatsApp (enlace) solo envía la dirección de la tienda o de Mercadito.
+              Compartir QR envía la imagen si tu navegador lo permite. En Windows copia el QR como imagen para pegarlo con Ctrl+V en WhatsApp u otra app. WhatsApp (enlace) solo envía la dirección.
             </p>
             {shareImageStatus === "failed" && (
               <p role="alert" className="mt-2 text-center text-xs font-bold">
