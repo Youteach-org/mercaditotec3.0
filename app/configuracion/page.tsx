@@ -106,6 +106,7 @@ export default function ConfiguracionPage() {
           <nav className="mt-4 grid gap-3" aria-label="Cuenta y privacidad">
             <Link href="/profile" className="rounded-2xl border border-[#f2d9a9] px-4 py-3 font-bold hover:bg-[#fff9ee]">Perfil, datos y contraseña →</Link>
             <Link href="/configuracion/privacidad" className="rounded-2xl border border-[#f2d9a9] px-4 py-3 font-bold hover:bg-[#fff9ee]">Privacidad y derechos ARCO →</Link>
+            <Link href="/aviso-de-privacidad" className="rounded-2xl border border-[#f2d9a9] px-4 py-3 font-bold hover:bg-[#fff9ee]">Aviso de privacidad →</Link>
             <Link href="/terms" className="rounded-2xl border border-[#f2d9a9] px-4 py-3 font-bold hover:bg-[#fff9ee]">Condiciones de uso →</Link>
           </nav>
         </section>

@@ -83,6 +83,11 @@ export default function TermsPage() {
           >
             Mis tiendas
           </Link>
+          <Link href="/aviso-de-privacidad"
+            className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-800"
+          >
+            Aviso de privacidad
+          </Link>
         </div>
       </div>
     </main>

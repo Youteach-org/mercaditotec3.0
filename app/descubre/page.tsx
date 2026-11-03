@@ -258,6 +258,11 @@ export default function DescubrePage() {
           </p>
         )}
 
+        <nav aria-label="Avisos legales" className="mt-8 flex flex-wrap justify-center gap-4 pb-4 text-xs font-semibold text-[#123d82]">
+          <Link href="/aviso-de-privacidad" className="underline underline-offset-2">Aviso de privacidad</Link>
+          <Link href="/terms" className="underline underline-offset-2">Condiciones de uso</Link>
+        </nav>
+
         <div className="discover-end-doodle" aria-hidden="true">
           <span>Compra local ♥<br />Apoya a nuestra comunidad</span>
           <span>✰　✧　↝</span>

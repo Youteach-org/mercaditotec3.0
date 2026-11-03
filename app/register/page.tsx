@@ -292,6 +292,15 @@ export default function RegisterPage() {
         {error && <p className="text-red-600 text-sm break-all">{error}</p>}
         {success && <p className="text-green-700 text-sm break-all">{success}</p>}
 
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm leading-relaxed text-slate-800">
+          Para crear tu cuenta se utilizará tu correo institucional y nombre de usuario.
+          Antes de continuar, consulta nuestro{" "}
+          <a href="/aviso-de-privacidad" className="font-bold text-blue-800 underline">
+            aviso de privacidad
+          </a>{" "}
+          y las <a href="/terms" className="font-bold text-blue-800 underline">condiciones de uso</a>.
+        </div>
+
         <button
           type="submit"
           disabled={loading}

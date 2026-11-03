@@ -110,6 +110,7 @@ export default function PrivacidadYDatosPage() {
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/profile" className="rounded-xl bg-[#ffd54c] px-4 py-2.5 font-bold">Corregir mis datos de perfil →</Link>
             <Link href="/terms" className="rounded-xl border border-[#174db4] px-4 py-2.5 font-bold">Ver reglas de uso →</Link>
+            <Link href="/aviso-de-privacidad" className="rounded-xl border border-[#174db4] px-4 py-2.5 font-bold">Aviso de privacidad →</Link>
           </div>
         </section>
 
@@ -175,7 +176,11 @@ export default function PrivacidadYDatosPage() {
         </section>
 
         <aside className="rounded-2xl border-2 border-amber-300 bg-[#fff3d6] p-4 text-sm leading-relaxed text-slate-800">
-          <strong>Aviso de privacidad integral:</strong> su publicación definitiva está pendiente de verificar la identidad y el canal de contacto del responsable. Las reglas de uso están disponibles, pero no las presentamos como sustituto del aviso legal. Las solicitudes ARCO se reciben desde esta pantalla y requieren revisión humana.
+          <strong>Aviso de privacidad:</strong> ya puedes{" "}
+          <Link href="/aviso-de-privacidad" className="font-bold underline">consultar el documento público</Link>.
+          El aviso de privacidad es un borrador que no se publicará como definitivo
+          hasta disponer de un domicilio legal válido que no exponga el domicilio particular.
+          Las solicitudes ARCO realizadas desde esta pantalla requieren revisión humana.
         </aside>
       </div>
     </main>

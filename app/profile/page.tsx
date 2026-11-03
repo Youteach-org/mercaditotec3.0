@@ -397,6 +397,12 @@ function ProfileContent() {
           </button>
         </form>
 
+        <Link href="/configuracion/privacidad"
+          className="block rounded-2xl border border-blue-200 bg-blue-50 p-4 font-bold text-blue-900 hover:bg-blue-100"
+        >
+          Mis datos y solicitudes de privacidad ARCO →
+        </Link>
+
         {isAdmin && (
           <Link
             href="/admin"
