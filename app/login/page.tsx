@@ -318,6 +318,10 @@ export default function LoginPage() {
           <a href="/register" className="block text-center text-blue-600 font-medium">
             Crear cuenta nueva
           </a>
+          <p className="text-center text-xs text-slate-600">
+            Consulta el <a href="/aviso-de-privacidad" className="font-semibold text-blue-700 underline">aviso de privacidad</a>{" "}
+            y las <a href="/terms" className="font-semibold text-blue-700 underline">condiciones de uso</a>.
+          </p>
         </div>
       </div>
     </main>

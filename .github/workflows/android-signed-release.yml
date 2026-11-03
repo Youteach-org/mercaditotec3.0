@@ -1,0 +1,83 @@
+name: Build signed MercaditoTec Android release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require verified legal notice before distribution
+        run: node scripts/check-android-release-readiness.mjs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install Android build SDK
+        shell: bash
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: Require protected signing secrets
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.MERCADITOTEC_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.MERCADITOTEC_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MERCADITOTEC_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.MERCADITOTEC_RELEASE_KEY_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_B64" || { echo "Release signing keystore is not configured"; exit 1; }
+          test -n "$STORE_PASSWORD" || { echo "Release store password is not configured"; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "Release alias is not configured"; exit 1; }
+          test -n "$KEY_PASSWORD" || { echo "Release key password is not configured"; exit 1; }
+      - name: Restore private signing keystore
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.MERCADITOTEC_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/mercaditotec-signing"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/mercaditotec-signing/release.jks"
+          test -s "$RUNNER_TEMP/mercaditotec-signing/release.jks"
+      - name: Build production release APK
+        working-directory: android
+        env:
+          MERCADITOTEC_RELEASE_KEYSTORE: ${{ runner.temp }}/mercaditotec-signing/release.jks
+          MERCADITOTEC_RELEASE_STORE_PASSWORD: ${{ secrets.MERCADITOTEC_RELEASE_STORE_PASSWORD }}
+          MERCADITOTEC_RELEASE_KEY_ALIAS: ${{ secrets.MERCADITOTEC_RELEASE_KEY_ALIAS }}
+          MERCADITOTEC_RELEASE_KEY_PASSWORD: ${{ secrets.MERCADITOTEC_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :app:assembleRelease
+      - name: Verify signed APK
+        shell: bash
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/mercaditotec-badging.txt"
+          sed -n '1,12p' "$RUNNER_TEMP/mercaditotec-badging.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump permissions "$APK" > "$RUNNER_TEMP/mercaditotec-permissions.txt"
+          if grep -E 'REQUEST_INSTALL_PACKAGES|READ_SMS|SEND_SMS|READ_CALL_LOG|READ_CONTACTS|ACCESS_BACKGROUND_LOCATION|QUERY_ALL_PACKAGES|BIND_ACCESSIBILITY_SERVICE' "$RUNNER_TEMP/mercaditotec-permissions.txt"; then
+            echo "Unexpected sensitive Android permission found in final APK"; exit 1
+          fi
+          sha256sum "$APK" > "$APK.sha256"
+      - name: Upload signed release and checksum for controlled testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: mercaditotec-android-release-signed
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/release/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary signing key
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/mercaditotec-signing"

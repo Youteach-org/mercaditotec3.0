@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
 
         val root = FrameLayout(this)
         webView = WebView(this)
+        WebView.setWebContentsDebuggingEnabled(false)
         root.addView(webView, FrameLayout.LayoutParams(-1, -1))
 
         loading = ProgressBar(this)
@@ -88,7 +89,10 @@ class MainActivity : ComponentActivity() {
             domStorageEnabled = true
             databaseEnabled = true
             allowFileAccess = false
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
             allowContentAccess = true
+            safeBrowsingEnabled = true
             javaScriptCanOpenWindowsAutomatically = false
             setSupportMultipleWindows(true)
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
@@ -199,32 +203,44 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun allowed(uri: Uri): Boolean =
-        uri.scheme.equals("https", true) && uri.host.equals(trustedHost, true)
+        uri.scheme.equals("https", true) &&
+            uri.host.equals(trustedHost, true) &&
+            uri.userInfo == null
 
+    /**
+     * Only launch trusted external protocols. Arbitrary javascript:, file:,
+     * content:, market:, and custom intent: URLs must never be forwarded
+     * to another Android app from marketplace content.
+     */
     private fun route(uri: Uri, target: WebView): Boolean {
         if (allowed(uri)) {
-            // Normal in-site links are handled natively by WebView navigation,
-            // unless this is a temporary popup targeting the main WebView.
             if (target === webView) return false
             webView.loadUrl(uri.toString())
             return true
         }
-        if (uri.scheme == "about") return false
+        val scheme = uri.scheme?.lowercase() ?: return true
+        if (scheme == "about" && uri.toString().equals("about:blank", true)) return false
+
         try {
-            val intent = if (uri.scheme == "intent") {
-                Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                    component = null
-                    selector = null
+            val intent = when (scheme) {
+                "https", "mailto", "tel", "sms", "smsto", "whatsapp" ->
+                    Intent(Intent.ACTION_VIEW, uri).apply {
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                    }
+                "intent" -> {
+                    val parsed = Intent.parseUri(uri.toString(), Intent.URI_INTENT_SCHEME)
+                    if (parsed.`package` !in setOf("com.whatsapp", "com.whatsapp.w4b")) return true
+                    parsed.apply {
+                        component = null
+                        selector = null
+                        addCategory(Intent.CATEGORY_BROWSABLE)
+                    }
                 }
-            } else {
-                Intent(Intent.ACTION_VIEW, uri).apply {
-                    addCategory(Intent.CATEGORY_BROWSABLE)
-                }
+                else -> return true
             }
             startActivity(intent)
         } catch (_: Exception) {
-            // If WhatsApp or an external handler is unavailable, stay in Mercadito.
+            // Remain in Mercadito if the requested external app is unavailable.
         }
         return true
     }
@@ -270,18 +286,27 @@ class MainActivity : ComponentActivity() {
 
     private fun download(url: String, userAgent: String, disposition: String, mime: String) {
         val uri = Uri.parse(url)
-        if (uri.scheme != "https") return
+        val fromTrustedStorage = uri.scheme.equals("https", true) &&
+            uri.host.equals("wfmokinfcypfpdisussw.supabase.co", true)
+        if (!allowed(uri) && !fromTrustedStorage) return
         try {
             val filename = URLUtil.guessFileName(url, disposition, mime)
+            val lowered = filename.lowercase()
+            if (listOf(".apk", ".xapk", ".apks", ".dex", ".jar").any { lowered.endsWith(it) } ||
+                mime.equals("application/vnd.android.package-archive", true)
+            ) return
             val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-            manager.enqueue(
-                DownloadManager.Request(uri)
-                    .setMimeType(mime)
-                    .addRequestHeader("User-Agent", userAgent)
-                    .addRequestHeader("Cookie", CookieManager.getInstance().getCookie(url) ?: "")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename),
-            )
+            val download = DownloadManager.Request(uri)
+                .setMimeType(mime)
+                .addRequestHeader("User-Agent", userAgent)
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+            if (allowed(uri)) {
+                CookieManager.getInstance().getCookie(url)?.takeIf { it.isNotBlank() }?.let {
+                    download.addRequestHeader("Cookie", it)
+                }
+            }
+            manager.enqueue(download)
         } catch (_: Exception) {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         }
