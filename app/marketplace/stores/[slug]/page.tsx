@@ -231,7 +231,7 @@ export default function PublicStorePage() {
                     <div className={store.products.length === 1 ? "h-56 bg-slate-100 sm:h-72" : "h-48 bg-slate-100 sm:h-56"}>
                       {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.imageUrls[0]} alt={product.title} className="h-full w-full object-cover" />
+                        <img src={product.imageUrls[0]} alt={product.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full items-center justify-center text-4xl" aria-hidden="true">📦</div>
                       )}
