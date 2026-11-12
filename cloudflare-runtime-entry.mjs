@@ -4,6 +4,7 @@ import { boundApiRequest, ApiBodyLimitError } from "./lib/security/requestBody.m
 import { screenListing } from "./lib/descubre/automaticReview.mjs";
 
 import { enforceEdgeBudget } from "./lib/security/edgeBudget.mjs";
+import { servePublicStoreMedia } from "./lib/store/publicStoreMediaDelivery.mjs";
 import { enforceHttps } from "./lib/security/enforceHttps.mjs";
 import { serveCachedPublicShell } from "./lib/security/publicShellEdgeCache.mjs";
 import {
@@ -136,6 +137,10 @@ export default {
     try {
       const limited = await enforceEdgeBudget(request, env);
       if (limited) return limited;
+      // Only public, immutable store photos are eligible for Cloudflare/R2 delivery.
+      if (url.pathname.startsWith("/media/stores/")) {
+        return await servePublicStoreMedia(request, env, ctx);
+      }
       const bounded = await boundApiRequest(request);
       // For a seller-created item, the normal API writes only a private
       // screening draft. Only THIS trusted edge layer runs the image+text

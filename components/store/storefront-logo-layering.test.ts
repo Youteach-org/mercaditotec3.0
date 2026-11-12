@@ -27,8 +27,8 @@ describe("logo overlay without changing approved storefront aesthetics", () => {
     expect(publicStore).toContain(
       'className="relative z-10 -mt-14 h-24 w-24 shrink-0 overflow-hidden rounded-3xl border-4 border-white bg-slate-100 shadow-md"',
     );
-    expect(publicStore).toContain('src={store.logoUrl}');
-    expect(publicStore).toContain('src={store.coverUrl}');
+    expect(publicStore).toContain('src={publicStoreImageSrc(store.logoUrl)}');
+    expect(publicStore).toContain('src={publicStoreImageSrc(store.coverUrl)}');
   });
 
   it("restores the original preview without unrelated logo styling changes", () => {
