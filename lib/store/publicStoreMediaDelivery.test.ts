@@ -41,7 +41,7 @@ describe("Cloudflare/R2 public store photos", () => {
 
   it("delivers a legacy Supabase photo, stores it in the edge cache, and does not fetch it twice", async () => {
     const cache = memoryCache();
-    const fetcher = vi.fn(async () => new Response("image bytes", {
+    const fetcher = vi.fn(async (_url: string) => new Response("image bytes", {
       status: 200,
       headers: { "content-type": "image/webp" },
     }));
@@ -77,6 +77,27 @@ describe("Cloudflare/R2 public store photos", () => {
     expect(await response.text()).toBe("R2 bytes");
     expect(get).toHaveBeenCalledWith("stores/owner/store/products/product-1/photo.webp");
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("mirrors a public legacy image into R2 after a miss without changing its URL", async () => {
+    const put = vi.fn(async () => ({}));
+    const get = vi.fn(async () => null);
+    const fetcher = vi.fn(async (_url: string) => new Response("legacy image", {
+      status: 200,
+      headers: { "content-type": "image/webp", "content-length": "12" },
+    }));
+    const tasks = makeContext();
+    const response = await servePublicStoreMedia(
+      new Request(imageUrl),
+      { STORE_MEDIA_R2: { get, put } },
+      tasks.ctx,
+      { cache: memoryCache(), fetch: fetcher },
+    );
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("legacy image");
+    await tasks.flush();
+    expect(put).toHaveBeenCalledTimes(1);
+    expect(put.mock.calls[0][0]).toBe("stores/owner/store/products/product-1/photo.webp");
   });
 
   it("keeps private routes untouched and rejects unsupported methods", async () => {
