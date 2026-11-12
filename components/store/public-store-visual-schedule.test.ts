@@ -54,8 +54,8 @@ describe("public storefront weekly visual timetable", () => {
   it("preserves the previously approved store header, layering and photo zoom", () => {
     expect(storefront).toContain('<header className="overflow-hidden rounded-3xl bg-white shadow-lg">');
     expect(storefront).toContain('className="relative z-10 -mt-14 h-24 w-24');
-    expect(storefront).toContain('src={store.coverUrl}');
-    expect(storefront).toContain('src={store.logoUrl}');
-    expect(storefront).toContain('src={product.imageUrls[0]}');
+    expect(storefront).toContain('src={publicStoreImageSrc(store.coverUrl)}');
+    expect(storefront).toContain('src={publicStoreImageSrc(store.logoUrl)}');
+    expect(storefront).toContain('src={publicStoreImageSrc(product.imageUrls[0])}');
   });
 });
