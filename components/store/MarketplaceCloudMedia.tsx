@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { publicStoreImageSrc } from "@/lib/store/publicStoreImageSrc";
 
 const CLOUD_PATHS = [
   "M80 112 C100 49 190 32 270 53 C330 14 430 18 490 49 C560 14 680 18 730 53 C820 25 910 56 920 119 C985 140 995 210 950 252 C995 301 995 371 950 413 C990 476 950 546 870 560 C860 630 760 665 680 637 C620 683 510 690 440 658 C360 690 250 676 210 630 C120 658 40 609 50 553 C0 511 15 434 65 406 C15 350 20 280 70 245 C20 196 25 140 80 112 Z",
@@ -51,7 +52,12 @@ export default function MarketplaceCloudMedia({
           <rect x="0" y="0" width="1000" height="700" fill="#fffdf6" />
           {imageUrl ? (
             <image
-              href={imageUrl}
+              href={publicStoreImageSrc(imageUrl)}
+              onError={(event) => {
+                if (imageUrl && event.currentTarget.getAttribute("href") !== imageUrl) {
+                  event.currentTarget.setAttribute("href", imageUrl);
+                }
+              }}
               x="82"
               y="58"
               width="836"
