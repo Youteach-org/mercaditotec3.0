@@ -9,6 +9,7 @@ import StoreScheduleGrid from "@/components/store/StoreScheduleGrid";
 import { StoreRatingBadge } from "@/components/store/StoreEmojiRating";
 import { createOrderRequest } from "@/lib/orders/client";
 import type { PublicStoreDetail } from "@/lib/store/publicMarketplace";
+import { publicStoreImageSrc } from "@/lib/store/publicStoreImageSrc";
 import { useSession } from "@/lib/useSession";
 
 function WhatsAppIcon() {
@@ -160,7 +161,7 @@ export default function PublicStorePage() {
           <div className="relative h-44 bg-gradient-to-br from-slate-900 to-slate-600 sm:h-60">
             {store.coverUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={store.coverUrl} alt="" className="h-full w-full object-cover" />
+              <img src={publicStoreImageSrc(store.coverUrl)} onError={(event) => { if (event.currentTarget.getAttribute("src") !== store.coverUrl) event.currentTarget.src = store.coverUrl!; }} alt="" className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full items-center justify-center text-6xl" aria-hidden="true">🏬</div>
             )}
@@ -171,7 +172,7 @@ export default function PublicStorePage() {
               <div className="relative z-10 -mt-14 h-24 w-24 shrink-0 overflow-hidden rounded-3xl border-4 border-white bg-slate-100 shadow-md">
                 {store.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={store.logoUrl} alt="" className="h-full w-full object-cover" />
+                  <img src={publicStoreImageSrc(store.logoUrl)} onError={(event) => { if (event.currentTarget.getAttribute("src") !== store.logoUrl) event.currentTarget.src = store.logoUrl!; }} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-4xl" aria-hidden="true">🛍️</div>
                 )}
@@ -231,7 +232,7 @@ export default function PublicStorePage() {
                     <div className={store.products.length === 1 ? "h-56 bg-slate-100 sm:h-72" : "h-48 bg-slate-100 sm:h-56"}>
                       {product.imageUrls[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={product.imageUrls[0]} alt={product.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                        <img src={publicStoreImageSrc(product.imageUrls[0])} onError={(event) => { if (event.currentTarget.getAttribute("src") !== product.imageUrls[0]) event.currentTarget.src = product.imageUrls[0]; }} alt={product.title} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full items-center justify-center text-4xl" aria-hidden="true">📦</div>
                       )}
