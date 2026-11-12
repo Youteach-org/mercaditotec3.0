@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+import StoreImageCacheRegistration from "@/components/StoreImageCacheRegistration";
+
 const RuntimeAppShell = dynamic(
   () => import("@/components/RuntimeAppShell"),
   {
@@ -17,5 +19,10 @@ export default function ClientAppShell({
 }: {
   children: React.ReactNode;
 }) {
-  return <RuntimeAppShell>{children}</RuntimeAppShell>;
+  return (
+    <>
+      <StoreImageCacheRegistration />
+      <RuntimeAppShell>{children}</RuntimeAppShell>
+    </>
+  );
 }
