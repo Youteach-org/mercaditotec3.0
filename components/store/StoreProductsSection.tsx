@@ -331,7 +331,7 @@ export default function StoreProductsSection({
           {products.map((product) => (
             <article key={product.id} className="rounded-2xl border border-gray-200 p-4">
               {product.imageUrls[0] ? (
-                <img src={product.imageUrls[0]} alt={product.title} className="h-40 w-full rounded-xl object-cover" />
+                <img src={product.imageUrls[0]} alt={product.title} loading="lazy" decoding="async" className="h-40 w-full rounded-xl object-cover" />
               ) : (
                 <div className="flex h-40 items-center justify-center rounded-xl border-2 border-dashed border-red-200 bg-red-50 text-sm font-semibold text-red-600">Falta imagen obligatoria</div>
               )}
