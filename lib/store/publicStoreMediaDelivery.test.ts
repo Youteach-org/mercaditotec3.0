@@ -80,7 +80,7 @@ describe("Cloudflare/R2 public store photos", () => {
   });
 
   it("mirrors a public legacy image into R2 after a miss without changing its URL", async () => {
-    const put = vi.fn(async () => ({}));
+    const put = vi.fn(async (_key: string, _body: ReadableStream<Uint8Array> | null, _options: unknown) => ({}));
     const get = vi.fn(async () => null);
     const fetcher = vi.fn(async (_url: string) => new Response("legacy image", {
       status: 200,
