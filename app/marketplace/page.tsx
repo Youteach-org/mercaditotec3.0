@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import QuickNoticesPanel from "@/components/community/QuickNoticesPanel";
 import { StoreEmojiRatingCard } from "@/components/store/StoreEmojiRating";
 import MarketplaceCloudMedia from "@/components/store/MarketplaceCloudMedia";
+import { publicStoreImageSrc } from "@/lib/store/publicStoreImageSrc";
 import MarketplaceRibbon from "@/components/store/MarketplaceRibbon";
 
 import {
@@ -254,7 +255,8 @@ function StoreCard({
         {store.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={store.logoUrl}
+            src={publicStoreImageSrc(store.logoUrl)}
+            onError={(event) => { if (event.currentTarget.getAttribute("src") !== store.logoUrl) event.currentTarget.src = store.logoUrl!; }}
             alt={`Logo de ${store.name}`}
             data-force-image-zoom="true"
             data-image-double-href={!previewMode && !demo ? (requiresLogin ? "/login" : storeHref) : undefined}
